@@ -1,0 +1,16 @@
+
+string type(any)
+ Arg 1: Any variable
+ Side Effect: None
+ Return: string containing the type of the variable
+
+string string(any)
+ Arg 1: Any variable
+ Side Effect: None
+ Return: string containing a representation of Arg 1's value.
+
+void print(string)
+ Arg 1: string to print
+ Side Effect: Prints the string to Pile's stdout
+ Return: None
+

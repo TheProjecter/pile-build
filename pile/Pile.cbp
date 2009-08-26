@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="Pile" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Release">
+				<Option output="pile" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+		</Compiler>
+		<Linker>
+			<Add library="SDLmain" />
+			<Add library="SDL" />
+			<Add library="SDL_image" />
+			<Add library="SDL_ttf" />
+		</Linker>
+		<Unit filename="Eve Source/eve_interpreter.cpp" />
+		<Unit filename="Eve Source/eve_interpreter.h" />
+		<Unit filename="External Code/NFont.cpp" />
+		<Unit filename="External Code/NFont.h" />
+		<Unit filename="External Code/goodio.cpp" />
+		<Unit filename="External Code/goodio.h" />
+		<Unit filename="main.cpp" />
+		<Unit filename="pile_build.cpp" />
+		<Unit filename="pile_build.h" />
+		<Unit filename="pile_commands.cpp" />
+		<Unit filename="pile_commands.h" />
+		<Unit filename="pile_config.cpp" />
+		<Unit filename="pile_config.h" />
+		<Unit filename="pile_depend.cpp" />
+		<Unit filename="pile_depend.h" />
+		<Unit filename="pile_env.h" />
+		<Unit filename="pile_global.h" />
+		<Unit filename="pile_interpreter.cpp" />
+		<Unit filename="pile_load.cpp" />
+		<Unit filename="pile_load.h" />
+		<Unit filename="pile_os.h" />
+		<Unit filename="pile_system.cpp" />
+		<Unit filename="pile_system.h" />
+		<Unit filename="pile_ui.cpp" />
+		<Unit filename="pile_ui.h" />
+		<Unit filename="string_functions.cpp" />
+		<Unit filename="string_functions.h" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
