@@ -1,0 +1,1066 @@
+/*
+Eve, an interpreted programming language.
+by Jonathan Dearborn
+*/
+
+
+#ifndef _EVE_INTERPRETER_H__
+#define _EVE_INTERPRETER_H__
+
+#include <sstream>
+// FIXME: Replace Pile output with an error message system
+#include "../pile_ui.h"
+#include <list>
+#include <vector>
+#include <map>
+#include <string>
+#include <sstream>
+#include "stdarg.h"  // FIXME: Move into the cpp file
+
+bool isWhitespace(const char& c);
+
+bool isMatch(const char& c, const std::vector<char>& matching);
+
+bool isQuantizer(const char& c);
+
+inline bool isAlpha(const char& c)
+{
+    return (65 <= c && c <= 90) || (97 <= c && c <= 122);
+}
+
+inline bool isNumeric(const char& c)
+{
+    return (48 <= c && c <= 57);
+}
+
+inline bool isAlphanumeric(const char& c)
+{
+    return isAlpha(c) || isNumeric(c);
+}
+
+
+bool isOperator(const char& c);
+bool isSeparator(const char& c);
+
+
+enum TypeEnum{NOT_A_TYPE, VOID, TYPENAME, BOOL, INT, FLOAT, STRING, MACRO, ARRAY, LIST, FUNCTION, PROCEDURE};
+
+enum OperatorEnum{NOT_AN_OPERATOR, ADD, SUBTRACT, NEGATE, ASSIGN, ADD_ASSIGN, SUBTRACT_ASSIGN, MULTIPLY_ASSIGN, DIVIDE_ASSIGN,
+                  MULTIPLY, DIVIDE, MODULUS, EQUALS, NOT_EQUALS, LESS, GREATER, LESS_EQUAL,
+                  GREATER_EQUAL, NOT, AND, OR, CALL, CONTINUATION, COLON
+                 };
+                 
+enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS, 
+                OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, OPEN_CURLY_BRACKET, 
+                CLOSE_CURLY_BRACKET, SEMICOLON
+                 };
+
+enum FunctionEnum{FN_NONE, FN_PRINT, FN_TYPE, FN_STRING};
+
+class Token;
+std::list<Token> tokenize1(std::string& line, bool& continuation);
+
+std::string getTypeString(TypeEnum type);
+std::string getOperatorString(OperatorEnum type);
+std::string getSeparatorString(SeparatorEnum type);
+
+class Variable;
+Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args);
+
+
+bool isConvertable(TypeEnum source, TypeEnum dest);
+
+class Variable
+{
+protected:
+    TypeEnum type;
+public:
+    bool literal;
+    Variable(TypeEnum type)
+            : type(type)
+            , literal(false)
+    {}
+    TypeEnum getType()
+    {
+        return type;
+    }
+    virtual std::string getValueString() = 0;
+    // This could easily be a virtual function instead... and then it'd be independent of some external stuff.
+    std::string getTypeString()
+    {
+        return ::getTypeString(type);
+    }
+};
+
+// This class represents a type declaration.
+class TypeName : public Variable
+{
+private:
+    TypeEnum value; // What type is being declared?
+public:
+    TypeName()
+            : Variable(TYPENAME)
+    {}
+    void setValue(const TypeEnum& val)
+    {
+        value = val;
+    }
+    TypeEnum& getValue()
+    {
+        return value;
+    }
+    virtual std::string getValueString()
+    {
+        return ::getTypeString(value);
+    }
+};
+
+// This class represents an undefined variable.
+class Void : public Variable
+{
+private:
+    std::string value; // What type is being declared?
+public:
+    Void()
+            : Variable(VOID)
+    {}
+    Void(const std::string& val)
+            : Variable(VOID)
+            , value(val)
+    {}
+    void setValue(const std::string& val)
+    {
+        value = val;
+    }
+    std::string& getValue()
+    {
+        return value;
+    }
+    virtual std::string getValueString()
+    {
+        return value;
+    }
+};
+
+class String : public Variable
+{
+private:
+    std::string value;
+public:
+    String()
+            : Variable(STRING)
+    {}
+    String(const std::string& value)
+            : Variable(STRING)
+            , value(value)
+    {}
+    void setValue(const std::string& val)
+    {
+        value = val;
+    }
+    std::string& getValue()
+    {
+        return value;
+    }
+    virtual std::string getValueString()
+    {
+        return value;
+    }
+};
+
+class Int : public Variable
+{
+private:
+    int value;
+public:
+    Int()
+            : Variable(INT)
+            , value(0)
+    {}
+    Int(int value)
+            : Variable(INT)
+            , value(value)
+    {}
+    int& getValue()
+    {
+        return value;
+    }
+    void setValue(const int& val)
+    {
+        value = val;
+    }
+    virtual std::string getValueString()
+    {
+        char buff[20];
+        sprintf(buff, "%d", value);
+        return buff;
+    }
+};
+
+class Float : public Variable
+{
+private:
+    float value;
+public:
+    Float()
+            : Variable(FLOAT)
+            , value(0.0f)
+    {}
+    float& getValue()
+    {
+        return value;
+    }
+    void setValue(const float& val)
+    {
+        value = val;
+    }
+    virtual std::string getValueString()
+    {
+        char buff[200];
+        sprintf(buff, "%f", value);
+        return buff;
+    }
+};
+
+class Bool : public Variable
+{
+private:
+    bool value;
+public:
+    Bool()
+            : Variable(BOOL)
+            , value(false)
+    {}
+    bool& getValue()
+    {
+        return value;
+    }
+    void setValue(const bool& val)
+    {
+        value = val;
+    }
+    virtual std::string getValueString()
+    {
+        return (value? "true" : "false");
+    }
+};
+
+class Macro : public Variable
+{
+private:
+    std::string value;
+public:
+    Macro()
+            : Variable(MACRO)
+    {}
+    std::string& getValue()
+    {
+        return value;
+    }
+    void setValue(const std::string& val)
+    {
+        value = val;
+    }
+    virtual std::string getValueString()
+    {
+        return value;
+    }
+};
+
+
+
+class Array : public Variable
+{
+private:
+    TypeEnum valueType;
+    std::vector<Variable*> value;
+public:
+    Array()
+            : Variable(ARRAY)
+            , valueType(VOID)
+    {}
+    Array(TypeEnum valueType)
+            : Variable(ARRAY)
+            , valueType(valueType)
+    {}
+    Array(const std::vector<Variable*>& value, TypeEnum valueType)
+            : Variable(ARRAY)
+            , valueType(valueType)
+            , value(value)
+    {}
+    std::vector<Variable*>& getValue()
+    {
+        return value;
+    }
+    void setValue(const std::vector<Variable*>& val)
+    {
+        value = val;  // Needs copy
+    }
+    std::string getValueTypeString()
+    {
+        return ::getTypeString(valueType);
+    }
+    TypeEnum getValueType()
+    {
+        return valueType;
+    }
+    virtual std::string getValueString()
+    {
+        std::string result;
+        for (std::vector<Variable*>::iterator e = value.begin(); e != value.end();)
+        {
+            result += (*e)->getValueString();
+            e++;
+            if(e != value.end())
+                result += ", ";
+        }
+        return result;
+    }
+    void push_back(Variable* var)
+    {
+        if(var != NULL && var->getType() == valueType)
+            value.push_back(var);
+    }
+    void push_back(const std::vector<Variable*>& vec)
+    {
+        for(std::vector<Variable*>::const_iterator e = vec.begin(); e != vec.end(); e++)
+        {
+            if((*e)->getType() == valueType)
+                value.push_back(*e);
+        }
+    }
+};
+
+class List : public Variable
+{
+private:
+    std::list<Variable*> value;
+public:
+    List()
+            : Variable(LIST)
+    {}
+    List(const std::list<Variable*>& value)
+            : Variable(LIST)
+            , value(value)
+    {}
+    std::list<Variable*>& getValue()
+    {
+        return value;
+    }
+    void setValue(const std::list<Variable*>& val)
+    {
+        value = val;  // Needs copy
+    }
+    virtual std::string getValueString()
+    {
+        char buff[2048];
+        buff[0] = '<';
+        char* c = buff+1;
+        int num = 1;
+        bool ran = false;
+        for (std::list<Variable*>::iterator e = value.begin(); e != value.end(); e++)
+        {
+            if (ran)
+            {
+                sprintf(c, ", ");
+                c += 1;
+            }
+            ran = true;
+            sprintf(c, "(%s, '%s')%n", (*e)->getTypeString().c_str(), (*e)->getValueString().c_str(), &num);
+            c += num;  // Move the pointer along...
+        }
+        buff[num] = '>';
+        buff[num+1] = '\0';
+        return buff;
+    }
+    void push_back(Variable* var)
+    {
+        if(var != NULL)
+            value.push_back(var);
+    }
+};
+
+class Function : public Variable
+{
+private:
+    std::string value;
+    std::vector<TypeEnum> argt;  // Types of arguments
+    TypeEnum returnType;
+    FunctionEnum builtIn;
+public:
+    Function()
+            : Variable(FUNCTION)
+            , builtIn(FN_NONE)
+    {}
+    Function(const std::vector<TypeEnum>& argt, const std::string& value)
+            : Variable(FUNCTION)
+            , value(value)
+            , argt(argt)
+            , builtIn(FN_NONE)
+    {}
+    Function(FunctionEnum builtIn)
+            : Variable(FUNCTION)
+            , builtIn(builtIn)
+    {
+        switch(builtIn)
+        {
+            case FN_PRINT:
+                argt.push_back(STRING);
+                break;
+            case FN_TYPE:
+                argt.push_back(VOID);
+                break;
+            case FN_STRING:
+                argt.push_back(VOID);
+                break;
+            default:
+                break;
+        }
+    }
+    std::string& getValue()
+    {
+        return value;
+    }
+    std::vector<TypeEnum>& getArgTypes()
+    {
+        return argt;
+    }
+    void setValue(const std::string& val)
+    {
+        value = val;
+    }
+    void setArgTypes(const std::vector<TypeEnum>& argTypes)
+    {
+        argt = argTypes;
+    }
+    /*void loadFromSig(const std::list<Token>& fnSignature)
+    {
+        // ...
+    }*/
+    virtual std::string getValueString()
+    {
+        return value;
+    }
+    bool isBuiltIn()
+    {
+        return (builtIn != FN_NONE);
+    }
+    FunctionEnum getBuiltIn()
+    {
+        return builtIn;
+    }
+};
+
+class Procedure : public Variable
+{
+private:
+    std::string value;
+public:
+    Procedure()
+            : Variable(PROCEDURE)
+    {}
+    std::string& getValue()
+    {
+        return value;
+    }
+    void setValue(const std::string& val)
+    {
+        value = val;
+    }
+    virtual std::string getValueString()
+    {
+        return value;
+    }
+};
+
+
+
+Variable* assign(Variable* A, Variable* B);
+
+Variable* add(Variable* A, Variable* B);
+
+Variable* subtract(Variable* A, Variable* B);
+
+Variable* negate(Variable* A);
+
+Variable* multiply(Variable* A, Variable* B);
+
+Variable* divide(Variable* A, Variable* B);
+
+Variable* add_assign(Variable* A, Variable* B);
+
+class Scope
+{
+public:
+    bool isolated;  // If true, don't check previous scopes for variables (except for global).
+    // This is used for functions, which have their own separate scope.
+    
+    
+    enum ScopeEnum {NO_SCOPE, IF_BLOCK, SKIP_IF, SKIP_ELSE};
+    ScopeEnum state;
+    bool singleLine;
+    
+    std::map<std::string, Variable*> env;
+    
+    std::list<Token*> skipList; // Holds brackets while a block is being skipped
+
+    Scope(bool isolated)
+            : isolated(isolated)
+            , state(NO_SCOPE)
+            , singleLine(false)
+    {}
+
+    Variable* getVar(const std::string& name)
+    {
+        if (env.find(name) == env.end())
+            return NULL;
+        return env[name];
+    }
+
+    void printEnv()
+    {
+        UI_debug_pile("Printing scope... %d variables.\n", env.size());
+        for (std::map<std::string, Variable*>::iterator e = env.begin(); e != env.end(); e++)
+        {
+            UI_debug_pile(" '%s' has type '%s' with value '%s'\n", e->first.c_str(), e->second->getTypeString().c_str(), e->second->getValueString().c_str());
+        }
+    }
+};
+
+
+class Token
+{
+public:
+    enum TokenEnum{NOT_A_TOKEN, VARIABLE, OPERATOR, SEPARATOR, KEYWORD};
+
+    TokenEnum type;
+
+    std::string text;
+    Variable* var;
+
+    OperatorEnum oper;
+    int precedence;  // 1-15, lower is earlier
+    bool associativeLeftToRight;
+    
+    SeparatorEnum sep;
+
+
+    Token()
+            : type(NOT_A_TOKEN)
+            , var(NULL)
+            , oper(NOT_AN_OPERATOR), precedence(0), associativeLeftToRight(true)
+            , sep(NOT_A_SEPARATOR)
+    {}
+    Token(Variable* var, std::string text)
+            : type(VARIABLE)
+            , text(text), var(var)
+            , oper(NOT_AN_OPERATOR), precedence(0), associativeLeftToRight(true)
+            , sep(NOT_A_SEPARATOR)
+    {
+        if (var == NULL) // Error?
+            type = NOT_A_TOKEN;
+    }
+    
+    Token(TokenEnum type, std::string text)
+            : type(type)
+            , text(text)
+            , var(NULL), oper(NOT_AN_OPERATOR), precedence(0), associativeLeftToRight(true)
+    {
+        if(type == OPERATOR)
+            setOperator(text);
+        else if(type == SEPARATOR)
+            setSeparator(text);
+    }
+    
+    void setOperator(std::string Oper)
+    {
+        //strip(Oper, ' ');
+        if (Oper == "+")
+        {
+            oper = ADD;
+            precedence = 4;
+        }
+        if (Oper == "-")
+        {
+            oper = SUBTRACT;
+            precedence = 4;
+        }
+        else if (Oper == "-X") // The weird one...
+        {
+            oper = NEGATE;
+            associativeLeftToRight = false;
+            precedence = 2;
+        }
+        else if (Oper == "=")
+        {
+            oper = ASSIGN;
+            associativeLeftToRight = false;
+            precedence = 14;
+        }
+        else if (Oper == "+=")
+        {
+            oper = ADD_ASSIGN;
+            associativeLeftToRight = false;
+            precedence = 14;
+        }
+        else if (Oper == "-=")
+        {
+            oper = SUBTRACT_ASSIGN;
+            associativeLeftToRight = false;
+            precedence = 14;
+        }
+        else if (Oper == "*=")
+        {
+            oper = MULTIPLY_ASSIGN;
+            associativeLeftToRight = false;
+            precedence = 14;
+        }
+        else if (Oper == "/=")
+        {
+            oper = DIVIDE_ASSIGN;
+            associativeLeftToRight = false;
+            precedence = 14;
+        }
+        else if (Oper == "*")
+        {
+            oper = MULTIPLY;
+            precedence = 3;
+        }
+        else if (Oper == "/")
+        {
+            oper = DIVIDE;
+            precedence = 3;
+        }
+        else if (Oper == "%")
+        {
+            oper = MODULUS;
+            precedence = 3;
+        }
+        else if (Oper == "==")
+        {
+            oper = EQUALS;
+            precedence = 7;
+        }
+        else if (Oper == "!=")
+        {
+            oper = NOT_EQUALS;
+            precedence = 7;
+        }
+        else if (Oper == "<")
+        {
+            oper = LESS;
+            precedence = 6;
+        }
+        else if (Oper == ">")
+        {
+            oper = GREATER;
+            precedence = 6;
+        }
+        else if (Oper == "<=")
+        {
+            oper = LESS_EQUAL;
+            precedence = 6;
+        }
+        else if (Oper == ">=")
+        {
+            oper = GREATER_EQUAL;
+            precedence = 6;
+        }
+        else if (Oper == "!")
+        {
+            oper = NOT;
+            precedence = 2;
+        }
+        else if (Oper == "&&")
+        {
+            oper = AND;
+            precedence = 11;
+        }
+        else if (Oper == "||")
+        {
+            oper = OR;
+            precedence = 12;
+        }
+        /*else if (Oper == ",")
+        {
+            oper = COMMA;
+            precedence = 15;
+        }
+        */
+        else if (Oper == "...")
+        {
+            oper = CONTINUATION;
+        }
+        else if (Oper == ":")
+        {
+            oper = COLON;
+            precedence = 1;
+        }
+        /*else if (Oper == ";")
+        {
+            oper = SEMICOLON;
+        }*/
+    }
+    
+    void setSeparator(std::string s)
+    {
+        //strip(s, ' ');
+        if (s == ",")
+        {
+            sep = COMMA;
+        }
+        else if (s == "(")
+        {
+            sep = OPEN_PARENTHESIS;
+        }
+        else if (s == ")")
+        {
+            sep = CLOSE_PARENTHESIS;
+        }
+        else if (s == "[")
+        {
+            sep = OPEN_SQUARE_BRACKET;
+        }
+        else if (s == "]")
+        {
+            sep = CLOSE_SQUARE_BRACKET;
+        }
+        else if (s == "{")
+        {
+            sep = OPEN_CURLY_BRACKET;
+        }
+        else if (s == "}")
+        {
+            sep = CLOSE_CURLY_BRACKET;
+        }
+        else if (s == ";")
+        {
+            sep = SEMICOLON;
+        }
+    }
+
+
+    std::string getTypeString()
+    {
+        switch (type)
+        {
+        case NOT_A_TOKEN:
+            return "Not_A_Token";
+        case VARIABLE:
+            if (var->literal)
+                return "Literal";
+            if (var->getType() == TYPENAME)
+                return "TypeName";
+            return "Variable";
+        case OPERATOR:
+            return "Operator";
+        case SEPARATOR:
+            return "Separator";
+        default:
+            return "Unknown Token type";
+        }
+    }
+    std::string getName()
+    {
+        switch (type)
+        {
+        case NOT_A_TOKEN:
+            return "";
+        case VARIABLE:
+            if (var->getType() == TYPENAME)
+                return static_cast<TypeName*>(var)->getValueString();
+            if (var->getType() == STRING)
+                return static_cast<String*>(var)->getValueString();
+            if (var->getType() == BOOL)
+                return static_cast<Bool*>(var)->getValueString();
+            if (var->getType() == INT)
+                return static_cast<Int*>(var)->getValueString();
+            if (var->getType() == FLOAT)
+                return static_cast<Float*>(var)->getValueString();
+            if (var->getType() == VOID)
+                return static_cast<Void*>(var)->getValueString();
+            return "Variable";
+        case OPERATOR:
+            return "Operator";
+        case SEPARATOR:
+            return "Separator";
+        default:
+            return "Unknown Token type";
+        }
+    }
+};
+
+
+class Interpreter
+{
+private:
+
+public:
+    std::list<Scope> env;
+    unsigned int lineNumber;
+    bool errorFlag;
+    
+    Interpreter()
+        : lineNumber(1)
+        , errorFlag(false)
+    {
+        pushEnv(true);  // Push global scope
+    }
+
+    void printEnv()
+    {
+        UI_debug_pile("Printing Interpreter Environment... %d scopes.\n", env.size());
+        for (std::list<Scope>::iterator e = env.begin(); e != env.end(); e++)
+        {
+            e->printEnv();
+        }
+    }
+    
+    void error(const char* formatted_text, ...);
+
+    Variable* callFn(Function* fn, std::list<Token>& arguments)
+    {
+        UI_debug_pile("  Calling a function.\n");
+        // Sort out the arguments...
+        
+        // Put all the tokens between commas into new lists
+        // Evaluate those lists
+        // Make argument variables and assign the values
+        // Parse the function.
+        
+        if(fn == NULL)
+            return NULL;
+        
+        std::vector<Variable*> args;
+        std::list<Token> tokens;
+        int argNum = 1;
+        
+        std::list<Token>::iterator f = arguments.begin();  // Mark the beginning
+        
+        int num = 0;  // Keeps track of parentheses
+        for(std::list<Token>::iterator e = arguments.begin(); e != arguments.end();)
+        {
+            if(e->type == Token::SEPARATOR)
+            {
+                if(e->sep == OPEN_PARENTHESIS)
+                    num++;
+                else if(e->sep == CLOSE_PARENTHESIS)
+                    num--;
+                // If we're not in parens and it's a comma, take and evaluate the tokens.
+                else if(num == 0 && e->sep == COMMA)
+                {
+                    tokens.splice(tokens.begin(), arguments, f, e);
+                    Token eval = evalTokens(tokens, false);
+                    if(eval.var != NULL)
+                        args.push_back(eval.var);
+                    else
+                    {
+                        error("Error: Argument %d of function call is invalid.\n", argNum);
+                        return NULL;
+                    }
+                    argNum++;
+                    
+                    f = e;  // Mark the beginning
+                    f++;  // Skip the comma
+                }
+            }
+            
+            e++;
+            if(e == arguments.end())
+            {
+                tokens.splice(tokens.begin(), arguments, f, e);
+                Token eval = evalTokens(tokens, false);
+                if(eval.var != NULL)
+                    args.push_back(eval.var);
+                else
+                {
+                    error("Error: Argument %d of function call is invalid.\n", argNum);
+                    return NULL;
+                }
+                argNum++;
+                
+                f = e;  // Mark the beginning
+                f++;  // Skip the comma
+            }
+        }
+        
+        UI_debug_pile(" Num args in: %d vs %d\n", args.size(), fn->getArgTypes().size());
+        
+        // Compare number of arguments
+        if(args.size() > fn->getArgTypes().size())
+        {
+            error("Error: Too many arguments in function call.\n");
+            return NULL;
+        }
+        if(args.size() < fn->getArgTypes().size())
+        {
+            error("Error: Too few arguments in function call.\n");
+            return NULL;
+        }
+        
+        for(unsigned int i = 0; i < args.size(); i++)
+        {
+            // Void will accept anything
+            if(fn->getArgTypes()[i] != VOID && !isConvertable(args[i]->getType(), fn->getArgTypes()[i]))
+            {
+                error("Error: Argument %d has the wrong type in function call.\n", i+1);
+                return NULL;
+            }
+        }
+        
+        Variable* result = NULL;
+        
+        // Deal with built-in functions
+        if(fn->isBuiltIn())
+        {
+            result = callBuiltIn(fn->getBuiltIn(), args);
+            
+            return result;
+        }
+        
+        Token returnValue;
+        
+        // Interpret the function...
+        std::stringstream str(fn->getValue());
+        bool continuation = false;
+        tokens.clear();
+        std::string line;
+        while(!str.eof())
+        {
+            getline(str, line);
+            
+            if(!continuation)  // If we're not continuing the line, then clear the tokens.
+                tokens.clear();
+            
+            std::list<Token> tok2 = tokenize1(line, continuation);
+            tokens.splice(tokens.end(), tok2);
+            
+            if(!continuation || str.eof())  // Skip the eval if we're continuing, but not if the file ends!
+                returnValue = evalTokens(tokens, true);
+            //if(returnValue.isReturn())
+            //    break;
+        }
+        
+        if(returnValue.var != NULL)
+            result = returnValue.var;
+        
+        return result;
+    }
+
+    Variable* evaluateExpression(Variable* A, OperatorEnum operation)
+    {
+        if (operation == NEGATE)
+            return ::negate(A);
+        error("Error: Undefined operation\n");
+        return A;
+    }
+
+    Variable* evaluateExpression(Variable* A, OperatorEnum operation, Variable* B)
+    {
+        if (operation == ASSIGN)
+            return assign(A, B);
+        if (operation == ADD)
+            return add(A, B);
+        if (operation == ADD_ASSIGN)
+            return add_assign(A, B);
+        if (operation == SUBTRACT)
+            return subtract(A, B);
+        if (operation == MULTIPLY)
+            return multiply(A, B);
+        if (operation == DIVIDE)
+            return divide(A, B);
+        error("Error: Undefined operation\n");
+        return A;
+    }
+
+    bool readFile(std::string filename);
+    
+    Variable* getArrayLiteral(std::list<Token>& tokens, std::list<Token>::iterator& e);
+
+    Token evalTokens(std::list<Token>& tokens, bool beginning);
+    
+    //bool interpret(std::string line);
+
+
+    // Environment interface
+
+    std::map<std::string, Variable*>* topEnv()
+    {
+        return &((env.begin())->env);
+    }
+
+    bool addVar(const std::string& name, Variable* var)
+    {
+        UI_debug_pile("In addVar()...\n");
+        std::map<std::string, Variable*>* e = topEnv();
+        if (e->find(name) == e->end())
+        {
+            UI_debug_pile("... Setting variable\n");
+            (*e)[name] = var;
+            return true;
+        }
+        error("Error: Variable \"%s\" redefined!\n", name.c_str());
+        return false;
+    }
+
+    bool setVar(const std::string& name, Variable* var)
+    {
+        std::map<std::string, Variable*>* e = topEnv();
+        if (e->find(name) == e->end())
+        {
+            error("Error: Variable \"%s\" not defined!\n", name.c_str());
+            return false;
+        }
+        *((*e)[name]) = *var;
+        return true;
+    }
+
+    Variable* getVar(const std::string& name)
+    {
+        Variable* result = NULL;
+        for (std::list<Scope>::iterator e = env.begin(); e != env.end(); e++)
+        {
+            result = e->getVar(name);
+            if (result != NULL)
+                return result;
+            // result is NULL now
+            if (e->isolated)
+            {
+                e++;
+                if (e != env.end())
+                {
+                    // Check global scope
+                    e = env.end();
+                    e--;
+                    result = e->getVar(name);
+                }
+                break;
+            }
+        }
+
+        if (result == NULL)
+            ;//error("Error: Variable '%s' not found at this scope\n", name.c_str());
+
+        return result;
+    }
+
+    void pushEnv(bool isolated)
+    {
+        env.push_front(Scope(isolated));
+    }
+
+    void popEnv()
+    {
+        if (env.size() > 1)
+            env.erase(env.begin());
+    }
+
+    void popAll()
+    {
+        while (env.size() > 1)
+            env.erase(env.begin());
+    }
+};
+
+
+#endif

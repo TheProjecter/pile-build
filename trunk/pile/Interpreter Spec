@@ -1,0 +1,63 @@
+
+The Pile Interpreter is specifically designed to be intuitive for someone who knows C/C++.  It uses a C-like syntax and operators though it extends the base language to make things more intuitive, easy, and convenient.  The main purpose is to control the functionality of Pile through the Pilefile, which is written in this interpreted language.
+
+The differences
+---------------
+Variable Types
+bool, int, float, string, macro, array, list, function, and procedure are the built-in data types.
+
+Initialized Variables
+New variables are initialized to a zero state (numerically zero or empty).
+
+No Pointers
+Though pointers are very powerful in the right hands, they don't add enough benefit when the built-in types are considered, since they are very safe and flexible.  They may be added in a later version.
+
+Built-in Functions and Variables
+There are several Built-in functions and variables.  The built-in functions provide essential and convenient functionality, like print() (outputs a string to stdout), string() (expresses the value of any variable as a string), and type() (returns the type of any variable as a string).  The built-in variables are used to control certain aspects of the Pilefile (like "enable_print") and to define the build environment (like "compiler").
+
+Line Termination
+Lines are terminated by a line break, instead of semicolons.  Besides the obvious small benefit to typing and editing, this change is meant to improve clarity by preventing jam-packed lines of source code.  A line can be extended to include the next line of text by using the continuation operator.
+
+Continuation operator
+The continuation operator is "..." rather than "\".  This change is motivated by the improved clarity that this provides.  Comments can not be continued, which avoids certain strange bugs (accidentally continuing a comment) and allows a line of code to be continued even if it has a single-line comment in it.
+
+
+
+Data Types
+----------
+
+bool:
+A boolean type.  It holds either true (1) or false (0).  False is the default value.
+
+int:
+An integer type.  It holds values in the range -X to Y.  Zero is the default value.
+
+float:
+A floating-point (decimal) type.  Zero is the default value.
+
+string:
+A string type.  The default state is to be empty.  The string type replaces C's char and char* types and replaces the C++ STL's string class.
+
+macro:
+A macro type.  The default state is to be empty.  The macro type replaces part of C's preprocessor system, single-line #define.  The contents of a macro are textually placed into the location where the macro is used.
+
+procedure:
+A function-like macro type.  The default state is to be empty.  The procedure type replaces part of C's preprocessor system, function-like #define.  A procedure is a set of instructions to be carried out.  It creates its own environment for variables, but also inherits the local environment from the calling location.  The arguments given to the procedure call are textually substituted into the procedure definition.
+
+array:
+An array type.  The default state is to be empty.  An array is a one-dimensional grouping of variables of a single type.
+
+list:
+A list type.  The default state is to be empty.  A list is a one-dimensional grouping of variables of any combination of types.
+
+function:
+A function type.  The default state is to be empty.  A function is a set of instructions to be carried out.  It creates its own environment for variables, which obscures any local environment from the calling location.
+
+
+
+Built-in Functions:
+
+print()
+warning()
+error()
+debug()

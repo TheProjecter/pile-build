@@ -1,0 +1,5 @@
+
+output = "eve"
+
+sources += ["eve_main.cpp", "eve_interpreter.cpp"]
+

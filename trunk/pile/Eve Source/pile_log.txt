@@ -1,0 +1,115 @@
+Starting up...
+Argc = 1
+Argv[0] = pile
+Token 1: "pile"
+Token 2: "Version"
+Token 3: "0.1.0"
+Token 4: ""
+Token 5: ""
+Token 6: ""
+Token 7: ""
+Token 8: ""
+Token 9: ""
+Token 10: ""
+Token 11: ""
+Token 12: ""
+Token 13: "editor:"
+Token 14: "vi"
+Token 15: "installPath:"
+Token 16: "/home/jonny/jon/Pile/Pile source"
+Token 17: "lang"
+Token 18: "C:"
+Token 19: "gcc,"
+Token 20: "gcc,"
+Token 21: "ar"
+Token 22: "rsc,"
+Token 23: "COMP"
+Token 24: "-c"
+Token 25: "FLAGS"
+Token 26: "SRC"
+Token 27: "lang"
+Token 28: "C++:"
+Token 29: "g++,"
+Token 30: "g++,"
+Token 31: "ar"
+Token 32: "rsc,"
+Token 33: "COMP"
+Token 34: "-c"
+Token 35: "FLAGS"
+Token 36: "SRC"
+Token 37: "lang"
+Token 38: "FORTRAN:"
+Token 39: "gfortran,"
+Token 40: "gfortran,"
+Token 41: "ar"
+Token 42: "rsc,"
+Token 43: "COMP"
+Token 44: "-c"
+Token 45: "FLAGS"
+Token 46: "SRC"
+Token 47: "includeDirs:"
+Token 48: "/usr/include"
+Token 49: "/usr/local/include"
+Token 50: ""
+Current directory: /home/jonny/jon/Pile/Pile source/Eve SourceFound pilefile: com.pile
+Token 1: <Not_A_Token> "" : ""
+Evaluating tokens: 
+Done evaluation: NULL var
+Retrieved a variable: string a.out
+Token 2: <Variable> "a.out" : "output"
+Token 3: <Operator> "Operator" : ""
+Token 4: <Literal> "eve" : "eve"
+Evaluating tokens: ['string' (a.out)] ['Operator' '='] ['string' (eve)] 
+ Token name: output
+ Token name: =
+ Token name: eve
+Done evaluation: 'string' (eve)
+Token 5: <Not_A_Token> "" : ""
+Evaluating tokens: 
+Done evaluation: NULL var
+Retrieved a variable: array 
+Token 6: <Variable> "Variable" : "sources"
+Token 7: <Operator> "Operator" : ""
+Token 8: <Operator> "Operator" : ""
+Token 9: <Literal> "eve_main.cpp" : "eve_main.cpp"
+Token 10: <Operator> "Operator" : ""
+Token 11: <Literal> "eve_interpreter.cpp" : "eve_interpreter.cpp"
+Token 12: <Operator> "Operator" : ""
+Evaluating tokens: ['array' ()] ['Operator' '+='] ['Operator' '['] ['string' (eve_main.cpp)] ['Operator' ','] ['string' (eve_interpreter.cpp)] ['Operator' ']'] 
+ Token name: sources
+ Token name: +=
+ Token name: [
+Evaluating tokens: ['string' (eve_main.cpp)] 
+ Token name: eve_main.cpp
+Done evaluation: 'string' (eve_main.cpp)
+Evaluating tokens: ['string' (eve_interpreter.cpp)] 
+ Token name: eve_interpreter.cpp
+Done evaluation: 'string' (eve_interpreter.cpp)
+  Returning an array: Size = 2
+    Element: eve_main.cpp
+    Element: eve_interpreter.cpp
+    Element: eve_main.cpp
+    Element: eve_interpreter.cpp
+Done evaluation: 'array' (eve_main.cpp, eve_interpreter.cpp)
+Token 13: <Not_A_Token> "" : ""
+Evaluating tokens: 
+Done evaluation: NULL var
+Token 14: <Not_A_Token> "" : ""
+Evaluating tokens: 
+Done evaluation: NULL var
+Printing Interpreter Environment... 1 scopes.
+Printing scope... 7 variables.
+ 'cflags' has type 'array' with value ''
+ 'lflags' has type 'array' with value ''
+ 'output' has type 'string' with value 'eve'
+ 'print' has type 'function' with value ''
+ 'sources' has type 'array' with value 'eve_main.cpp, eve_interpreter.cpp'
+ 'string' has type 'function' with value ''
+ 'type' has type 'function' with value ''
+Done interpreting.
+Scanning.
+Building.
+Build1.
+Build2.
+Build3.
+Build4.
