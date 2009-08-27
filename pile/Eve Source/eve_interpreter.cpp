@@ -67,9 +67,6 @@ bool Interpreter::readFile(string filename)
         
         list<Token> tok2 = tokenize1(line, continuation);
         
-        if(errorFlag)
-            return false;
-        
         tokens.splice(tokens.end(), tok2);
         
         if(!continuation || fin.eof())  // Skip the eval if we're continuing, but not if the file ends!
@@ -79,13 +76,11 @@ bool Interpreter::readFile(string filename)
         }
         else if(continuation)
             lineNumber++;  // Skip an extra line if the last one was continued...  This probably isn't right for multiple-line continues...
-        
-        if(errorFlag)
-            return false;
     }
     
     fin.close();
-    return true;
+    
+    return !errorFlag;
 }
 
 

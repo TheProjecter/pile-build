@@ -254,34 +254,58 @@ int main(int argc, char* argv[])
     
     if(file != "")
     {
+        bool errorFlag = false;
         UI_processEvents();
         UI_updateScreen();
         UI_debug_pile("Found pilefile: %s\n", file.c_str());
         if(!interpret(file, env))
-            return 0;
+            errorFlag = true;
         UI_debug_pile("Done interpreting.\n");
         UI_processEvents();
         UI_updateScreen();
-        // Scan for dependencies
-        if(config.useAutoDepend)
+        
+        if(!errorFlag)
         {
-            UI_debug_pile("Scanning.\n");
-            for(list<string>::iterator e = env.sources.begin(); e != env.sources.end(); e++)
+            // Scan for dependencies
+            if(config.useAutoDepend)
             {
-                recurseIncludes(env.depends, env.fileDataHash, config.includePaths, *e, "");
+                UI_debug_pile("Scanning.\n");
+                for(list<string>::iterator e = env.sources.begin(); e != env.sources.end(); e++)
+                {
+                    recurseIncludes(env.depends, env.fileDataHash, config.includePaths, *e, "");
+                    //if(!recurseIncludes(env.depends, env.fileDataHash, config.includePaths, *e, ""))
+                    //{
+                    //    errorFlag = true;
+                    //    break;
+                    //}
+                }
+            }
+            
+            if(!errorFlag)
+            {
+                UI_debug_pile("Building.\n");
+                if(!build(env, config))
+                    errorFlag = true;
+                if(!errorFlag)
+                {
+                    UI_debug_pile("Linking.\n");
+                    if(!link(config.languages.find("CPP_LINKER_D")->second, env, config))
+                        errorFlag = true;
+                }
             }
         }
         
-        UI_debug_pile("Building.\n");
-        build(env, config);
-        UI_debug_pile("Linking.\n");
-        link(config.languages.find("CPP_LINKER_D")->second, env, config);
+        if(errorFlag)
+            UI_error("\nBuild errors have occured...\n");
         
         if(graphical)
         {
             ui_print = true;
             ui_log_print = false;
-            UI_print("\nAll done!  Press any key.\n");
+            if(errorFlag)
+                UI_print("\nPress any key to quit.\n");
+            else
+                UI_print("\nAll done!  Press any key.\n");
             UI_updateScreen();
             
             UI_waitKeyPress();

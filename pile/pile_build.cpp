@@ -86,6 +86,7 @@ bool build(Environment& env, Configuration& config)
         {
             sprintf(buffer, "%s %s -c %s -o %s", getCompiler(config, *e).c_str(), config.cflags.c_str(), sourceFile.c_str(), objName.c_str());
             
+            
             string buff = buffer;
             convertSlashes(buff);
             
@@ -100,17 +101,32 @@ bool build(Environment& env, Configuration& config)
             UI_debug_pile("Actual call:\n %s\n", buff.c_str());
             //system(buff.c_str());
             //systemCall(("\"" + buff + "\"").c_str());
+            
+            // Needed for success check
+            bool objExists = ioExists(objName);
+            time_t objTime = 0;
+            if(objExists)
+                objTime = ioTimeModified(objName);
+            
             systemCall(buff.c_str());
             
             UI_print_file(tempname);
             ioDelete(tempname.c_str());
+            
+            // Check to see if the build was successful.
+            if(objExists)
+            {
+                // FIXME: This looks like it could fail if the build is quick (and the object had been modified...)!!!
+                if(!ioExists(objName) || objTime >= ioTimeModified(objName))
+                    return false;
+            }
         }
         else
         {
             UI_print(" Up to date: %s\n", e->c_str());
         }
         if(UI_processEvents() < 0)
-            return false;
+            ;//return false;
         UI_updateScreen();
     }
     return true;
