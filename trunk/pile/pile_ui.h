@@ -47,6 +47,7 @@ int UI_choice(int numChoices, std::string* choices);
 std::string UI_input();
 
 bool UI_prompt(std::string message);
+std::string UI_promptString(std::string message);
 
 void UI_updateScreen();
 int UI_waitKeyPress();

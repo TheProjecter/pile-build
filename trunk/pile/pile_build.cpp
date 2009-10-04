@@ -73,6 +73,11 @@ bool build(Environment& env, Configuration& config)
     UI_debug_pile("Sources size: %d\n", env.sources.size());
     for(list<string>::iterator e = env.sources.begin(); e != env.sources.end(); e++)
     {
+        if(!ioExists(*e))
+        {
+            UI_error("Source file \"%s\" not found.\n", e->c_str());
+            continue;
+        }
         sourceFile = quoteWhitespace(*e);
         FileData* fd = env.fileDataHash[*e];
         objName = getObjectName(*e, config.objPath, config.useSourceObjPath);
