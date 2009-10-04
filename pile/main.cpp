@@ -433,7 +433,11 @@ int main(int argc, char* argv[])
         {
             // Prompt user in order to proceed to build all local source files.
             if(UI_prompt(" No Pilefile found here.  Should I try to build all local source files?\n"))
+            {
                 env.sources = getLocalSourceFiles();
+                config.cflags += UI_promptString(" Compiler flags?\n");
+                config.lflags += UI_promptString(" Linker flags?\n");
+            }
             else
                 return 0;
         }

@@ -510,6 +510,28 @@ bool UI_prompt(string message)
     return isYes(user);
 }
 
+string UI_promptString(string message)
+{
+    #ifndef PILE_NO_GUI
+    if(ui_gui)
+    {
+        
+        return "";
+    }
+    #endif
+    printf("%s: ", message.c_str());
+    char buff[1024];
+    cin.clear();
+    do
+    {
+        cin.getline(buff, 1023);
+        delay(20);
+    }
+    while(strcmp(buff, "") == 0);
+    
+    return buff;
+}
+
 
 void UI_updateScreen()
 {

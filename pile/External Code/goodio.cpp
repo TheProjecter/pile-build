@@ -12,10 +12,13 @@ See goodio.h for details and license.
 #include <sys/stat.h>
 #include <dirent.h>
 
+#include <stdexcept> // std::runtime_error
+
 #define IO_COPY_BUFFSIZE 512
 #define IO_UNIQUE_MAX 10000
 
 using namespace std;
+
 
 bool ioExists(string filename)
 {
@@ -267,8 +270,7 @@ string ioUniqueName(string filename, int startAt)
 {
     string ext, base;
     size_t lastDot = filename.find_last_of(".");
-    size_t lastSlash = filename.find_last_of("/\\");
-    if(lastDot == string::npos || (lastSlash != string::npos && lastSlash >= lastDot))
+    if(lastDot == string::npos || filename.find_last_of("/\\") >= lastDot - 1)
     {
         ext = "";
         base = filename;
@@ -446,3 +448,206 @@ list<string> ioList(string dirname, bool directories, bool files)
     
     return fileList;
 }
+
+
+
+std::list<std::string> ioExplode(std::string str, char delimiter)
+{
+    std::list<std::string> result;
+    
+    unsigned int oldPos = 0;
+    unsigned int pos = str.find_first_of(delimiter);
+    while(pos != string::npos)
+    {
+        result.push_back(str.substr(oldPos, pos - oldPos));
+        oldPos = pos+1;
+        pos = str.find_first_of(delimiter, oldPos);
+    }
+    
+    result.push_back(str.substr(oldPos, string::npos));
+    
+    return result;
+}
+
+
+// ioFileReader
+ioFileReader::ioFileReader(const string& filename)
+    : fin(filename.c_str())
+    , file(filename)
+{}
+
+ioFileReader::~ioFileReader()
+{
+    if(fin.is_open())
+        fin.close();
+}
+
+void ioFileReader::stripCarriageReturn(string& str)
+{
+    if(str.length() > 0 && str[str.length()-1] == '\r')
+        str.erase(str.length()-1);
+}
+
+char ioFileReader::get()
+{
+    if(!ready())
+        throw std::runtime_error("io::FileReader not ready.");
+    return fin.get();
+}
+
+char ioFileReader::peek()
+{
+    if(!ready())
+        throw std::runtime_error("io::FileReader not ready.");
+    return fin.peek();
+}
+
+string ioFileReader::getLine()
+{
+    if(!ready())
+        throw std::runtime_error("io::FileReader not ready.");
+    string result;
+    getline(fin, result);
+    stripCarriageReturn(result);
+    return result;
+}
+
+std::string ioFileReader::getString(char delimiter)
+{
+    if(!ready())
+        throw std::runtime_error("io::FileReader not ready.");
+    string result;
+    char c;
+    do
+    {
+        c = fin.get();
+        if(c == delimiter)
+            break;
+        result += c;
+    }
+    while(ready());
+    return result;
+}
+
+std::string ioFileReader::getStringUntil(char delimiter)
+{
+    if(!ready())
+        throw std::runtime_error("io::FileReader not ready.");
+    
+    string result;
+    while(ready() && fin.peek() != delimiter)
+        result += fin.get();
+    while(ready());
+    return result;
+}
+
+bool ioFileReader::getBool()
+{
+    if(!ready())
+        throw std::runtime_error("io::FileReader not ready.");
+    bool result;
+    fin >> result;
+    return result;
+}
+
+int ioFileReader::getInt()
+{
+    if(!ready())
+        throw std::runtime_error("io::FileReader not ready.");
+    int result;
+    fin >> result;
+    return result;
+}
+
+unsigned int ioFileReader::getUInt()
+{
+    if(!ready())
+        throw std::runtime_error("io::FileReader not ready.");
+    unsigned int result;
+    fin >> result;
+    return result;
+}
+
+long ioFileReader::getLong()
+{
+    if(!ready())
+        throw std::runtime_error("io::FileReader not ready.");
+    long result;
+    fin >> result;
+    return result;
+}
+
+unsigned long ioFileReader::getULong()
+{
+    if(!ready())
+        throw std::runtime_error("io::FileReader not ready.");
+    unsigned long result;
+    fin >> result;
+    return result;
+}
+
+float ioFileReader::getFloat()
+{
+    if(!ready())
+        throw std::runtime_error("io::FileReader not ready.");
+    float result;
+    fin >> result;
+    return result;
+}
+
+double ioFileReader::getDouble()
+{
+    if(!ready())
+        throw std::runtime_error("io::FileReader not ready.");
+    double result;
+    fin >> result;
+    return result;
+}
+
+// Ignore the next characters
+void ioFileReader::skip(unsigned int numChars)
+{
+    while(ready() && numChars > 0)
+    {
+        fin.get();
+        numChars--;
+    }
+}
+
+void ioFileReader::skip(unsigned int numChars, char delimiter)
+{
+    while(ready() && numChars > 0 && fin.get() != delimiter)
+        numChars--;
+}
+
+void ioFileReader::skip(char delimiter)
+{
+    while(ready() && fin.get() != delimiter)
+        ;
+}
+
+void ioFileReader::skipUntil(unsigned int numChars, char delimiter)
+{
+    while(ready() && numChars > 0 && fin.peek() != delimiter)
+    {
+        numChars--;
+        fin.get();
+    }
+}
+
+void ioFileReader::skipUntil(char delimiter)
+{
+    while(ready() && fin.peek() != delimiter)
+        fin.get();
+}
+
+void ioFileReader::skipLine()
+{
+    skip('\n');
+}
+
+bool ioFileReader::ready()
+{
+    return (fin.good() && !fin.eof());
+}
+

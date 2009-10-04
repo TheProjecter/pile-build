@@ -13,9 +13,9 @@ bool ioIsDir(string filename);  // Is the file a directory?
 bool ioIsFile(string filename);  // Is the file a regular file (not a directory)?
 bool ioIsHidden(string filename);  // Is the file hidden?
 int ioSize(string filename);  // Get the size of a file in bytes
-time_t ioTimeAccessed(string filename);  // Get the time a file was last accessed
-time_t ioTimeModified(string filename);  // Get the time a file was last modified
-time_t ioTimeStatus(string filename);  // Get the time a file last had its status (file properties) changed
+int ioTimeAccessed(string filename);  // Get the time a file was last accessed
+int ioTimeModified(string filename);  // Get the time a file was last modified
+int ioTimeStatus(string filename);  // Get the time a file last had its status (file properties) changed
 string ioTimeString(time_t time);  // Convert the result of a goodIO time function into a human-readable string
 list<string> ioList(string dirname, bool directories = true, bool files = true);  // Returns a list of files
 string ioStripDir(string filename);  // Get the parent directory
@@ -94,13 +94,8 @@ WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH 
 
 #include <string>
 #include <list>
+#include <fstream>
 
-
-/*
-To do:
-ioPrepend()
-ioTempName()
-*/
 
 #define IO_NONE 0
 #define IO_READ 1
@@ -120,11 +115,11 @@ std::string ioGetProgramDir(std::string argv0);
 
 bool ioResetCWD(std::string argv0);
 
+#define ioResetCWDm() ioResetCWD(argv[0])
+
 bool ioSetCWD(std::string dir);
 
 std::string ioGetCWD();
-
-#define ioResetCWDm() ioResetCWD(argv[0])
 
 std::string ioStripDir(std::string filename);
 
@@ -182,110 +177,78 @@ bool ioRename(std::string source, std::string dest);
 
 bool ioClear(std::string filename);
 
+// File writing
+
 bool ioAppend(std::string text, std::string filename);
 
 bool ioPrepend(std::string text, std::string filename);
 
 bool ioAppendFile(std::string srcfile, std::string destfile);
 
+
 // Directory listing
 std::list<std::string> ioList(std::string dirname, bool directories = true, bool files = true);
 
+std::list<std::string> ioExplode(std::string str, char delimiter = ' ');
 
-}
-
-
-/*
-class ioObject
+class ioFileReader
 {
-    public:
-    enum ioObjectEnum{UNKNOWN, STRING, INT, FLOAT};
-    ioObjectEnum type;
+private:
+    std::ifstream fin;
+    std::string file;
+ 
+    ioFileReader (const ioFileReader&);
+    ioFileReader& operator=(const ioFileReader&);
     
-    std::string String;
-    int Int;
-    float Float;
+    void stripCarriageReturn(std::string& str);
+
+public:
+    ioFileReader(const std::string& filename);
+ 
+    ~ioFileReader();
     
-    ioObject()
-        : type(UNKNOWN)
-        , String(), Int(), Float()
-    {}
-    ioObject(std::string String)
-        : type(STRING)
-        , String(String), Int(), Float()
-    {}
-    ioObject(int Int)
-        : type(INT)
-        , String(), Int(Int), Float()
-    {}
-    ioObject(float Float)
-        : type(FLOAT)
-        , String(), Int(), Float(Float)
-    {}
+    char get();
+    
+    char peek();
+ 
+    std::string getLine();
+ 
+    std::string getString(char delimiter);
+ 
+    std::string getStringUntil(char delimiter);
+ 
+    bool getBool();
+ 
+    int getInt();
+ 
+    unsigned int getUInt();
+ 
+    long getLong();
+ 
+    unsigned long getULong();
+ 
+    float getFloat();
+ 
+    double getDouble();
+    
+    // Ignore the next characters
+    void skip(unsigned int numChars);
+    
+    void skip(unsigned int numChars, char delimiter);
+    
+    void skip(char delimiter);
+    
+    void skipUntil(unsigned int numChars, char delimiter);
+    
+    void skipUntil(char delimiter);
+    
+    void skipLine();
+    
+    bool ready();
 };
 
-#include <fstream>
 
-// Wraps fstreams.  Three usages: getline() -> line (ASCII), getnext() -> lastObject (ASCII or BIN?), getnext(void*) (BIN)
-// readBlock(), getLine(), getChar(), seek(), filesize(), eof(), ready()
-// if(stream.block() >> mybuffer)
-//    // do stuff
-ifstream fin;
-fin.open("mytext.txt");
-string mystr;
-for(getline(fin, mystr); !fin.eof(); getline(fin, mystr))
-{
-    // Do stuff
 }
-
-
-What's my motivation?  What do I really want to do?
-I'd like to make ASCII file interpretation as easy as possible.
-I'd like to make binary file loading as easy as possible.
-
-ASCII:
-read char
-read variable
-read line
-read all
-
-Binary:
-read variable
-read block
-read all
-
-
-
-
-ioStream stream;
-stream.open("mytext.txt");
-for(string str = stream.getline(); !stream.eof(); str = stream.getline())
-{
-    // Do stuff
-}
-
-class ioStreamer
-{
-    public:
-    std::string filename;
-    fstream fstr;
-    
-    std::string line;
-    ioObject lastObject;
-    
-    ioStreamer(std::string filename)
-        : filename(filename)
-    {
-        fstr.open(filename.c_str(), "rw");
-    }
-    
-    void close()
-    {
-        fstr.close();
-    }
-};
-
-*/
 
 
 #endif

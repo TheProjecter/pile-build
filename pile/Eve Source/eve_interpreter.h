@@ -55,6 +55,8 @@ enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
                 CLOSE_CURLY_BRACKET, SEMICOLON
                  };
 
+enum KeywordEnum{KW_IF, KW_ELSE};
+
 enum FunctionEnum{FN_NONE, FN_PRINT, FN_TYPE, FN_STRING};
 
 class Token;
