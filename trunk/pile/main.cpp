@@ -170,6 +170,35 @@ void checkSourceExistence(list<string>& sources)
 }
 
 
+void generatePilefile(string name)
+{
+    string base = ioStripToFile(name);
+    if(ioStripToExt(name) != "pile")
+        name += ".pile";
+    else
+    {
+        if(name == "com.pile")
+            base = "a.out";
+        else
+        {
+            // Strip extension
+            unsigned int dot = base.find_last_of('.');
+            if(dot != string::npos)
+                base = base.substr(0, dot);
+        }
+    }
+        
+    if(ioExists(name))
+    {
+        UI_print("Cannot create new pilefile.  %s already exists!\n", name.c_str());
+        return;
+    }
+    
+    ioNew(name);
+    ioAppend("output = \"" + base + "\"\nsources += [\"main.cpp\"]\n//lflags += [\"-lSDLmain\", \"-lSDL\"]\n//cflags += [\"`sdl-config --cflags`\"]", name);
+}
+
+
 int main(int argc, char* argv[])
 {
     Environment env;
@@ -221,12 +250,25 @@ int main(int argc, char* argv[])
             }
             UI_print("Pile GUI started.\n\n");
         }
-        else if(string("pile") == ioStripExt(argv[i]))
+        else if(string("pile") == ioStripToExt(argv[i]))
         {
             // Found a pilefile...
             // Change directory first
-            ioSetCWD(ioStripDir(argv[i]));
-            file = ioStripFile(argv[i]);
+            ioSetCWD(ioStripToDir(argv[i]));
+            file = ioStripToFile(argv[i]);
+        }
+        else if(string("new") == argv[i])
+        {
+            // Generate a new pilefile
+            string name = "com.pile";
+            i++;
+            if(i < argc)
+            {
+                name = argv[i];
+            }
+            
+            generatePilefile(name);
+            return 0;
         }
     }
     
@@ -522,7 +564,7 @@ int main(int argc, char* argv[])
             build(env, config);
             link(config.languages.find("CPP_LINKER_D")->second, env, config);
         }
-        else if(string("-g") == argv[i] || string("pile") == ioStripExt(argv[i]))
+        else if(string("-g") == argv[i] || string("pile") == ioStripToExt(argv[i]))
         {}
         else
         {

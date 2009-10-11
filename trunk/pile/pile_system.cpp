@@ -53,7 +53,7 @@ void convertSlashes(string& str)
 void systemCall(string command)
 {
     // Append stdout and stderr to file
-    string tempname = "pile.tmp";
+    string tempname = ".pile.tmp";
     command += " >> " + tempname + " 2>&1";
     
     #ifdef PILE_LINUX

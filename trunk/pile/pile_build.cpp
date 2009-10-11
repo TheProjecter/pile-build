@@ -61,7 +61,7 @@ bool build(Environment& env, Configuration& config)
     char buffer[5000];
     string objName;
     string sourceFile;
-    string tempname = "pile.tmp";
+    string tempname = ".pile.tmp";
     ioDelete(tempname.c_str());
     
     for(list<string>::iterator e = env.cflags.begin(); e != env.cflags.end(); e++)
@@ -81,7 +81,7 @@ bool build(Environment& env, Configuration& config)
         sourceFile = quoteWhitespace(*e);
         FileData* fd = env.fileDataHash[*e];
         objName = getObjectName(*e, config.objPath, config.useSourceObjPath);
-        mkpath(ioStripDir(objName));
+        mkpath(ioStripToDir(objName));
         objName = quoteWhitespace(objName);
         
         UI_debug_pile("Checking %s\n", e->c_str());
@@ -152,7 +152,7 @@ bool link(const string& linker, Environment& env, Configuration& config)
 {
     char buffer[5000];
     string out = quoteWhitespace(env.outfile + EXE_EXT);
-    string tempname = "pile.tmp";
+    string tempname = ".pile.tmp";
     ioDelete(tempname.c_str());
     
     string objectstr;

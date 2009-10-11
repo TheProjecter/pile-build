@@ -1,5 +1,5 @@
 /*
-goodIO - A small library for simple filesystem interaction.
+goodio v1.1 - A small library for simple filesystem interaction.
 by Jonathan Dearborn, 2009
 grimfang4 [at] gmail [dot] com
 
@@ -16,16 +16,27 @@ See goodio.h for details and license.
 
 #define IO_COPY_BUFFSIZE 512
 #define IO_UNIQUE_MAX 10000
+#define IO_PATH_MAX PATH_MAX
+
+
+#if defined(WIN32) || defined(_WIN32)
+//#define WIN32
+#include "windows.h"
+#endif
+
+#if defined(linux) || defined(__linux) || defined(__linux__)
+#define LINUX
+#endif
 
 using namespace std;
 
 
-bool ioExists(string filename)
+bool ioExists(const string& filename)
 {
     return (access(filename.c_str(), 0) == 0);
 }
 
-bool ioIsDir(string filename)
+bool ioIsDir(const string& filename)
 {
     struct stat status;
     stat(filename.c_str(), &status);
@@ -33,7 +44,7 @@ bool ioIsDir(string filename)
     return (status.st_mode & S_IFDIR);
 }
 
-bool ioIsFile(string filename)
+bool ioIsFile(const string& filename)
 {
     struct stat status;
     stat(filename.c_str(), &status);
@@ -41,22 +52,22 @@ bool ioIsFile(string filename)
     return (status.st_mode & S_IFREG);
 }
 
-bool ioIsReadable(string filename)
+bool ioIsReadable(const string& filename)
 {
     return (access(filename.c_str(), 4) == 0);
 }
 
-bool ioIsWriteable(string filename)
+bool ioIsWriteable(const string& filename)
 {
     return (access(filename.c_str(), 2) == 0);
 }
 
-bool ioIsReadWriteable(string filename)
+bool ioIsReadWriteable(const string& filename)
 {
     return (access(filename.c_str(), 6) == 0);
 }
 
-bool ioNew(string filename, bool readable, bool writeable)
+bool ioNew(const string& filename, bool readable, bool writeable)
 {
     if(ioExists(filename))
         return false;
@@ -68,7 +79,7 @@ bool ioNew(string filename, bool readable, bool writeable)
     return true;
 }
 
-bool ioNewDir(string dirname, int mode)
+bool ioNewDir(const string& dirname, int mode)
 {
     if(ioExists(dirname))
         return false;
@@ -84,7 +95,7 @@ bool ioNewDir(string dirname, int mode)
     #endif
 }
 
-bool ioDelete(string filename)
+bool ioDelete(const string& filename)
 {
     #ifdef WIN32
     return (unlink(filename.c_str()) == 0) || (rmdir(filename.c_str()) == 0);
@@ -93,7 +104,7 @@ bool ioDelete(string filename)
     #endif
 }
 
-bool ioMove(string source, string dest)
+bool ioMove(const string& source, const string& dest)
 {
     if(source == dest)
         return true;
@@ -108,12 +119,12 @@ bool ioMove(string source, string dest)
 }
 
 // This has a same device limitation
-bool ioRename(string source, string dest)
+bool ioRename(const string& source, const string& dest)
 {
     return (rename(source.c_str(), dest.c_str()) == 0);
 }
 
-bool ioCopy(string source, string dest)
+bool ioCopy(const string& source, const string& dest)
 {
     if(source == dest)
         return true;
@@ -148,7 +159,7 @@ bool ioCopy(string source, string dest)
     return true;
 }
 
-bool ioClear(std::string filename)
+bool ioClear(const string& filename)
 {
     if(!ioExists(filename))
         return false;
@@ -162,7 +173,7 @@ bool ioClear(std::string filename)
 
 // Should these have binary counterparts?
 // Prepend avoids access permissions, but append respects them...  Oh well!
-bool ioPrepend(std::string text, std::string filename)
+bool ioPrepend(const string& text, const string& filename)
 {
     // Create a temp file
     string temp = ioUniqueName(filename, 0);
@@ -198,7 +209,7 @@ bool ioPrepend(std::string text, std::string filename)
     return true;
 }
 
-bool ioAppend(string text, string filename)
+bool ioAppend(const string& text, const string& filename)
 {
     FILE* file = fopen(filename.c_str(), "a");
     if(file == NULL)
@@ -214,7 +225,7 @@ bool ioAppend(string text, string filename)
     return true;
 }
 
-bool ioAppendFile(string srcfile, string destfile)
+bool ioAppendFile(const string& srcfile, const string& destfile)
 {
     FILE* file1 = fopen(destfile.c_str(), "a");
     if(file1 == NULL)
@@ -244,7 +255,7 @@ bool ioAppendFile(string srcfile, string destfile)
     return true;
 }
 
-string ioStripDir(string filename)
+string ioStripToDir(const string& filename)
 {
     size_t lastSlash = filename.find_last_of("/\\");
     if(lastSlash == string::npos)
@@ -252,21 +263,21 @@ string ioStripDir(string filename)
     return filename.substr(0, lastSlash);
 }
 
-string ioStripFile(string filename)
+string ioStripToFile(const string& filename)
 {
     return filename.substr(filename.find_last_of("/\\") + 1);  // If npos, it should become 0, which is good :)
 }
 
-string ioStripExt(string filename)
+string ioStripToExt(const string& filename)
 {
     size_t lastDot = filename.find_last_of(".");
     size_t lastSlash = filename.find_last_of("/\\");
-    if(lastDot == string::npos || lastSlash >= lastDot - 1) // "/usr/cow" or "/usr/.hidden" or "/usr/tex.d/"
+    if(lastDot == string::npos || (lastSlash != string::npos && lastSlash >= lastDot - 1)) // "/usr/cow" or "/usr/.hidden" or "/usr/tex.d/"
         return "";
     return filename.substr(lastDot + 1);
 }
 
-string ioUniqueName(string filename, int startAt)
+string ioUniqueName(const string& filename, int startAt)
 {
     string ext, base;
     size_t lastDot = filename.find_last_of(".");
@@ -292,7 +303,7 @@ string ioUniqueName(string filename, int startAt)
     return "";
 }
 
-int ioSize(string filename)
+int ioSize(const string& filename)
 {
     struct stat status;
     if(stat(filename.c_str(), &status) < 0)
@@ -300,7 +311,7 @@ int ioSize(string filename)
     return status.st_size;
 }
 
-time_t ioTimeAccessed(string filename)
+time_t ioTimeAccessed(const string& filename)
 {
     struct stat status;
     if(stat(filename.c_str(), &status) < 0)
@@ -308,7 +319,7 @@ time_t ioTimeAccessed(string filename)
     return status.st_atime;
 }
 
-time_t ioTimeModified(string filename)
+time_t ioTimeModified(const string& filename)
 {
     struct stat status;
     if(stat(filename.c_str(), &status) < 0)
@@ -316,7 +327,7 @@ time_t ioTimeModified(string filename)
     return status.st_mtime;
 }
 
-time_t ioTimeStatus(string filename)
+time_t ioTimeStatus(const string& filename)
 {
     struct stat status;
     if(stat(filename.c_str(), &status) < 0)
@@ -329,7 +340,7 @@ string ioTimeString(time_t time)
     return ctime(&time);
 }
 
-bool ioSetReadable(string filename, bool readable)
+bool ioSetReadable(const string& filename, bool readable)
 {
     struct stat status;
     if(stat(filename.c_str(), &status) < 0)
@@ -351,7 +362,7 @@ bool ioSetReadable(string filename, bool readable)
     }
 }
 
-bool ioSetWriteable(string filename, bool writeable)
+bool ioSetWriteable(const string& filename, bool writeable)
 {
     struct stat status;
     if(stat(filename.c_str(), &status) < 0)
@@ -373,7 +384,7 @@ bool ioSetWriteable(string filename, bool writeable)
     }
 }
 
-bool ioSetReadWriteable(string filename, bool ReadWriteable)
+bool ioSetReadWriteable(const string& filename, bool ReadWriteable)
 {
     struct stat status;
     if(stat(filename.c_str(), &status) < 0)
@@ -382,28 +393,32 @@ bool ioSetReadWriteable(string filename, bool ReadWriteable)
     return (chmod(filename.c_str(), ReadWriteable? S_IREAD | S_IWRITE : 0) == 0);
 }
 
-
-string ioGetProgramDir(string argv0)
+// Returns the executable's name.  This works only for Linux so far and uses /proc, which may be unportable to some UNIX platforms.
+// Needs unistd.h and string.
+string ioGetProgramPath()
 {
-    string path = argv0;
-    path = path.substr(0, path.find_last_of('/'));  // Remove exe name from string
+    #ifdef WIN32
+    TCHAR name[IO_PATH_MAX];
+    DWORD len = GetModuleFileName( NULL, name, IO_PATH_MAX );
+    name[len] = '\0';
     
-    // Maybe I should compare the cwd with path to get the result?
-    //string cwd = getcwd(NULL, 0);
-    // They may overlap and be absolute (Code::Blocks): cwd == "/usr/bin", path == "/usr/bin/myapp"
-    // They may be distinct (Konqueror): cwd == "/home/myself", path == "/usr/bin/myapp"
-    // They may overlap, but be relative (Terminal): cwd == "/usr/bin", path == "./myapp"
-    // Similarly (Terminal): cwd == "/usr", path == "./bin/myapp"
-    // They may be totally non-helpful! (e.g. installed in /bin): cwd == "/home/myself/stuff", path == "myapp"
-    return path;
+    #elif defined(LINUX)
+    
+    char name[IO_PATH_MAX];
+    pid_t pid = getpid();
+    char symlink[128];
+    sprintf(symlink, "/proc/%d/exe", pid);
+    ssize_t len = readlink(symlink, name, IO_PATH_MAX);
+    name[len] = '\0';
+    #endif
+    
+    // If you get an error here, where name is undefined, then this function is
+    // not implemented for your platform!
+    return ioStripToDir(name);
 }
 
-bool ioResetCWD(string argv0)
-{
-    return (chdir(ioGetProgramDir(argv0).c_str()) == 0);
-}
 
-bool ioSetCWD(string dir)
+bool ioSetCWD(const string& dir)
 {
     return (chdir(dir.c_str()) == 0);
 }
@@ -415,7 +430,7 @@ string ioGetCWD()
 }
 
 
-list<string> ioList(string dirname, bool directories, bool files)
+list<string> ioList(const string& dirname, bool directories, bool files)
 {
     list<string> dirList;
     list<string> fileList;
@@ -451,9 +466,9 @@ list<string> ioList(string dirname, bool directories, bool files)
 
 
 
-std::list<std::string> ioExplode(std::string str, char delimiter)
+list<string> ioExplode(const string& str, char delimiter)
 {
-    std::list<std::string> result;
+    list<string> result;
     
     unsigned int oldPos = 0;
     unsigned int pos = str.find_first_of(delimiter);
@@ -465,6 +480,16 @@ std::list<std::string> ioExplode(std::string str, char delimiter)
     }
     
     result.push_back(str.substr(oldPos, string::npos));
+    
+    // Test this:
+    /*unsigned int pos;
+    do
+    {
+        pos = str.find_first_of(delimiter, oldPos);
+        result.push_back(str.substr(oldPos, pos - oldPos));
+        oldPos = pos+1;
+    }
+    while(pos != string::npos);*/
     
     return result;
 }
