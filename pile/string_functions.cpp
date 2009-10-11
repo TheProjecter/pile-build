@@ -41,10 +41,10 @@ string addDirSlash(string path)
 
 string getObjectName(string source, string objPath, bool useSourceDir)
 {
-    string objName = ioStripFile(source);
+    string objName = ioStripToFile(source);
     objName = getBaseName(objName) + ".o";
     
-    string dir = ioStripDir(source);
+    string dir = ioStripToDir(source);
     
     if(useSourceDir)
     {
