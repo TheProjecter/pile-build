@@ -6,6 +6,9 @@
 #include "pile_config.h"
 #include "External Code/goodio.h"
 
+#define PILE_BUTTON_WHEELLEFT 6
+#define PILE_BUTTON_WHEELRIGHT 7
+
 char ui_buffer[PILE_PRINT_BUFFER_SIZE];
 
 using namespace std;
@@ -630,6 +633,14 @@ int UI_waitKeyPress()
                 {
                     scrollY += 20;
                 }
+                else if(event.button.button == PILE_BUTTON_WHEELLEFT)
+                {
+                    scrollX -= 20;
+                }
+                else if(event.button.button == PILE_BUTTON_WHEELRIGHT)
+                {
+                    scrollX += 20;
+                }
             }
         }
         if(keystates[SDLK_UP])
@@ -696,6 +707,14 @@ int UI_processEvents()
                 else if(event.button.button == SDL_BUTTON_WHEELDOWN)
                 {
                     scrollY += 20;
+                }
+                else if(event.button.button == PILE_BUTTON_WHEELLEFT)
+                {
+                    scrollX -= 20;
+                }
+                else if(event.button.button == PILE_BUTTON_WHEELRIGHT)
+                {
+                    scrollX += 20;
                 }
             }
         }
