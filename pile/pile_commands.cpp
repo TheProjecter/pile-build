@@ -54,7 +54,7 @@ Returns: true on success
 */
 bool clean(bool cleanall, const list<string>& sources, Configuration& config, const string& outfile)
 {
-    list<string> ls = ioList(".", false, true);
+    //list<string> ls = ioList(".", false, true);
     
     bool result = true;
     
@@ -72,25 +72,65 @@ bool clean(bool cleanall, const list<string>& sources, Configuration& config, co
     return result;
 }
 
-bool clean(string ext)
+
+bool compare_time_lowtohigh(string first, string second)
 {
-    list<string> ls = ioList(".", false, true);
+    return ioTimeModified(first) < ioTimeModified(second);
+}
+
+/*
+Deletes object files that are old according to the largest time spacing between
+any two of the files.
+
+Takes: bool (if true, the output file will be deleted)
+       list<string> (file names for removing object files)
+       string (the output file)
+Returns: true on success
+         false on failure
+*/
+bool cleanOld(bool cleanall, const list<string>& sources, Configuration& config, const string& outfile)
+{
+    list<string> objects;
     
     bool result = true;
     
-    for(list<string>::iterator e = ls.begin(); e != ls.end(); e++)
+    if(cleanall && !ioDelete(outfile))
+        result = false;
+    
+    string obj;
+    for(list<string>::const_iterator e = sources.begin(); e != sources.end(); e++)
     {
-        unsigned int dotpos = e->find_last_of(".");
-        if(dotpos != string::npos && e->substr(dotpos, string::npos) == ext)
+        obj = getObjectName(*e, config.objPath, config.useSourceObjPath);
+        if(ioExists(obj))
+            objects.push_back(obj);
+    }
+    
+    objects.sort(compare_time_lowtohigh);
+    
+    time_t prev_time = 0;
+    time_t max_delta = 0;
+    time_t time_gap = 0;
+    for(list<string>::iterator e = objects.begin(); e != objects.end(); e++)
+    {
+        time_t this_time = ioTimeModified(*e);
+        
+        if(prev_time != 0)
         {
-            UI_print(("Cleaning " + *e + "...").c_str());
-            if(!ioIsWriteable(*e) || !ioDelete(*e))
+            if(this_time - prev_time > max_delta)
             {
-                result = false;
-                UI_print(" Error");
-                UI_log(("Cleaning " + *e + "... Error\n").c_str());
+                max_delta = this_time - prev_time;
+                time_gap = this_time;
             }
-            UI_print("\n");
+        }
+        prev_time = this_time;
+    }
+    
+    for(list<string>::iterator e = objects.begin(); e != objects.end(); e++)
+    {
+        if(ioTimeModified(*e) < time_gap)
+        {
+            if(!ioDelete(*e))
+                result = false;
         }
     }
     

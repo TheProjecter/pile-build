@@ -62,6 +62,7 @@ bool build(Environment& env, Configuration& config)
     string objName;
     string sourceFile;
     string tempname = ".pile.tmp";
+    list<string> failedFiles;
     ioDelete(tempname.c_str());
     
     for(list<string>::iterator e = env.cflags.begin(); e != env.cflags.end(); e++)
@@ -86,7 +87,7 @@ bool build(Environment& env, Configuration& config)
         
         UI_debug_pile("Checking %s\n", e->c_str());
         
-        // FIXME: mustRebuild() is crashing...
+        // FIXME: mustRebuild() is crashing... Is it fixed yet?
         if(mustRebuild(objName, env.depends, fd))
         {
             sprintf(buffer, "%s %s -c %s -o %s", getCompiler(config, *e).c_str(), config.cflags.c_str(), sourceFile.c_str(), objName.c_str());
@@ -123,7 +124,12 @@ bool build(Environment& env, Configuration& config)
             {
                 // FIXME: This looks like it could fail if the build is quick (and the object had been modified...)!!!
                 if(!ioExists(objName) || objTime >= ioTimeModified(objName))
-                    return false;
+                    failedFiles.push_back(*e);
+            }
+            else
+            {
+                if(!ioExists(objName))
+                    failedFiles.push_back(*e);
             }
         }
         else
@@ -131,8 +137,19 @@ bool build(Environment& env, Configuration& config)
             UI_print(" Up to date: %s\n", e->c_str());
         }
         if(UI_processEvents() < 0)
-            ;//return false;
+            return true;
         UI_updateScreen();
+    }
+    
+    if(failedFiles.size() > 0)
+    {
+        UI_error("Some files failed to build:\n");
+        for(list<string>::iterator e = failedFiles.begin(); e != failedFiles.end(); e++)
+        {
+            UI_error("  %s\n", e->c_str());
+        }
+        UI_error("\n");
+        return false;
     }
     return true;
 }

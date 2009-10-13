@@ -3,8 +3,6 @@
 
 class Configuration;
 
-bool loadPileFile(const string& filename, Configuration& config, string& outfile, list<string>& sources, list<string>& objects);
-
 list<string> tokenize(string& line);
 
 #endif

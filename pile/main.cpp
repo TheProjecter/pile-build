@@ -204,6 +204,8 @@ int main(int argc, char* argv[])
     Environment env;
     Configuration config;
     
+    //string pileDirectory = ioGetProgramPath();
+    
     // Create config dir
     ioNewDir(getConfigDir());
     
@@ -236,6 +238,11 @@ int main(int argc, char* argv[])
     string file;  // pilefile name
     
     
+    int cleaning = 0;  // Interpret without actions or messages
+    bool dryRun = false;  // Interpret without actions, but with messages
+    bool noLink = false;
+    bool noCompile = false;
+    bool changedOutfile = false;
     bool graphical = false;
     // Check for graphical flag
     for(int i = 1; i < argc; i++)
@@ -250,13 +257,6 @@ int main(int argc, char* argv[])
             }
             UI_print("Pile GUI started.\n\n");
         }
-        else if(string("pile") == ioStripToExt(argv[i]))
-        {
-            // Found a pilefile...
-            // Change directory first
-            ioSetCWD(ioStripToDir(argv[i]));
-            file = ioStripToFile(argv[i]);
-        }
         else if(string("new") == argv[i])
         {
             // Generate a new pilefile
@@ -270,10 +270,85 @@ int main(int argc, char* argv[])
             generatePilefile(name);
             return 0;
         }
+        else if(string("edit") == argv[i])
+        {
+            string file = "com.pile";
+            i++;
+            if(i < argc)
+            {
+                file = argv[i];
+                if(file == "pile.conf")
+                {
+                    file = configDir + "pile.conf";
+                }
+            }
+            edit(file, config);
+            return 0;
+        }
+        else if(string("--version") == argv[i])
+        {
+            UI_print("pile Version %s\n", getVersion().c_str());
+            return 0; // FIXME: Shouldn't always return here.
+        }
+        else if(string("scan") == argv[i])
+        {
+            // FIXME: Create/update dependency files (in depends directory?)
+            return 0; // FIXME: Shouldn't always return here.
+        }
+        else if(string("clean") == argv[i])
+        {
+            if(i+1 < argc && string("all") == argv[i+1])
+            {
+                cleaning = 1;
+                i++;
+            }
+            else if(i+1 < argc && string("old") == argv[i+1])
+            {
+                cleaning = 3;
+                i++;
+            }
+            else
+            {
+                cleaning = 2;
+            }
+        }
+        else if(string("dryrun") == argv[i])
+        {
+            dryRun = true;
+        }
+        else if(string("--nocompile") == argv[i])
+        {
+            noCompile = true;
+        }
+        else if(string("--nolink") == argv[i])
+        {
+            noLink = true;
+        }
+        // FIXME: Change this to check for substring 'out=', grab the file name, then strip the (optional) quotes.
+        else if(string("out:") == argv[i] || string("output:") == argv[i])
+        {
+            i++;
+            if(i < argc)
+            {
+                env.outfile = argv[i];
+                changedOutfile = true;
+            }
+        }
+        // Check for .pile file extension ('pile myfile.pile')
+        else if(string("pile") == ioStripToExt(argv[i]))
+        {
+            // Found a pilefile...
+            // Change directory first
+            ioSetCWD(ioStripToDir(argv[i]));
+            file = ioStripToFile(argv[i]);
+        }
+        else
+        {
+            UI_warning("pile Warning: Command \"%s\" not found, so it will be ignored.\n", argv[i]);
+        }
     }
     
     UI_processEvents();
-    
     UI_updateScreen();
     
     
@@ -285,7 +360,6 @@ int main(int argc, char* argv[])
     
     UI_debug_pile("Current directory: %s", ioGetCWD().c_str());
     
-    bool changedOutfile = false;
     
     // Find the appropriate pilefile
     if(file == "")
@@ -294,15 +368,18 @@ int main(int argc, char* argv[])
             file = findPileFile();
     }
     
+    bool errorFlag = false;
+    // If we've found a Pilefile, then we can begin the build.
     if(file != "")
     {
-        bool errorFlag = false;
+        UI_debug_pile("Found pilefile: %s\n", file.c_str());
         UI_processEvents();
         UI_updateScreen();
-        UI_debug_pile("Found pilefile: %s\n", file.c_str());
+        
         if(!interpret(file, env))
             errorFlag = true;
         UI_debug_pile("Done interpreting.\n");
+        
         UI_processEvents();
         UI_updateScreen();
         
@@ -323,115 +400,28 @@ int main(int argc, char* argv[])
                 }
             }
             
-            if(!errorFlag)
+            if(!dryRun && !cleaning && !errorFlag)
             {
-                UI_debug_pile("Building.\n");
-                if(!build(env, config))
+                UI_debug_pile("Building and linking.\n");
+                if(!noCompile && !build(env, config))
                     errorFlag = true;
                 if(!errorFlag)
-                {
-                    UI_debug_pile("Linking.\n");
-                    if(!link(config.languages.find("CPP_LINKER_D")->second, env, config))
+                    if(!noLink && !link(config.languages.find("CPP_LINKER_D")->second, env, config))
                         errorFlag = true;
-                }
             }
         }
         
-        if(errorFlag)
-            UI_error("\nBuild errors have occured...\n");
-        
-        if(graphical)
-        {
-            ui_print = true;
-            ui_log_print = false;
-            if(errorFlag)
-                UI_print("\nPress any key to quit.\n");
-            else
-                UI_print("\nAll done!  Press any key.\n");
-            UI_updateScreen();
-            
-            UI_waitKeyPress();
-        }
-        
-        UI_quit();
-        
-        return 0;
     }
-    
-    UI_processEvents();
-    UI_updateScreen();
-    
-    // FIXME: I should fix the auto-naming later...
-    changedOutfile = true;
-    
-    env.print();
-    
-    bool buildFlag = true;
-    
-    // Early command-line args
-    for(int i = 1; i < argc; i++)
+    else  // No Pilefile found
     {
-        if(i == 1 && string("edit") == argv[i])
+        // Prompt user in order to proceed to build all local source files.
+        if(UI_prompt(" No Pilefile found here.  Should I try to build all local source files?\n"))
         {
-            if(argc > 2)
-                file = argv[2];
-            if(file == "pile.conf")
-            {
-                file = configDir + "pile.conf";
-            }
-            if(file == "")
-                file = "com.pile";
-            edit(file, config);
-            return 0;
-        }
-        else if(string("--version") == argv[i])
-        {
-            UI_print("pile Version %s\n", getVersion().c_str());
-            if(i == 1 && argc <= 2)
-                return 0;
-        }
-        else if(string("scan") == argv[i])
-        {
-            buildFlag = false;
-        }
-        else if(string("build") == argv[i])
-        {
-            buildFlag = true;
-        }
-        else if(buildFlag && isSourceFile(argv[i]))
-        {
-            env.sources.push_back(argv[i]);
-            if(!changedOutfile)
-            {
-                env.outfile = getExeName(argv[i]);
-                changedOutfile = true;
-            }
-            i++;
-            for(; i < argc; i++)
-            {
-                if(string("out:") == argv[i] || string("output:") == argv[i])
-                {
-                    i++;
-                    if(i < argc)
-                    {
-                        env.outfile = argv[i];
-                    }
-                }
-                else if(isSourceFile(argv[i]))
-                    env.sources.push_back(argv[i]);
-                else if(firstChar(argv[i], '-'))
-                {
-                    config.cflags += " " + string(argv[i]);
-                    config.lflags += " " + string(argv[i]);
-                }
-                else
-                {
-                    config.libraries += " " + string(argv[i]);
-                }
-            }
-            checkSourceExistence(env.sources);
-            fflush(stdout);
+            env.sources = getLocalSourceFiles();
+            config.cflags += UI_promptString(" Compiler flags?\n");
+            config.lflags += UI_promptString(" Linker flags?\n");
             
+            // Scan for dependencies
             if(config.useAutoDepend)
             {
                 for(list<string>::iterator e = env.sources.begin(); e != env.sources.end(); e++)
@@ -439,18 +429,14 @@ int main(int argc, char* argv[])
                     recurseIncludes(env.depends, env.fileDataHash, config.includePaths, *e, "");
                 }
             }
-            build(env, config);
-            link(config.languages.find("CPP_LINKER_D")->second, env, config);
             
-            return 0;
-        }
-        else if(string("out:") == argv[i] || string("output:") == argv[i])
-        {
-            i++;
-            if(i < argc)
+            UI_debug_pile("Building and linking.\n");
+            if(!dryRun && !cleaning && !errorFlag)
             {
-                env.outfile = argv[i];
-                changedOutfile = true;
+                if(!noCompile && !build(env, config))
+                    errorFlag = true;
+                if(!errorFlag && !noLink && !link(config.languages.find("CPP_LINKER_D")->second, env, config))
+                    errorFlag = true;
             }
         }
     }
@@ -458,73 +444,49 @@ int main(int argc, char* argv[])
     UI_processEvents();
     UI_updateScreen();
     
-    // Load the pilefile
-    if(file != "")
+    // Cleaning
+    // FIXME: This should be the default clean, but there should also be a way to overload it in the Pilefile.
+    if(cleaning > 0)
     {
-        loadPileFile(file, config, env.outfile, env.sources, env.objects);
-        
-        // Organize data
-        checkSourceExistence(env.sources);
-        fflush(stdout);
+        if(cleaning == 1)
+            clean(true, env.sources, config, env.outfile);
+        else if(cleaning == 2)
+            clean(false, env.sources, config, env.outfile);
+        else if(cleaning == 3)
+            cleanOld(false, env.sources, config, env.outfile);
+        UI_processEvents();
+        UI_updateScreen();
     }
     
-    // No command-line args...  Build it!
-    if(argc <= 1)
+    
+    
+    if(errorFlag)
+        UI_error("\nBuild errors have occurred...\n");
+    
+    if(graphical)
     {
-        if(file == "")
-        {
-            // Prompt user in order to proceed to build all local source files.
-            if(UI_prompt(" No Pilefile found here.  Should I try to build all local source files?\n"))
-            {
-                env.sources = getLocalSourceFiles();
-                config.cflags += UI_promptString(" Compiler flags?\n");
-                config.lflags += UI_promptString(" Linker flags?\n");
-            }
-            else
-                return 0;
-        }
+        ui_print = true;
+        ui_log_print = false;
+        if(errorFlag)
+            UI_print("\nPress any key to quit.\n");
+        else
+            UI_print("\nAll done!  Press any key.\n");
+        UI_updateScreen();
         
-        // Scan for dependencies
-        if(config.useAutoDepend)
-        {
-            for(list<string>::iterator e = env.sources.begin(); e != env.sources.end(); e++)
-            {
-                recurseIncludes(env.depends, env.fileDataHash, config.includePaths, *e, "");
-            }
-        }
-        
-        build(env, config);
-        link(config.languages.find("CPP_LINKER_D")->second, env, config);
-        return 0;
+        UI_waitKeyPress();
     }
+    
+    UI_quit();
+    
+    return 0;
+    
+    //env.print();
+    //FIXME: Should I use this? -> checkSourceExistence(env.sources);
     
     // Parse other command-line args
-    for(int i = 1; i < argc; i++)
+    /*for(int i = 1; i < argc; i++)
     {
-        if(string("clean") == argv[i])
-        {
-            bool cleanall = false;
-            if(i+1 < argc && string("all") == argv[i+1])
-            {
-                cleanall = true;
-                i++;
-                clean(cleanall, env.sources, config, env.outfile);
-            }
-            else if(i+1 < argc && (string("o") == argv[i+1] || string(".o") == argv[i+1]))
-            {
-                i++;
-                clean(".o");
-            }
-            else
-            {
-                clean(cleanall, env.sources, config, env.outfile);
-            }
-        }
-        else if(string("clean.o") == argv[i])
-        {
-            clean(".o");
-        }
-        else if(string("scan") == argv[i])
+        if(string("scan") == argv[i])
         {
             bool checkedOne = false;
             i++;
@@ -552,38 +514,5 @@ int main(int argc, char* argv[])
                 //UI_debug_pile("Recursed, got %d depends.\n", depends.size());
             }
         }
-        else if(string("build") == argv[i])
-        {
-            if(config.useAutoDepend)
-            {
-                for(list<string>::iterator e = env.sources.begin(); e != env.sources.end(); e++)
-                {
-                    recurseIncludes(env.depends, env.fileDataHash, config.includePaths, *e, "");
-                }
-            }
-            build(env, config);
-            link(config.languages.find("CPP_LINKER_D")->second, env, config);
-        }
-        else if(string("-g") == argv[i] || string("pile") == ioStripToExt(argv[i]))
-        {}
-        else
-        {
-            UI_warning("pile Warning: Command \"%s\" not found, so it will be ignored.\n", argv[i]);
-        }
-    }
-    
-    
-    if(graphical)
-    {
-        ui_print = true;
-        ui_log_print = false;
-        UI_print("\nAll done!  Press any key.\n");
-        UI_updateScreen();
-        
-        UI_waitKeyPress();
-    }
-    
-    UI_quit();
-    
-    return 0;
+    }*/
 }
