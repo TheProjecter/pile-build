@@ -4,7 +4,7 @@
 
 bool mkpath(const string& path);
 bool clean(bool cleanall, const list<string>& sources, Configuration& config, const string& outfile);
-bool clean(string ext);
+bool cleanOld(bool cleanall, const list<string>& sources, Configuration& config, const string& outfile);
 bool edit(string file, Configuration& config);
 string getVersion();
 
