@@ -36,7 +36,8 @@ void Interpreter::error(const char* formatted_text, ...)
     vsprintf(buffer, formatted_text, lst);
     va_end(lst);
     
-    UI_error("@%d: %s", interpreter.lineNumber, buffer);
+    outputter.error(currentFile, lineNumber, buffer);
+    //UI_error("@%d: %s", interpreter.lineNumber, buffer);
     
     errorFlag = true;
 }
@@ -44,6 +45,7 @@ void Interpreter::error(const char* formatted_text, ...)
 
 bool Interpreter::readFile(string filename)
 {
+    currentFile = filename;
     lineNumber = 1;
     errorFlag = false;
     
@@ -52,6 +54,7 @@ bool Interpreter::readFile(string filename)
     if(fin.fail())
     {
         fin.close();
+        currentFile = "";
         return false;
     }
     
@@ -79,6 +82,7 @@ bool Interpreter::readFile(string filename)
     }
     
     fin.close();
+    currentFile = "";
     
     return !errorFlag;
 }
@@ -306,6 +310,21 @@ Variable* getCorrectVariable(string token, bool isFunction = false)
 {
     if(token == "")
         return NULL;
+    
+    if(token == "true")
+    {
+        Bool* b = new Bool;
+        b->setValue(true);
+        b->literal = true;
+        return b;
+    }
+    if(token == "false")
+    {
+        Bool* b = new Bool;
+        b->setValue(false);
+        b->literal = true;
+        return b;
+    }
     
     // #### or .####
     if(isNumeric(token[0]) || (token[0] == '.' && isNumeric(token[1])))
@@ -2283,6 +2302,13 @@ Variable* callBuiltIn(FunctionEnum fn, vector<Variable*>& args)
             if(args.size() != 1)
                 return NULL;
             result = new String(args[0]->getValueString());
+            break;
+        case FN_INT:
+            if(args.size() != 1)
+                return NULL;
+            result = NULL;
+            // FIXME!
+            //result = new Int(args[0]->getValue());
             break;
         default:
             break;
