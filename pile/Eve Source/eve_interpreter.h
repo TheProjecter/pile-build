@@ -57,7 +57,7 @@ enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 
 enum KeywordEnum{KW_IF, KW_ELSE};
 
-enum FunctionEnum{FN_NONE, FN_PRINT, FN_TYPE, FN_STRING};
+enum FunctionEnum{FN_NONE, FN_PRINT, FN_TYPE, FN_STRING, FN_INT};
 
 class Token;
 std::list<Token> tokenize1(std::string& line, bool& continuation);
@@ -499,6 +499,9 @@ public:
     
     
     enum ScopeEnum {NO_SCOPE, IF_BLOCK, SKIP_IF, SKIP_ELSE};
+    // SKIP_IF means that the if() evaluated to false.  We skip the if block and
+    // eval the else blocks.
+    // SKIP_ELSE means that the if() evaluated to true.  We skip the else blocks.
     ScopeEnum state;
     bool singleLine;
     
@@ -793,18 +796,41 @@ public:
 };
 
 
+class Outputter
+{
+    public:
+    std::string syntax;
+    
+    Outputter(std::string syntax)
+        : syntax(syntax)
+    {}
+    
+    void error(std::string file, unsigned int line, std::string message)
+    {
+        // FIXME: Syntax must be in this order: file, line, message
+        char buff[syntax.size() + file.size() + message.size() + 100];
+        sprintf(buff, "%s", syntax.c_str());
+        UI_error(buff, file.c_str(), line, message.c_str());
+    }
+};
+
+
 class Interpreter
 {
 private:
 
 public:
     std::list<Scope> env;
+    std::string currentFile;
     unsigned int lineNumber;
     bool errorFlag;
+    Outputter outputter;
     
     Interpreter()
         : lineNumber(1)
         , errorFlag(false)
+        //, outputter("%s: @%d:%s")
+        , outputter("%s:%d:%s")
     {
         pushEnv(true);  // Push global scope
     }

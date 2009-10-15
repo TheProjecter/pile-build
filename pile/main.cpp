@@ -369,6 +369,7 @@ int main(int argc, char* argv[])
     }
     
     bool errorFlag = false;
+    bool interpreterError = false;
     // If we've found a Pilefile, then we can begin the build.
     if(file != "")
     {
@@ -377,13 +378,13 @@ int main(int argc, char* argv[])
         UI_updateScreen();
         
         if(!interpret(file, env))
-            errorFlag = true;
+            errorFlag = interpreterError = true;
         UI_debug_pile("Done interpreting.\n");
         
         UI_processEvents();
         UI_updateScreen();
         
-        if(!errorFlag)
+        if(!errorFlag && env.sources.size() > 0)
         {
             // Scan for dependencies
             if(config.useAutoDepend)
@@ -461,7 +462,12 @@ int main(int argc, char* argv[])
     
     
     if(errorFlag)
-        UI_error("\nBuild errors have occurred...\n");
+    {
+        if(interpreterError)
+            UI_error("\nPilefile errors have occurred...\n");
+        else
+            UI_error("\nBuild errors have occurred...\n");
+    }
     
     if(graphical)
     {
