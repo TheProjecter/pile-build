@@ -2280,6 +2280,46 @@ void fn_print(Variable* arg)
     }
 }
 
+Int* intCast(Variable* v)
+{
+    if(v->getType() == BOOL)
+    {
+        Bool* b = static_cast<Bool*>(v);
+        return new Int(int(b->getValue()));
+    }
+    if(v->getType() == INT)
+    {
+        Int* i = static_cast<Int*>(v);
+        return new Int(i->getValue());
+    }
+    if(v->getType() == FLOAT)
+    {
+        Float* f = static_cast<Float*>(v);
+        return new Int(int(f->getValue()));
+    }
+    return NULL;
+}
+
+Float* floatCast(Variable* v)
+{
+    if(v->getType() == BOOL)
+    {
+        Bool* b = static_cast<Bool*>(v);
+        return new Float(float(b->getValue()));
+    }
+    if(v->getType() == INT)
+    {
+        Int* i = static_cast<Int*>(v);
+        return new Float(float(i->getValue()));
+    }
+    if(v->getType() == FLOAT)
+    {
+        Float* f = static_cast<Float*>(v);
+        return new Float(f->getValue());
+    }
+    return NULL;
+}
+
 
 Variable* callBuiltIn(FunctionEnum fn, vector<Variable*>& args)
 {
@@ -2306,9 +2346,12 @@ Variable* callBuiltIn(FunctionEnum fn, vector<Variable*>& args)
         case FN_INT:
             if(args.size() != 1)
                 return NULL;
-            result = NULL;
-            // FIXME!
-            //result = new Int(args[0]->getValue());
+            result = intCast(args[0]);
+            break;
+        case FN_FLOAT:
+            if(args.size() != 1)
+                return NULL;
+            result = floatCast(args[0]);
             break;
         default:
             break;
