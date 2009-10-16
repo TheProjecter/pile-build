@@ -57,7 +57,7 @@ enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 
 enum KeywordEnum{KW_IF, KW_ELSE};
 
-enum FunctionEnum{FN_NONE, FN_PRINT, FN_TYPE, FN_STRING, FN_INT};
+enum FunctionEnum{FN_NONE, FN_PRINT, FN_TYPE, FN_STRING, FN_INT, FN_FLOAT};
 
 class Token;
 std::list<Token> tokenize1(std::string& line, bool& continuation);
@@ -208,6 +208,10 @@ public:
             : Variable(FLOAT)
             , value(0.0f)
     {}
+    Float(float value)
+            : Variable(FLOAT)
+            , value(value)
+    {}
     float& getValue()
     {
         return value;
@@ -232,6 +236,10 @@ public:
     Bool()
             : Variable(BOOL)
             , value(false)
+    {}
+    Bool(bool value)
+            : Variable(BOOL)
+            , value(value)
     {}
     bool& getValue()
     {
@@ -415,7 +423,13 @@ public:
             case FN_STRING:
                 argt.push_back(VOID);
                 break;
-            default:
+            case FN_INT:
+                argt.push_back(VOID);
+                break;
+            case FN_FLOAT:
+                argt.push_back(VOID);
+                break;
+            case FN_NONE:
                 break;
         }
     }

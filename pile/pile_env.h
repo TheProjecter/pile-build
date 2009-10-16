@@ -34,6 +34,8 @@ class Environment
         (*(inter.env.begin())).env["print"] = new Function(FN_PRINT);
         (*(inter.env.begin())).env["type"] = new Function(FN_TYPE);
         (*(inter.env.begin())).env["string"] = new Function(FN_STRING);
+        (*(inter.env.begin())).env["int"] = new Function(FN_INT);
+        (*(inter.env.begin())).env["float"] = new Function(FN_FLOAT);
         (*(inter.env.begin())).env["output"] = new String("a.out");
         (*(inter.env.begin())).env["sources"] = new Array(STRING);
         (*(inter.env.begin())).env["cflags"] = new Array(STRING);
