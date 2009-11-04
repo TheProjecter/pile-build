@@ -55,9 +55,11 @@ enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
                 CLOSE_CURLY_BRACKET, SEMICOLON
                  };
 
-enum KeywordEnum{KW_IF, KW_ELSE};
+enum KeywordEnum{KW_NONE, KW_IF, KW_ELSE};
 
 enum FunctionEnum{FN_NONE, FN_PRINT, FN_TYPE, FN_STRING, FN_INT, FN_FLOAT};
+
+KeywordEnum getKeyword(const std::string& str);
 
 class Token;
 std::list<Token> tokenize1(std::string& line, bool& continuation);
@@ -490,6 +492,7 @@ public:
 };
 
 
+Variable* equals(Variable* A, Variable* B);
 
 Variable* assign(Variable* A, Variable* B);
 
@@ -512,7 +515,7 @@ public:
     // This is used for functions, which have their own separate scope.
     
     
-    enum ScopeEnum {NO_SCOPE, IF_BLOCK, SKIP_IF, SKIP_ELSE};
+    enum ScopeEnum {NO_BLOCK, IF_BLOCK, SKIP_IF, SKIP_ELSE};
     // SKIP_IF means that the if() evaluated to false.  We skip the if block and
     // eval the else blocks.
     // SKIP_ELSE means that the if() evaluated to true.  We skip the else blocks.
@@ -525,8 +528,13 @@ public:
 
     Scope(bool isolated)
             : isolated(isolated)
-            , state(NO_SCOPE)
+            , state(NO_BLOCK)
             , singleLine(false)
+    {}
+    Scope(bool isolated, ScopeEnum state, bool singleLine)
+            : isolated(isolated)
+            , state(state)
+            , singleLine(singleLine)
     {}
 
     Variable* getVar(const std::string& name)
@@ -562,24 +570,28 @@ public:
     bool associativeLeftToRight;
     
     SeparatorEnum sep;
+    KeywordEnum keyword;
 
-
+    // Null token
     Token()
             : type(NOT_A_TOKEN)
             , var(NULL)
             , oper(NOT_AN_OPERATOR), precedence(0), associativeLeftToRight(true)
             , sep(NOT_A_SEPARATOR)
+            , keyword(KW_NONE)
     {}
+    // Variable token
     Token(Variable* var, std::string text)
             : type(VARIABLE)
             , text(text), var(var)
             , oper(NOT_AN_OPERATOR), precedence(0), associativeLeftToRight(true)
             , sep(NOT_A_SEPARATOR)
+            , keyword(KW_NONE)
     {
         if (var == NULL) // Error?
             type = NOT_A_TOKEN;
     }
-    
+    // Operator, Separator, or Keyword
     Token(TokenEnum type, std::string text)
             : type(type)
             , text(text)
@@ -589,6 +601,13 @@ public:
             setOperator(text);
         else if(type == SEPARATOR)
             setSeparator(text);
+        else if(type == KEYWORD)
+            setKeyword(text);
+    }
+    
+    void setKeyword(std::string Keyword)
+    {
+        keyword = getKeyword(Keyword);
     }
     
     void setOperator(std::string Oper)
@@ -775,6 +794,8 @@ public:
             return "Operator";
         case SEPARATOR:
             return "Separator";
+        case KEYWORD:
+            return "Keyword";
         default:
             return "Unknown Token type";
         }
@@ -803,6 +824,8 @@ public:
             return "Operator";
         case SEPARATOR:
             return "Separator";
+        case KEYWORD:
+            return "Keyword";
         default:
             return "Unknown Token type";
         }
@@ -993,12 +1016,16 @@ public:
     {
         if (operation == NEGATE)
             return ::negate(A);
+        //else if (operation == NOT)
+        //    return ::not_(A);
         error("Error: Undefined operation\n");
         return A;
     }
 
     Variable* evaluateExpression(Variable* A, OperatorEnum operation, Variable* B)
     {
+        if (operation == EQUALS)
+            return equals(A, B);
         if (operation == ASSIGN)
             return assign(A, B);
         if (operation == ADD)
@@ -1086,9 +1113,25 @@ public:
         return result;
     }
 
+    void pushEnv(const Scope& scope)
+    {
+        env.push_front(scope);
+    }
+
     void pushEnv(bool isolated)
     {
         env.push_front(Scope(isolated));
+    }
+
+    Scope currentScope()
+    {
+        if(env.size() >= 1)
+            return (env.front());
+        else
+        {
+            UI_debug_pile("ERROR: Popped the last scope!\n");
+            return Scope(false);
+        }
     }
 
     void popEnv()

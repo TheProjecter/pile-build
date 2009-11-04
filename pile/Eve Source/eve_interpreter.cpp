@@ -6,6 +6,15 @@ using namespace std;
 extern Interpreter interpreter;
 
 
+KeywordEnum getKeyword(const string& str)
+{
+    if(str == "if")
+        return KW_IF;
+    if(str == "else")
+        return KW_ELSE;
+    return KW_NONE;
+}
+
 bool isConvertable(TypeEnum source, TypeEnum dest)
 {
     if(source == INT)
@@ -74,8 +83,32 @@ bool Interpreter::readFile(string filename)
         
         if(!continuation || fin.eof())  // Skip the eval if we're continuing, but not if the file ends!
         {
-            evalTokens(tokens, true);
+            bool popThatScope = currentScope().singleLine;
+            
+            if(currentScope().state == Scope::SKIP_IF)
+            {
+                // Nada
+            }
+            else
+            {
+                Token result = evalTokens(tokens, true);
+                if(result.type == Token::KEYWORD)
+                {
+                    // FIXME: These use 'true' for 'singleLine'
+                    // They should allow for blocks
+                    if(result.text == "if")
+                    {
+                        pushEnv(Scope(false, Scope::IF_BLOCK, true));
+                    }
+                    else if(result.text == "false if")
+                    {
+                        pushEnv(Scope(false, Scope::SKIP_IF, true));
+                    }
+                }
+            }
             lineNumber++;
+            if(popThatScope)
+                popEnv();
         }
         else if(continuation)
             lineNumber++;  // Skip an extra line if the last one was continued...  This probably isn't right for multiple-line continues...
@@ -244,491 +277,6 @@ string getSeparatorString(SeparatorEnum type)
     }
 }
 
-bool isDigraphOperator(const char& c, const char& d)
-{
-    switch(c)
-    {
-        case '=':
-            return (d == '=');
-        case '+':
-            return (d == '=' || d == '+');
-        case '-':
-            return (d == '=' || d == '-');
-        case '*':
-            return (d == '=');
-        case '/':
-            return (d == '=');
-        case '<':
-            return (d == '=' || d == '<');
-        case '>':
-            return (d == '=' || d == '>');
-        case '!':
-            return (d == '=');
-        case '^':
-            return (d == '=');
-        case '&':
-            return (d == '=' || d == '&');
-        case '|':
-            return (d == '=' || d == '|');
-        case '%':
-            return (d == '=');
-    }
-    return false;
-}
-
-TypeEnum getTypeFromString(const string& str)
-{
-    if(str == "string")
-        return STRING;
-    if(str == "int")
-        return INT;
-    if(str == "float")
-        return FLOAT;
-    if(str == "bool")
-        return BOOL;
-    if(str == "macro")
-        return MACRO;
-    if(str == "array")
-        return ARRAY;
-    if(str == "list")
-        return LIST;
-    if(str == "function")
-        return FUNCTION;
-    if(str == "procedure")
-        return PROCEDURE;
-    
-    return NOT_A_TYPE;
-}
-
-// Analyze token to return a correct variable.
-// First, see if it's a type name.
-// If it's a literal (numbers only...  strings are handled in nextToken()),
-// then return a new one.  
-// Then, look it up in the environment.
-// If it's not found, it's an error (maybe not?).
-Variable* getCorrectVariable(string token, bool isFunction = false)
-{
-    if(token == "")
-        return NULL;
-    
-    if(token == "true")
-    {
-        Bool* b = new Bool;
-        b->setValue(true);
-        b->literal = true;
-        return b;
-    }
-    if(token == "false")
-    {
-        Bool* b = new Bool;
-        b->setValue(false);
-        b->literal = true;
-        return b;
-    }
-    
-    // #### or .####
-    if(isNumeric(token[0]) || (token[0] == '.' && isNumeric(token[1])))
-    {
-        // Make a new numeric variable
-        if(token.find_first_of('.') == string::npos)
-        {
-            // Int
-            Int* i = new Int;
-            int val = 0;
-            sscanf(token.c_str(), "%d", &val);
-            i->setValue(val);
-            i->literal = true;
-            return i;
-        }
-        else
-        {
-            // Float
-            Float* f = new Float;
-            float val = 0;
-            sscanf(token.c_str(), "%f", &val);
-            f->setValue(val);
-            f->literal = true;
-            return f;
-        }
-    }
-    /*
-    TODO: Construct other types here...
-    */
-    TypeEnum t = getTypeFromString(token);
-    // Variable declaration
-    if(!isFunction && t != NOT_A_TYPE)  // This happens if token states a type...
-    {
-        // Make a new type variable
-        TypeName* v = new TypeName;
-        v->setValue(t);
-        return v;
-    }
-    
-    Variable* var = interpreter.getVar(token);
-    if(var == NULL)
-    {
-        var = new Void(token);
-    }
-    else
-    {
-        UI_debug_pile("Retrieved a variable: %s %s\n", var->getTypeString().c_str(), var->getValueString().c_str());
-    }
-    return var;
-}
-
-
-/*
-Returns the next whitespace-delimited token and erases that token from the original string.
-(destructive)
-
-Takes: string (a raw line of text)
-Returns: string (the next whitespace-delimited token)
-*/
-Token nextToken1(string& line, bool startingLine)
-{
-    // Ignore whitespace until you find something else.  Then find the whitespace on the other side
-    // and return that string.
-    int found = -1;
-    bool foundOper = false;
-    bool foundSep = false;
-    bool foundAlpha = false;
-    bool foundNumeric = false;
-    bool foundQuote = false;
-    bool dot = false;
-    bool foundWhitespace = startingLine;
-    for(unsigned int i = 0; i < line.size(); i++)
-    {
-        // A comment automatically ends the token.
-        if(line[i] == '/' && line.size() > i && line[i+1] == '/')
-        {
-            if(found < 0)  // Nothing in this line except for a comment
-            {
-                line.clear();
-                return Token();
-            }
-            string token = line.substr(found, i - found);
-            line.clear();
-            if(foundOper)  // Operator terminated by a comment
-            {
-                return Token(Token::OPERATOR, token);
-            }
-            if(foundSep)  // Separator terminated by a comment
-            {
-                return Token(Token::SEPARATOR, token);
-            }
-            if(foundAlpha || foundNumeric) // Variable terminated by a comment
-            {
-                return Token(getCorrectVariable(token), token);  // Will not be a function
-            }
-            if(foundQuote)  // FIXME: String terminated by a comment???  Maybe this should be an error? :)
-            {
-                String* s = new String;
-                token = token.substr(1, string::npos);
-                s->setValue(token);
-                s->literal = true;
-                return Token(s, token);
-            }
-            return Token();
-        }
-        
-        if(foundQuote)  // If we're in a quoted string...
-        {
-            // FIXME: Should all of the escaped characters be done here?
-            // FIXME: Allow single-quoted strings.
-            if(line[i] == '\\')
-            {
-                if(line.size() <= i)
-                {
-                    // FIXME: Report error better...  Quoted line ended in a backslash...
-                    return Token();
-                }
-                if(line[i+1] == '\"')
-                {
-                    // Skip the quote
-                    line.erase(i, 1);
-                    continue;
-                }
-                // Replace it with the real character
-                line.erase(i, 1);
-                if(line[i] == 'n')
-                    line[i] = '\n';
-                else if(line[i] == 't')
-                    line[i] = '\t';
-                else if(line[i] == '\'')
-                    ;
-                else if(line[i] == '?')
-                    line[i] = '\?';
-                else if(line[i] == '\\')
-                    ;
-                else if(line[i] == 'a')
-                    line[i] = '\a';
-                else if(line[i] == 'b')
-                    line[i] = '\b';
-                else if(line[i] == 'f')
-                    line[i] = '\f';
-                else if(line[i] == 'r')
-                    line[i] = '\r';
-                else if(line[i] == 'v')
-                    line[i] = '\v';
-                else
-                {
-                    // FIXME: Add better warning report for unknown escape sequence
-                    return Token();
-                }
-                continue;
-            }
-            if(line[i] != '\"')  // Skip everything except the end of the quote.
-                continue;
-            // Return the quoted String
-            string token = line.substr(found, i+1 - found);
-            line.erase(0, i+1);
-            token = token.substr(1, token.size()-2);
-            String* s = new String;
-            s->setValue(token);
-            s->literal = true;
-            return Token(s, token);
-        }
-        
-        if(found < 0)  // If we haven't found anything yet...
-        {
-            if(isWhitespace(line[i]))  // Keep skipping whitespace
-            {
-                foundWhitespace = true;
-                continue;
-            }
-            else  // We just found something
-            {
-                // Mark where it is and what it is.
-                found = i;
-                foundOper = isOperator(line[i]);
-                foundSep = isSeparator(line[i]);
-                foundAlpha = isAlpha(line[i]);
-                foundNumeric = isNumeric(line[i]);
-                foundQuote = (line[i] == '\"');
-                dot = (line[i] == '.');
-            }
-            if(i+1 >= line.size())  // If the line is ending, return what we have.
-            {
-                string token = line.substr(found, i+1 - found);
-                line.erase(0, i+1);
-                if(foundOper)  // Operator
-                {
-                    return Token(Token::OPERATOR, token);
-                }
-                if(foundSep)  // Separator
-                {
-                    return Token(Token::SEPARATOR, token);
-                }
-                if(foundAlpha || foundNumeric) // Variable
-                {
-                    return Token(getCorrectVariable(token), token);  // Can't be a function
-                }
-                if(foundQuote)  // A lone quote?  Error?
-                {
-                    
-                }
-                if(dot)  // A lone dot?  Error?
-                {
-                    
-                }
-                return Token();
-            }
-        }
-        else  // We found something earlier...
-        {
-            // Whitespace automatically ends the token
-            if(isWhitespace(line[i]))  // Return the thing we found
-            {
-                string token = line.substr(found, i - found);
-                line.erase(0, i);
-                if(foundOper)  // Operator
-                {
-                    return Token(Token::OPERATOR, token);
-                }
-                if(foundSep)  // Separator
-                {
-                    return Token(Token::SEPARATOR, token);
-                }
-                if(foundAlpha || foundNumeric) // Variable
-                {
-                    return Token(getCorrectVariable(token), token);  // Can't be a function. "var ()" is no good?
-                }
-                if(foundQuote)  // A lone quote?  Error?
-                {
-                    
-                }
-                if(dot)  // A lone dot?  Error?
-                {
-                    
-                }
-                return Token();
-            }
-            if(foundOper)  // We've been tracking an operator...  " + " or " == " or "b==a", etc.
-            {
-                // Check the dot, because it's special
-                if(line[found] == '.')  // We had found a dot at the beginning
-                {
-                    if(isAlpha(line[i]))  // Either a built-in function or an operator
-                    {
-                        if(foundWhitespace) // fn
-                        {
-                            // Start retrieving the whole token: " .thing"
-                            foundOper = false;
-                            dot = false;
-                            foundAlpha = true;
-                            UI_debug_pile("  Found a built-in function.\n");
-                            continue;
-                        }
-                        else // operator
-                        {
-                            // Return the dot operator: "thing.thing"
-                            string token = line.substr(found, i - found);  // Don't include this one
-                            line.erase(0, i);  // Don't erase this one
-                            return Token(Token::OPERATOR, token);
-                        }
-                    }
-                    else if(isNumeric(line[i+1])) // a leading decimal point
-                    {
-                        foundOper = false;
-                        dot = false;
-                        foundNumeric = true;
-                        continue;
-                    }
-                    else // Continuation operator "..." or an error...
-                    {
-                        if(line[i] == '.' && i+1 < line.size() && line[i+1] == '.')
-                        {
-                            string token = line.substr(found, i - found + 2);
-                            line.erase(0, i+2);
-                            return Token(Token::OPERATOR, token);
-                        }
-                        
-                        string token = line.substr(found, i - found + 1);
-                        line.erase(0, i+1);
-                        return Token();
-                    }
-                }
-                if(isDigraphOperator(line[i-1], line[i]))  // A digraph operator...  "==", ">=", "+=", etc.
-                {
-                    string token = line.substr(found, i - found + 1);
-                    line.erase(0, i+1);
-                    return Token(Token::OPERATOR, token);
-                }
-                // Hit something else
-                string token = line.substr(found, i - found); // Don't include this one
-                line.erase(0, i);  // Don't erase this one
-                return Token(Token::OPERATOR, token);
-            }
-            if(foundSep)  // We've been tracking a separator...
-            {
-                // Hit something else
-                string token = line.substr(found, i - found); // Don't include this one
-                line.erase(0, i);  // Don't erase this one
-                return Token(Token::SEPARATOR, token);
-            }
-            if(foundNumeric)
-            {
-                if(line[i] == '.')
-                {
-                    if(dot)
-                    {
-                        // Error, too many dots
-                    }
-                    else
-                        dot = true;
-                }
-                else if(!isNumeric(line[i])) // End of digits
-                {
-                    // Return the token
-                    string token = line.substr(found, i - found); // Don't include this one
-                    line.erase(0, i);  // Don't erase this one
-                    return Token(getCorrectVariable(token), token);  // Is a number, not a function
-                }
-            }
-            if(foundAlpha)  // Found a variable
-            {
-                if(!isAlphanumeric(line[i]))  // Hit something while tracking a variable
-                {
-                    bool isFn = (line[i] == '(');
-                    string token = line.substr(found, i - found); // Don't include this one
-                    line.erase(0, i);  // Don't erase this one
-                    return Token(getCorrectVariable(token, isFn), token);
-                }
-            }
-            if(i+1 >= line.size())  // The line is ending, return what we have.
-            {
-                string token = line.substr(found, i+1 - found);
-                line.erase(0, i+1);
-                if(foundOper)  // Operator
-                {
-                    return Token(Token::OPERATOR, token);
-                }
-                if(foundSep)  // Separator
-                {
-                    return Token(Token::SEPARATOR, token);
-                }
-                if(foundAlpha || foundNumeric) // Variable
-                {
-                    return Token(getCorrectVariable(token), token);  // Can't be a function
-                }
-                if(foundQuote)  // A lone quote?  Error?
-                {
-                    
-                }
-            }
-        }
-    }
-    return Token();
-}
-
-
-
-/*
-Breaks a raw line of text into whitespace-delimited tokens.
-
-Takes: string (line of text)
-Returns: list<Token> (separated tokens)
-*/
-list<Token> tokenize1(string& line, bool& continuation)
-{
-    list<Token> tokens;
-    Token tok;
-    #ifdef PILE_DEBUG_TOKENS
-        static int tokenNum = 1;
-    #endif
-    
-    continuation = false;
-    
-    bool start = true;
-    do
-    {
-        tok = nextToken1(line, start);
-        start = false;
-        #ifdef PILE_DEBUG_TOKENS
-            UI_debug_pile("Token %d: <%s> \"%s\" : \"%s\"\n", tokenNum, tok.getTypeString().c_str(), tok.getName().c_str(), tok.text.c_str());
-            tokenNum++;
-        #endif
-        if(tok.type != Token::NOT_A_TOKEN)
-        {
-            tokens.push_back(tok);
-        }
-    }
-    while(line.size() > 0 && tok.type != Token::NOT_A_TOKEN);
-    
-    // Check for the continuation operator at the end.
-    if(tokens.size() > 0)
-    {
-        list<Token>::iterator e = tokens.end();
-        e--;
-        if(e->type == Token::OPERATOR && e->oper == CONTINUATION)
-        {
-            continuation = true;
-            tokens.erase(e);
-        }
-    }
-    
-    return tokens;
-}
 
 
 
@@ -759,6 +307,166 @@ string getTypeString(TypeEnum type)
     }
 }
 
+
+Variable* equals(Variable* A, Variable* B)
+{
+    TypeEnum a = A->getType();
+    TypeEnum b = B->getType();
+    
+    bool mismatch = false;
+    if(a == STRING)
+    {
+        if(b != STRING)
+            mismatch = true;
+        else
+        {
+            String* C = static_cast<String*>(A);
+            String* D = static_cast<String*>(B);
+            return new Bool(C->getValue() == D->getValue());
+        }
+    }
+    else if(a == INT)
+    {
+        if(b != BOOL && b != INT && b != FLOAT)
+            mismatch = true;
+        else
+        {
+            Int* C = static_cast<Int*>(A);
+            if(b == BOOL)
+            {
+                Bool* D = static_cast<Bool*>(B);
+                return new Bool(C->getValue() == D->getValue());
+            }
+            else if(b == INT)
+            {
+                Int* D = static_cast<Int*>(B);
+                return new Bool(C->getValue() == D->getValue());
+            }
+            else
+            {
+                Float* D = static_cast<Float*>(B);
+                return new Bool(C->getValue() == D->getValue());
+            }
+        }
+    }
+    else if(a == FLOAT)
+    {
+        if(b != BOOL && b != INT && b != FLOAT)
+            mismatch = true;
+        else
+        {
+            Float* C = static_cast<Float*>(A);
+            if(b == BOOL)
+            {
+                Bool* D = static_cast<Bool*>(B);
+                return new Bool(C->getValue() == D->getValue());
+            }
+            else if(b == INT)
+            {
+                Int* D = static_cast<Int*>(B);
+                return new Bool(C->getValue() == D->getValue());
+            }
+            else
+            {
+                Float* D = static_cast<Float*>(B);
+                return new Bool(C->getValue() == D->getValue());
+            }
+        }
+    }
+    else if(a == BOOL)
+    {
+        if(b != BOOL && b != INT && b != FLOAT)
+            mismatch = true;
+        else
+        {
+            Bool* C = static_cast<Bool*>(A);
+            if(b == BOOL)
+            {
+                Bool* D = static_cast<Bool*>(B);
+                return new Bool(C->getValue() == D->getValue());
+            }
+            else if(b == INT)
+            {
+                Int* D = static_cast<Int*>(B);
+                return new Bool(C->getValue() == D->getValue());
+            }
+            else
+            {
+                Float* D = static_cast<Float*>(B);
+                return new Bool(C->getValue() == D->getValue());
+            }
+        }
+    }
+    else if(a == MACRO)
+    {
+        if(b != MACRO)
+            mismatch = true;
+        else
+        {
+            Macro* C = static_cast<Macro*>(A);
+            Macro* D = static_cast<Macro*>(B);
+            return new Bool(C->getValue() == D->getValue());
+        }
+    }
+    else if(a == ARRAY)
+    {
+        if(b != ARRAY)
+            mismatch = true;
+        else
+        {
+            Array* C = static_cast<Array*>(A);
+            Array* D = static_cast<Array*>(B);
+            a = C->getValueType();
+            b = C->getValueType();
+            if(a != b)
+            {
+                interpreter.error("Error: Types do not match in assignment: Array<%s> vs Array<%s>\n", C->getValueTypeString().c_str(), D->getValueTypeString().c_str());
+                return A;
+            }
+                return new Bool(C->getValue() == D->getValue());
+        }
+    }
+    else if(a == LIST)
+    {
+        if(b != LIST)
+            mismatch = true;
+        else
+        {
+            List* C = static_cast<List*>(A);
+            List* D = static_cast<List*>(B);
+            return new Bool(C->getValue() == D->getValue());
+        }
+    }
+    else if(a == FUNCTION)
+    {
+        if(b != FUNCTION)
+            mismatch = true;
+        else
+        {
+            Function* C = static_cast<Function*>(A);
+            Function* D = static_cast<Function*>(B);
+            return new Bool(C->getValue() == D->getValue());
+        }
+    }
+    else if(a == PROCEDURE)
+    {
+        if(b != PROCEDURE)
+            mismatch = true;
+        else
+        {
+            Procedure* C = static_cast<Procedure*>(A);
+            Procedure* D = static_cast<Procedure*>(B);
+            return new Bool(C->getValue() == D->getValue());
+        }
+    }
+    
+    //if(mismatch)
+    {
+        interpreter.error("Error: Types do not match in assignment: %s vs %s\n", A->getTypeString().c_str(), B->getTypeString().c_str());
+        return A;
+    }
+    return A;
+}
 
 
 Variable* assign(Variable* A, Variable* B)
@@ -1502,728 +1210,6 @@ Variable* Interpreter::getArrayLiteral(list<Token>& tokens, list<Token>::iterato
 }
 
 
-// Evaluates the tokens for a single line.
-Token Interpreter::evalTokens(list<Token>& tokens, bool beginning)
-{
-    enum StateEnum{BEGIN, READY, VAR_DECL, VAR, VAR_OP, VAR_OP_VAR};
-    StateEnum state;
-    if(beginning)
-        state = BEGIN;
-    else
-        state = READY;
-    UI_debug_pile("Evaluating tokens: ");
-    for(list<Token>::iterator e = tokens.begin(); e != tokens.end(); e++)
-    {
-        if(e->type == Token::OPERATOR)
-            UI_debug_pile("['%s' '%s'] ", "Operator", getOperatorString(e->oper).c_str());
-        else if(e->var != NULL)
-            UI_debug_pile("['%s' (%s)] ", e->var->getTypeString().c_str(), e->var->getValueString().c_str());
-    }
-    UI_debug_pile("\n");
-    TypeEnum newType = NOT_A_TYPE;  // Used for Variable declarations
-    Token firstVar;
-    Token firstOp;
-    Token secondVar;
-    vector<list<Token> > stack;  // Used to hold tokens when considering precedence.
-    stack.push_back(list<Token>());
-    // The nested Vector is for parenthesized expressions.
-    bool closingExpression = false;  // When we hit the end of the list or a close paren, 
-                                     // then we use this.
-
-    // Find a Variable, find an operator, find a Variable, find an operator.
-    // If the second operator has lower (earlier) precedence, then push the
-    // first Variable and operator and keep going.  If the first operator has
-    // precedence, then evaluate it.  If the two have the same precedence and
-    // the associativity is right-to-left, then push the first.
-    // When an open-parenthesis is hit, push the first Variable and operator, then
-    // push a new vector<> to the stack.  When a close-parenthesis is hit,
-    // evaluate the top vector, then pop it.
-    for (list<Token>::iterator e = tokens.begin(); e != tokens.end();)
-    {
-        if(e->type == Token::OPERATOR)
-            UI_debug_pile(" Token name: %s\n", getOperatorString(e->oper).c_str());
-        else
-            UI_debug_pile(" Token name: %s\n", e->text.c_str());
-        
-        if (state == BEGIN)
-        {
-            if (e->type == Token::VARIABLE)
-            {
-                // Declaring new variables...
-                // "TypeName variableName"
-                //  (new type) (VOID)
-                if (e->var->getType() == TYPENAME) // Should probably be an operator...
-                {
-                    TypeName* t = static_cast<TypeName*>(e->var);
-                    newType = t->getValue();
-                    UI_debug_pile(" Found a type name\n");
-                    state = VAR_DECL;
-                }
-                else if (e->var->getType() != VOID && e->var->getType() != NOT_A_TYPE)
-                {
-                    firstVar = *e;
-                    state = VAR;
-                }
-                else
-                {
-                    error("Syntax Error: Variable '%s' is not declared.\n", e->text.c_str());
-                }
-            }
-            else if(e->type == Token::OPERATOR)
-            {
-                if(e->oper == SUBTRACT)
-                {
-                    
-                }
-                else if(e->oper == NOT)
-                {
-                    
-                }
-                else
-                {
-                    error("Syntax Error: Unexpected binary operator at the beginning of a line.\n");
-                }
-            }
-            else if(e->type == Token::SEPARATOR)
-            {
-                if(e->sep == OPEN_PARENTHESIS)
-                {
-                    // Move elements between the parentheses into a new list to
-                    // be evaluated.
-                    list<Token> tok2;
-                    e++;
-                    list<Token>::iterator f = e;
-                    int num = 1;
-                    while(e != tokens.end() && num > 0)
-                    {
-                        if(e->type == Token::SEPARATOR)
-                        {
-                            if(e->sep == OPEN_PARENTHESIS)
-                                num++;
-                            else if(e->sep == CLOSE_PARENTHESIS)
-                                num--;
-                        }
-                        if(num > 0)
-                            e++;
-                    }
-                    tok2.splice(tok2.begin(), tokens, f, e);
-                    firstVar = evalTokens(tok2, false);
-                    if(firstVar.type == Token::NOT_A_TOKEN)
-                    {
-                        return firstVar;
-                    }
-                    state = VAR;
-                }
-                else if(e->sep == CLOSE_PARENTHESIS)
-                {
-                    error("Syntax Error: Unexpected closing parenthesis at the beginning of a line.\n");
-                }
-                else if(e->sep == OPEN_SQUARE_BRACKET)
-                {
-                    firstVar = Token(getArrayLiteral(tokens, e), "");
-                    if(firstVar.var != NULL)
-                    {
-                        state = VAR;
-                    }
-                }
-                else
-                {
-                    error("Syntax Error: Unexpected separator at the beginning of a line.\n");
-                }
-            }
-            else
-            {
-                error("Syntax Error: Unexpected token at the beginning of a line.\n");
-            }
-        }
-        else if(state == READY)
-        {
-            if (e->type == Token::VARIABLE)
-            {
-                if (e->var->getType() == TYPENAME)
-                {
-                    error("Syntax Error: Type '%s' can not be declared here.\n", e->text.c_str());
-                }
-                else if (e->var->getType() != VOID && e->var->getType() != NOT_A_TYPE)
-                {
-                    firstVar = *e;
-                    state = VAR;
-                }
-                else
-                {
-                    error("Syntax Error: Variable '%s' is not declared.\n", e->text.c_str());
-                }
-            }
-            else if(e->type == Token::OPERATOR)
-            {
-                if(e->oper == NEGATE)
-                {
-                    
-                }
-                else if(e->oper == NOT)
-                {
-                    
-                }
-                else
-                {
-                    error("Syntax Error: Unexpected binary operator at the beginning of a line.\n");
-                }
-            }
-            else if(e->type == Token::SEPARATOR)
-            {
-                if(e->sep == OPEN_PARENTHESIS)
-                {
-                    // Move elements between the parentheses into a new list to
-                    // be evaluated.
-                    list<Token> tok2;
-                    e++;
-                    list<Token>::iterator f = e;
-                    int num = 1;
-                    while(e != tokens.end() && num > 0)
-                    {
-                        if(e->type == Token::SEPARATOR)
-                        {
-                            if(e->sep == OPEN_PARENTHESIS)
-                                num++;
-                            else if(e->sep == CLOSE_PARENTHESIS)
-                                num--;
-                        }
-                        if(num > 0)
-                            e++;
-                    }
-                    tok2.splice(tok2.begin(), tokens, f, e);
-                    firstVar = evalTokens(tok2, false);
-                    if(firstVar.type == Token::NOT_A_TOKEN)
-                    {
-                        return firstVar;
-                    }
-                    state = VAR;
-                }
-                else if(e->sep == CLOSE_PARENTHESIS)
-                {
-                    error("Syntax Error: Unexpected closing parenthesis at the beginning of a line.\n");
-                }
-                else if(e->sep == OPEN_SQUARE_BRACKET)
-                {
-                    firstVar = Token(getArrayLiteral(tokens, e), "");
-                    if(firstVar.var != NULL)
-                    {
-                        state = VAR;
-                    }
-                }
-                else
-                {
-                    error("Syntax Error: Unexpected separator at the beginning of a line.\n");
-                }
-            }
-            else
-            {
-                error("Syntax Error: Unexpected token at the beginning of a line.\n");
-            }
-        }
-        else if (state == VAR_DECL)
-        {
-            if (e->type == Token::VARIABLE)
-            {
-                // Declaring new variables...
-                if (e->var->getType() == VOID)
-                {
-                    UI_debug_pile(" Adding a variable\n");
-                    Variable* v = NULL;
-                    // Set the new variable
-                    if (newType == STRING)
-                        v = new String;
-                    else if (newType == BOOL)
-                        v = new Bool;
-                    else if (newType == INT)
-                        v = new Int;
-                    else if (newType == FLOAT)
-                        v = new Float;
-                    else if (newType == MACRO)
-                        v = new Macro;
-                    else if (newType == ARRAY)
-                        v = new Array;
-                    else if (newType == LIST)
-                        v = new List;
-                    else if (newType == FUNCTION)
-                        v = new Function;
-                    else if (newType == PROCEDURE)
-                        v = new Procedure;
-                    else
-                    {
-                        error("Error: Unknown type for variable '%s'\n", e->text.c_str());
-                    }
-                    addVar(e->text, v);
-                    delete e->var;
-                    e->var = v;
-
-                    newType = NOT_A_TYPE;
-                    firstVar = *e;
-                    state = VAR;
-                }
-                else  // Bad syntax
-                {
-                    error("Error: Multiple declarations of variable '%s'\n", e->text.c_str());
-                }
-            }
-            else
-            {
-                error("Syntax Error: Unexpected token.  Expected a variable to be declared.\n");
-            }
-        }
-        else if (state == VAR)
-        {
-            if (e->type == Token::SEPARATOR)
-            {
-                if(e->sep == OPEN_PARENTHESIS)
-                {
-                    // VAR() -> Function call!
-                    
-                    // Find the argument tokens "arg1, arg2, arg3, ..."
-                    
-                    // Put all the tokens between matching parentheses into a new list
-                    list<Token> tok2;
-                    e++;
-                    list<Token>::iterator f = e;
-                    int num = 1;
-                    while(e != tokens.end() && num > 0)
-                    {
-                        if(e->type == Token::SEPARATOR)
-                        {
-                            if(e->sep == OPEN_PARENTHESIS)
-                                num++;
-                            else if(e->sep == CLOSE_PARENTHESIS)
-                                num--;
-                        }
-                        if(num > 0)
-                            e++;
-                    }
-                    tok2.splice(tok2.begin(), tokens, f, e);
-                    
-                    // Push the function stack
-                    stack.push_back(list<Token>());
-                    
-                    // Call the function
-                    if(firstVar.var->getType() == FUNCTION)
-                        firstVar.var = callFn(static_cast<Function*>(firstVar.var), tok2);
-                    
-                    // Pop the outer stack
-                    vector<list<Token> >::iterator g = stack.end();
-                    g--;
-                    stack.erase(g);
-                    
-                    if(firstVar.type == Token::NOT_A_TOKEN)
-                    {
-                        return firstVar;
-                    }
-                }
-                else if(e->sep == CLOSE_PARENTHESIS)
-                {
-                    error("Syntax Error: Unexpected closing parenthesis.\n");
-                }
-                else if(e->sep == OPEN_SQUARE_BRACKET)
-                {
-                    // FIXME: Array indexing
-                    error("Syntax Error: Unexpected separator (FIXME: ARRAY INDEXING).\n");
-                }
-                else
-                {
-                    error("Syntax Error: Unexpected separator.\n");
-                }
-            }
-            else if(e->type == Token::OPERATOR)
-            {
-                firstOp = *e;
-                state = VAR_OP;
-            }
-            else
-            {
-                error("Syntax Error1: Unexpected token.  Expected an operator or parenthesis.\n");
-            }
-        }
-        else if (state == VAR_OP)
-        {
-            if (e->type == Token::VARIABLE)
-            {
-                secondVar = *e;
-                state = VAR_OP_VAR;
-            }
-            else if(e->type == Token::SEPARATOR)
-            {
-                if(e->sep == OPEN_PARENTHESIS)
-                {
-                    // Move elements between the parentheses into a new list to
-                    // be evaluated.
-                    list<Token> tok2;
-                    e++;
-                    list<Token>::iterator f = e;
-                    int num = 1;
-                    while(e != tokens.end() && num > 0)
-                    {
-                        if(e->type == Token::SEPARATOR)
-                        {
-                            if(e->sep == OPEN_PARENTHESIS)
-                                num++;
-                            else if(e->sep == CLOSE_PARENTHESIS)
-                                num--;
-                        }
-                        if(num > 0)
-                            e++;
-                    }
-                    tok2.splice(tok2.begin(), tokens, f, e);
-                    secondVar = evalTokens(tok2, false);
-                    if(secondVar.type == Token::NOT_A_TOKEN)
-                    {
-                        return secondVar;
-                    }
-                    state = VAR_OP_VAR;
-                }
-                else if(e->sep == CLOSE_PARENTHESIS)
-                {
-                    error("Syntax Error: Unexpected closing parenthesis after an operator.  Ignoring the operator...\n");
-                    state = VAR;
-                }
-                else if(e->sep == OPEN_SQUARE_BRACKET)
-                {
-                    secondVar = Token(getArrayLiteral(tokens, e), "");
-                    if(secondVar.var != NULL)
-                    {
-                        state = VAR_OP_VAR;
-                        Array* arr = static_cast<Array*>(secondVar.var);
-                        for(unsigned int i = 0; i < arr->getValue().size(); i++)
-                        {
-                            UI_debug_pile("    Element: %s\n", arr->getValue()[i]->getValueString().c_str());
-                        }
-                    }
-                }
-                else
-                    error("Syntax Error: Unexpected token.  Expected a variable or parenthesis.\n");
-            }
-            else
-                error("Syntax Error: Unexpected token.  Expected a variable or parenthesis.\n");
-        }
-        else if(state == VAR_OP_VAR)
-        {
-            if (e->type == Token::SEPARATOR)
-            {
-                if(e->sep == OPEN_PARENTHESIS)
-                {
-                    // VAR() -> Function call!
-                    
-                    // Find the argument tokens "arg1, arg2, arg3"
-                    
-                    // Put all the tokens between matching parentheses into a new list
-                    list<Token> tok2;
-                    e++;
-                    list<Token>::iterator f = e;
-                    int num = 1;
-                    while(e != tokens.end() && num > 0)
-                    {
-                        if(e->type == Token::SEPARATOR)
-                        {
-                            if(e->sep == OPEN_PARENTHESIS)
-                                num++;
-                            else if(e->sep == CLOSE_PARENTHESIS)
-                                num--;
-                        }
-                        if(num > 0)
-                            e++;
-                    }
-                    tok2.splice(tok2.begin(), tokens, f, e);
-                    
-                    // Push the function stack
-                    stack.push_back(list<Token>());
-                    
-                    // Call the function
-                    if(secondVar.var->getType() == FUNCTION)
-                        secondVar.var = callFn(static_cast<Function*>(secondVar.var), tok2);
-                    
-                    // Pop the outer stack
-                    vector<list<Token> >::iterator g = stack.end();
-                    g--;
-                    stack.erase(g);
-                    
-                    if(secondVar.type == Token::NOT_A_TOKEN)
-                    {
-                        return secondVar;
-                    }
-                }
-                else if(e->sep == CLOSE_PARENTHESIS)
-                {
-                    error("Syntax Error: Unexpected closing parenthesis.\n");
-                }
-                else
-                    error("Syntax Error: Unexpected separator.\n");
-            }
-            else if(e->type == Token::OPERATOR)
-            {
-                // Compare operators
-                if(e->precedence < firstOp.precedence // New one goes earlier
-                   || (e->precedence == firstOp.precedence && firstOp.associativeLeftToRight == false))  // Right-to-left assoc.
-                {
-                    // Push our old stuff
-                    stack[0].push_front(firstVar);
-                    stack[0].push_front(firstOp);
-                    firstVar = secondVar;
-                    firstOp = *e;
-                    state = VAR_OP;
-                }
-                else  // Evaluate the first operator
-                {
-                    firstVar = Token(evaluateExpression(firstVar.var, firstOp.oper, secondVar.var), "");
-                    firstOp = *e;
-                    state = VAR_OP;
-                }
-            }
-            else
-            {
-                error("Syntax Error2: Unexpected token.  Expected an operator or parenthesis.\n");
-            }
-        }
-        
-        
-        // Get next token...
-        // This will also skip the closing parenthesis if it's there.
-        if(e != tokens.end())
-            e++;
-        
-        if(e == tokens.end())
-        {
-            // Does this happen in parentheses?  No...  I should push the parenthesis onto the new stack.
-            if(stack[0].size() == 0)
-            {
-                // Wrap up the collected tokens
-                if(state == VAR_OP_VAR)
-                {
-                    firstVar = Token(evaluateExpression(firstVar.var, firstOp.oper, secondVar.var), "");
-                }
-                else if(state == VAR)
-                {
-                    // Just a variable left...  We should be done.
-                }
-                else if(state != BEGIN)
-                {
-                    error("Error: Malformed line\n");
-                }
-                
-                
-                // All done
-                break;
-            }
-            
-            // Push everything onto the stack
-            if(state == VAR || state == VAR_OP || state == VAR_OP_VAR)
-            {
-                stack[0].push_front(firstVar);
-                if(state == VAR_OP || state == VAR_OP_VAR)
-                {
-                    stack[0].push_front(firstOp);
-                    if(state == VAR_OP_VAR)
-                    {
-                        stack[0].push_front(secondVar);
-                    }
-                }
-            }
-            
-            closingExpression = true;
-            state = READY;
-        }
-        
-        
-        if(closingExpression)
-        {
-            UI_debug_pile("Closing expression...\n");
-            // Loop over the stack until it's empty
-            while(stack[0].size() > 0)
-            {
-                UI_debug_pile("Looping back...\n");
-                // Pop the inner stack (from the front)
-                Token prev = *(stack[0].begin());
-                stack[0].erase(stack[0].begin());
-                
-                
-                if(prev.type == Token::OPERATOR)
-                    UI_debug_pile(" Retrieved: Operator '%s'\n", getOperatorString(prev.oper).c_str());
-                else if(prev.type == Token::SEPARATOR)
-                    UI_debug_pile(" Retrieved: Separator '%s'\n", getSeparatorString(prev.sep).c_str());
-                else
-                    UI_debug_pile(" Retrieved: %s\n", prev.text.c_str());
-                /*if(prev->type == Token::OPERATOR && prev->oper == OPEN_PARENTHESIS)
-                {
-                    // Pop the outer stack (from the back)
-                    if(stack.size() > 1)
-                    {
-                        vector<list<Token*> >::iterator s = stack.end();
-                        s--;
-                        stack.erase(s);
-                    }
-                    else
-                    {
-                        // Error...  but really shouldn't get here.
-                    }
-                    closingExpression = false;
-                    continue;
-                }*/
-                if(state == READY)
-                {
-                    if(prev.type == Token::OPERATOR)
-                    {
-                        // This shouldn't happen
-                        error("Error: Unexpected operator when evaluating expression.\n");
-                    }
-                    else if(prev.type == Token::SEPARATOR)
-                    {
-                        // This shouldn't happen
-                        error("Error: Unexpected separator when evaluating expression.\n");
-                    }
-                    else
-                    {
-                        secondVar = prev;
-                        state = VAR;
-                    }
-                }
-                else if (state == VAR)
-                {
-                    if (prev.type == Token::SEPARATOR)
-                    {
-                        /*if(prev->sep == OPEN_PARENTHESIS)
-                        {
-                            // Function call goes here...
-                            
-                            stack[0].push_front(firstVar);
-                            stack[0].push_front(new Token("*"));  // Implied multiplication
-                            stack.push_back(list<Token*>());
-                            state = READY;
-                        }
-                        else if(prev->sep == CLOSE_PARENTHESIS)
-                        {
-                            if(stack.size() > 1)
-                            {
-                                closingExpression = true;
-                            }
-                            else
-                            {
-                                error("Syntax Error: Unexpected closing parenthesis.\n");
-                            }
-                        }
-                        else
-                        {
-                            firstOp = prev;
-                            state = VAR_OP;
-                        }*/
-                        
-                        error("Syntax Error3: Unexpected separator.  Expected an operator or parenthesis.\n");
-                    }
-                    else if(prev.type == Token::OPERATOR)
-                    {
-                        firstOp = prev;
-                        state = VAR_OP;
-                    }
-                    else
-                    {
-                        error("Syntax Error3: Unexpected token.  Expected an operator or parenthesis.\n");
-                    }
-                }
-                else if (state == VAR_OP)
-                {
-                    if (prev.type == Token::VARIABLE)
-                    {
-                        secondVar = Token(evaluateExpression(prev.var, firstOp.oper, secondVar.var), "<temp>");
-
-                        state = VAR;
-                    }
-                    else
-                    {
-                        /*if(e->type == Token::SEPARATOR && e->sep == OPEN_PARENTHESIS)
-                        {
-                            stack[0].push_front(firstVar);
-                            stack[0].push_front(firstOp);
-                            stack.push_back(list<Token*>());
-                            state = READY;
-                        }
-                        if(e->sep == Token::OPERATOR && e->sep == CLOSE_PARENTHESIS)
-                        {
-                            closingExpression = true;
-                            
-                            error("Syntax Error: Unexpected closing parenthesis after an operator.  Ignoring the operator...\n");
-                            state = VAR;
-                        }
-                        else*/
-                            error("Syntax Error: Unexpected token.  Expected a variable or parenthesis.\n");
-                    }
-                }
-            }
-            
-            // All done.  Now we make sure the return is alright.
-            if(state == READY)
-            {
-                // e.g. "()"
-                error("Error: Empty expression.  Using '1' instead.\n");
-                secondVar = Token(new Int(1), "<temp>");
-            }
-            else if(state == VAR)
-            {
-                // e.g. (2)
-                // Nothing to do here.
-            }
-            else if(state == VAR_OP)
-            {
-                // e.g. "(+ 1)"
-                error("Error: Expression begins with a binary operator.  Ignoring the operator...\n");
-            }
-            
-            
-            if(stack.size() > 1)
-            {
-                // Pop the outer stack and keep going
-                vector<list<Token> >::iterator f = stack.end();
-                f--;
-                stack.erase(f);
-                closingExpression = false;
-                // Go back to checking new tokens
-                // Everything had been pushed, so it could look like:
-                // [4 + 3 *](returnValue)[+ 1 + 2]
-                // [] are stacks or lists, () is the expression
-                // I'll need to get the 3 * back so I can proceed.
-                // secondVar is already set to the returnValue.
-                
-                if(stack[0].size() > 1)
-                {
-                    firstOp = *(stack[0].begin());
-                    stack[0].erase(stack[0].begin());
-                    firstVar = *(stack[0].begin());
-                    stack[0].erase(stack[0].begin());
-                    state = VAR_OP_VAR;
-                }
-                else
-                {
-                    // Either something is wrong or there was a nested expression at the beginning.
-                    firstVar = secondVar;
-                    state = VAR;
-                }
-            }
-            else
-            {
-                // This was the last stack, so we're done!
-                // tokens.size() should be 0
-                break;
-            }
-        }
-        
-    }
-    
-    UI_debug_pile("Done evaluation");
-    if(firstVar.type == Token::OPERATOR)
-        UI_debug_pile(": '%s' (%s)", "Operator", getOperatorString(firstVar.oper).c_str());
-    else if(firstVar.type == Token::SEPARATOR)
-        UI_debug_pile(": '%s' (%s)", "Separator", getSeparatorString(firstVar.sep).c_str());
-    else if(firstVar.var != NULL)
-        UI_debug_pile(": '%s' (%s)", firstVar.var->getTypeString().c_str(), firstVar.var->getValueString().c_str());
-    else
-        UI_debug_pile(": NULL var");
-    UI_debug_pile("\n");
-    return firstVar;
-}
 
 void fn_print(Variable* arg)
 {
