@@ -3,8 +3,10 @@
 #include <list>
 using namespace std;
 
+
+
 // Evaluates the tokens for a single line.
-Token Interpreter::evalTokens(list<Token>& tokens, bool beginning)
+Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueIf, bool wasFalseIf, bool subExpression)
 {
     enum StateEnum{BEGIN, READY, VAR_DECL, VAR, VAR_OP, VAR_OP_VAR};
     StateEnum state;
@@ -46,9 +48,67 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning)
         else
             UI_debug_pile(" Token name: %s\n", e->text.c_str());
         
-        if (state == BEGIN)
+        if(currentScope().state == Scope::SKIP_IF)
         {
-            if (e->type == Token::VARIABLE)
+            // If there's an open bracket, we would change to multi-line scope.
+            // FIXME: Doesn't handle matching brackets to ignore nested bracket sets
+            // If there's a close bracket in multi-line mode, we end the skipping
+            
+            bool ignoreIt = (e->type != Token::SEPARATOR || (e->sep != OPEN_CURLY_BRACKET && e->sep != CLOSE_CURLY_BRACKET));
+            
+            if(ignoreIt)
+            {
+                // If it's a single line, then pop the scope
+                if(currentScope().singleLine)
+                {
+                    popEnv();
+                    return Token(Token::KEYWORD, "false if");
+                }
+                // FIXME: Doesn't see a bracket on a non-empty line
+                // Skip the line
+                return Token();
+            }
+            else
+            {
+                if(e->sep == OPEN_CURLY_BRACKET)
+                {
+                    if(currentScope().singleLine)
+                    {
+                        // Change scope to multi-line
+                        currentScope().singleLine = false;
+                    }
+                    else
+                    {
+                        // FIXME: Increment count of the open brackets
+                    }
+                    //state = BEGIN;
+                    // FIXME: Doesn't see anything else on a bracket line
+                    // Skip the rest of the line
+                    return Token();
+                }
+                else if(e->sep == CLOSE_CURLY_BRACKET)
+                {
+                    if(currentScope().singleLine)
+                    {
+                        error("Syntax Error: Unexpected close bracket in single-line 'if' statement.\n");
+                    }
+                    else
+                    {
+                        // FIXME: Decrement count of the open brackets
+                        popEnv();
+                        return Token(Token::KEYWORD, "false if");
+                    }
+                    //state = BEGIN;
+                    // FIXME: Doesn't see anything else on a bracket line
+                    // Skip the rest of the line
+                    return Token();
+                }
+            }
+        }
+        
+        if (e->type == Token::VARIABLE)
+        {
+            if (state == BEGIN)
             {
                 // Declaring new variables...
                 // "TypeName variableName"
@@ -70,132 +130,7 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning)
                     error("Syntax Error: Variable '%s' is not declared.\n", e->text.c_str());
                 }
             }
-            else if(e->type == Token::OPERATOR)
-            {
-                if(e->oper == SUBTRACT)
-                {
-                    
-                }
-                else if(e->oper == NOT)
-                {
-                    
-                }
-                else
-                {
-                    error("Syntax Error: Unexpected binary operator at the beginning of a line.\n");
-                }
-            }
-            else if(e->type == Token::SEPARATOR)
-            {
-                if(e->sep == OPEN_PARENTHESIS)
-                {
-                    // Move elements between the parentheses into a new list to
-                    // be evaluated.
-                    list<Token> tok2;
-                    e++;
-                    list<Token>::iterator f = e;
-                    int num = 1;
-                    while(e != tokens.end() && num > 0)
-                    {
-                        if(e->type == Token::SEPARATOR)
-                        {
-                            if(e->sep == OPEN_PARENTHESIS)
-                                num++;
-                            else if(e->sep == CLOSE_PARENTHESIS)
-                                num--;
-                        }
-                        if(num > 0)
-                            e++;
-                    }
-                    tok2.splice(tok2.begin(), tokens, f, e);
-                    firstVar = evalTokens(tok2, false);
-                    if(firstVar.type == Token::NOT_A_TOKEN)
-                    {
-                        return firstVar;
-                    }
-                    state = VAR;
-                }
-                else if(e->sep == CLOSE_PARENTHESIS)
-                {
-                    error("Syntax Error: Unexpected closing parenthesis at the beginning of a line.\n");
-                }
-                else if(e->sep == OPEN_SQUARE_BRACKET)
-                {
-                    firstVar = Token(getArrayLiteral(tokens, e), "");
-                    if(firstVar.var != NULL)
-                    {
-                        state = VAR;
-                    }
-                }
-                else
-                {
-                    error("Syntax Error: Unexpected separator at the beginning of a line.\n");
-                }
-            }
-            else if(e->type == Token::KEYWORD)
-            {
-                if(e->keyword == KW_IF)
-                {
-                    e++;
-                    if(e == tokens.end())
-                    {
-                        error("Syntax Error: Unexpected end of line after 'if'.\n");
-                        return Token();
-                    }
-                    if(e->type != Token::SEPARATOR || e->sep != OPEN_PARENTHESIS)
-                    {
-                        error("Syntax Error: Unexpected token after 'if'.\n");
-                        return Token();
-                    }
-                    
-                    list<Token> inside;
-                    e++;
-                    int paren = 1;
-                    while(e != tokens.end() && paren > 0)
-                    {
-                        if(e->type == Token::SEPARATOR)
-                        {
-                            if(e->sep == OPEN_PARENTHESIS)
-                                paren++;
-                            else if(e->sep == CLOSE_PARENTHESIS)
-                                paren--;
-                        }
-                        
-                        if(paren > 0)
-                            inside.push_back(*e);
-                        e++;
-                    }
-                    
-                    Token in = evalTokens(inside, false);
-                    
-                    if(in.type == Token::VARIABLE && in.var != NULL)
-                    {
-                        // FIXME: Accept other types too!
-                        if(in.var->getType() == BOOL)
-                        {
-                            if(static_cast<Bool*>(in.var)->getValue())
-                                return Token(Token::KEYWORD, "if");
-                            else
-                                return Token(Token::KEYWORD, "false if");
-                        }
-                    }
-                    
-                    error("Syntax Error: Something's wrong with your 'if' statement.\n");
-                    return Token();
-                }
-                else
-                {
-                    error("Syntax Error: Unexpected keyword at the beginning of a line.\n");
-                }
-            }
-            else
-            {
-                error("Syntax Error: Unexpected token at the beginning of a line.\n");
-            }
-        }
-        else if(state == READY)
-        {
-            if (e->type == Token::VARIABLE)
+            else if(state == READY)
             {
                 if (e->var->getType() == TYPENAME)
                 {
@@ -211,85 +146,7 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning)
                     error("Syntax Error: Variable '%s' is not declared.\n", e->text.c_str());
                 }
             }
-            else if(e->type == Token::OPERATOR)
-            {
-                if(e->oper == NEGATE)
-                {
-                    
-                }
-                else if(e->oper == NOT)
-                {
-                    
-                }
-                else
-                {
-                    error("Syntax Error: Unexpected binary operator at the beginning of an expression.\n");
-                }
-            }
-            else if(e->type == Token::SEPARATOR)
-            {
-                if(e->sep == OPEN_PARENTHESIS)
-                {
-                    // Move elements between the parentheses into a new list to
-                    // be evaluated.
-                    list<Token> tok2;
-                    e++;
-                    list<Token>::iterator f = e;
-                    int num = 1;
-                    while(e != tokens.end() && num > 0)
-                    {
-                        if(e->type == Token::SEPARATOR)
-                        {
-                            if(e->sep == OPEN_PARENTHESIS)
-                                num++;
-                            else if(e->sep == CLOSE_PARENTHESIS)
-                                num--;
-                        }
-                        if(num > 0)
-                            e++;
-                    }
-                    tok2.splice(tok2.begin(), tokens, f, e);
-                    firstVar = evalTokens(tok2, false);
-                    if(firstVar.type == Token::NOT_A_TOKEN)
-                    {
-                        return firstVar;
-                    }
-                    state = VAR;
-                }
-                else if(e->sep == CLOSE_PARENTHESIS)
-                {
-                    error("Syntax Error: Unexpected closing parenthesis at the beginning of an expression.\n");
-                }
-                else if(e->sep == OPEN_SQUARE_BRACKET)
-                {
-                    firstVar = Token(getArrayLiteral(tokens, e), "");
-                    if(firstVar.var != NULL)
-                    {
-                        state = VAR;
-                    }
-                }
-                else
-                {
-                    error("Syntax Error: Unexpected separator at the beginning of an expression.\n");
-                }
-            }
-            else if(e->type == Token::KEYWORD)
-            {
-                if(false)  // Put keywords here that can be used at the start of any expression
-                    ;
-                else
-                {
-                    error("Syntax Error: Unexpected keyword at the beginning of an expression.\n");
-                }
-            }
-            else
-            {
-                error("Syntax Error: Unexpected token at the beginning of an expression.\n");
-            }
-        }
-        else if (state == VAR_DECL)
-        {
-            if (e->type == Token::VARIABLE)
+            else if (state == VAR_DECL)
             {
                 // Declaring new variables...
                 if (e->var->getType() == VOID)
@@ -332,14 +189,207 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning)
                     error("Error: Multiple declarations of variable '%s'\n", e->text.c_str());
                 }
             }
-            else
+            else if (state == VAR)
             {
-                error("Syntax Error: Unexpected token.  Expected a variable to be declared.\n");
+                error("Syntax Error1: Unexpected variable.  Expected an operator or parenthesis.\n");
+            }
+            else if (state == VAR_OP)
+            {
+                secondVar = *e;
+                state = VAR_OP_VAR;
+            }
+            else if(state == VAR_OP_VAR)
+            {
+                error("Syntax Error2: Unexpected variable.  Expected an operator or parenthesis.\n");
             }
         }
-        else if (state == VAR)
+        else if(e->type == Token::OPERATOR)
         {
-            if (e->type == Token::SEPARATOR)
+            if (state == BEGIN)
+            {
+                if(e->oper == SUBTRACT)
+                {
+                    
+                }
+                else if(e->oper == NOT)
+                {
+                    
+                }
+                else
+                {
+                    error("Syntax Error: Unexpected binary operator at the beginning of a line.\n");
+                }
+            }
+            else if(state == READY)
+            {
+                if(e->oper == NEGATE)
+                {
+                    
+                }
+                else if(e->oper == NOT)
+                {
+                    
+                }
+                else
+                {
+                    error("Syntax Error: Unexpected binary operator at the beginning of an expression.\n");
+                }
+            }
+            else if (state == VAR_DECL)
+            {
+                error("Syntax Error: Unexpected operator.  Expected a variable to be declared.\n");
+            }
+            else if (state == VAR)
+            {
+                firstOp = *e;
+                state = VAR_OP;
+            }
+            else if (state == VAR_OP)
+            {
+                error("Syntax Error: Unexpected operator.  Expected a variable or parenthesis.\n");
+            }
+            else if(state == VAR_OP_VAR)
+            {
+                // Compare operators
+                if(e->precedence < firstOp.precedence // New one goes earlier
+                   || (e->precedence == firstOp.precedence && firstOp.associativeLeftToRight == false))  // Right-to-left assoc.
+                {
+                    // Push our old stuff
+                    stack[0].push_front(firstVar);
+                    stack[0].push_front(firstOp);
+                    firstVar = secondVar;
+                    firstOp = *e;
+                    state = VAR_OP;
+                }
+                else  // Evaluate the first operator
+                {
+                    firstVar = Token(evaluateExpression(firstVar.var, firstOp.oper, secondVar.var), "");
+                    firstOp = *e;
+                    state = VAR_OP;
+                }
+            }
+        }
+        else if(e->type == Token::SEPARATOR)
+        {
+            if (state == BEGIN)
+            {
+                if(e->sep == OPEN_PARENTHESIS)
+                {
+                    // Move elements between the parentheses into a new list to
+                    // be evaluated.
+                    list<Token> tok2;
+                    e++;
+                    list<Token>::iterator f = e;
+                    int num = 1;
+                    while(e != tokens.end() && num > 0)
+                    {
+                        if(e->type == Token::SEPARATOR)
+                        {
+                            if(e->sep == OPEN_PARENTHESIS)
+                                num++;
+                            else if(e->sep == CLOSE_PARENTHESIS)
+                                num--;
+                        }
+                        if(num > 0)
+                            e++;
+                    }
+                    tok2.splice(tok2.begin(), tokens, f, e);
+                    firstVar = evalTokens(tok2, false, false, false, true);
+                    if(firstVar.type == Token::NOT_A_TOKEN)
+                    {
+                        return firstVar;
+                    }
+                    state = VAR;
+                }
+                else if(e->sep == CLOSE_PARENTHESIS)
+                {
+                    error("Syntax Error: Unexpected closing parenthesis at the beginning of a line.\n");
+                }
+                else if(e->sep == OPEN_CURLY_BRACKET)
+                {
+                    if(currentScope().singleLine)
+                        currentScope().singleLine = false;
+                    else
+                    {
+                        // Push new scope
+                        pushEnv(false);
+                    }
+                }
+                else if(e->sep == CLOSE_CURLY_BRACKET)
+                {
+                    if(currentScope().singleLine)
+                        error("Syntax Error: Unexpected closing curly bracket at the beginning of a line.\n");
+                    else
+                    {
+                        popEnv();
+                        return Token(Token::KEYWORD, "true if");
+                    }
+                }
+                else if(e->sep == OPEN_SQUARE_BRACKET)
+                {
+                    firstVar = Token(getArrayLiteral(tokens, e), "");
+                    if(firstVar.var != NULL)
+                    {
+                        state = VAR;
+                    }
+                }
+                else
+                {
+                    error("Syntax Error: Unexpected separator at the beginning of a line.\n");
+                }
+            }
+            else if(state == READY)
+            {
+                if(e->sep == OPEN_PARENTHESIS)
+                {
+                    // Move elements between the parentheses into a new list to
+                    // be evaluated.
+                    list<Token> tok2;
+                    e++;
+                    list<Token>::iterator f = e;
+                    int num = 1;
+                    while(e != tokens.end() && num > 0)
+                    {
+                        if(e->type == Token::SEPARATOR)
+                        {
+                            if(e->sep == OPEN_PARENTHESIS)
+                                num++;
+                            else if(e->sep == CLOSE_PARENTHESIS)
+                                num--;
+                        }
+                        if(num > 0)
+                            e++;
+                    }
+                    tok2.splice(tok2.begin(), tokens, f, e);
+                    firstVar = evalTokens(tok2, false, false, false, true);
+                    if(firstVar.type == Token::NOT_A_TOKEN)
+                    {
+                        return firstVar;
+                    }
+                    state = VAR;
+                }
+                else if(e->sep == CLOSE_PARENTHESIS)
+                {
+                    error("Syntax Error: Unexpected closing parenthesis at the beginning of an expression.\n");
+                }
+                else if(e->sep == OPEN_SQUARE_BRACKET)
+                {
+                    firstVar = Token(getArrayLiteral(tokens, e), "");
+                    if(firstVar.var != NULL)
+                    {
+                        state = VAR;
+                    }
+                }
+                else
+                {
+                    error("Syntax Error: Unexpected separator at the beginning of an expression.\n");
+                }
+            }
+            else if (state == VAR_DECL)
+            {
+                error("Syntax Error: Unexpected separator.  Expected a variable to be declared.\n");
+            }
+            else if (state == VAR)
             {
                 if(e->sep == OPEN_PARENTHESIS)
                 {
@@ -397,24 +447,7 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning)
                     error("Syntax Error: Unexpected separator.\n");
                 }
             }
-            else if(e->type == Token::OPERATOR)
-            {
-                firstOp = *e;
-                state = VAR_OP;
-            }
-            else
-            {
-                error("Syntax Error1: Unexpected token.  Expected an operator or parenthesis.\n");
-            }
-        }
-        else if (state == VAR_OP)
-        {
-            if (e->type == Token::VARIABLE)
-            {
-                secondVar = *e;
-                state = VAR_OP_VAR;
-            }
-            else if(e->type == Token::SEPARATOR)
+            else if (state == VAR_OP)
             {
                 if(e->sep == OPEN_PARENTHESIS)
                 {
@@ -437,7 +470,7 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning)
                             e++;
                     }
                     tok2.splice(tok2.begin(), tokens, f, e);
-                    secondVar = evalTokens(tok2, false);
+                    secondVar = evalTokens(tok2, false, false, false, true);
                     if(secondVar.type == Token::NOT_A_TOKEN)
                     {
                         return secondVar;
@@ -463,14 +496,9 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning)
                     }
                 }
                 else
-                    error("Syntax Error: Unexpected token.  Expected a variable or parenthesis.\n");
+                    error("Syntax Error: Unexpected separator.  Expected a variable or parenthesis.\n");
             }
-            else
-                error("Syntax Error: Unexpected token.  Expected a variable or parenthesis.\n");
-        }
-        else if(state == VAR_OP_VAR)
-        {
-            if (e->type == Token::SEPARATOR)
+            else if(state == VAR_OP_VAR)
             {
                 if(e->sep == OPEN_PARENTHESIS)
                 {
@@ -521,31 +549,142 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning)
                 else
                     error("Syntax Error: Unexpected separator.\n");
             }
-            else if(e->type == Token::OPERATOR)
+        }
+        else if(e->type == Token::KEYWORD)
+        {
+            if (state == BEGIN)
             {
-                // Compare operators
-                if(e->precedence < firstOp.precedence // New one goes earlier
-                   || (e->precedence == firstOp.precedence && firstOp.associativeLeftToRight == false))  // Right-to-left assoc.
+                if(e->keyword == KW_IF)
                 {
-                    // Push our old stuff
-                    stack[0].push_front(firstVar);
-                    stack[0].push_front(firstOp);
-                    firstVar = secondVar;
-                    firstOp = *e;
-                    state = VAR_OP;
+                    e++;
+                    if(e == tokens.end())
+                    {
+                        error("Syntax Error: Unexpected end of line after 'if'.\n");
+                        return Token();
+                    }
+                    if(e->type != Token::SEPARATOR || e->sep != OPEN_PARENTHESIS)
+                    {
+                        error("Syntax Error: Unexpected token after 'if'.\n");
+                        return Token();
+                    }
+                    
+                    list<Token> inside;
+                    e++;
+                    int paren = 1;
+                    while(e != tokens.end() && paren > 0)
+                    {
+                        if(e->type == Token::SEPARATOR)
+                        {
+                            if(e->sep == OPEN_PARENTHESIS)
+                                paren++;
+                            else if(e->sep == CLOSE_PARENTHESIS)
+                                paren--;
+                        }
+                        
+                        if(paren > 0)
+                            inside.push_back(*e);
+                        e++;
+                    }
+                    
+                    Token in = evalTokens(inside, false, false, false, true);
+                    
+                    if(in.type == Token::VARIABLE && in.var != NULL)
+                    {
+                        // FIXME: Accept other types too!
+                        if(in.var->getType() == BOOL)
+                        {
+                            if(static_cast<Bool*>(in.var)->getValue())
+                            {
+                                // Push a single-line scope that evals the 'if' block
+                                pushEnv(Scope(false, Scope::IF_BLOCK, true));
+                                return Token(Token::KEYWORD, "true if");
+                            }
+                            else
+                            {
+                                // Push a single-line scope that skips the 'if' block
+                                pushEnv(Scope(false, Scope::SKIP_IF, true));
+                                return Token(Token::KEYWORD, "false if");
+                            }
+                        }
+                    }
+                    
+                    error("Syntax Error: Something's wrong with your 'if' statement.\n");
+                    return Token();
                 }
-                else  // Evaluate the first operator
+                else if(e->keyword == KW_ELSE)
                 {
-                    firstVar = Token(evaluateExpression(firstVar.var, firstOp.oper, secondVar.var), "");
-                    firstOp = *e;
-                    state = VAR_OP;
+                    e++;
+                    if(e != tokens.end())
+                    {
+                        error("Syntax Error: Unexpected token after 'else' statement.\n");
+                    }
+                    if(wasFalseIf)
+                        pushEnv(Scope(false, Scope::IF_BLOCK, true));
+                    else if(wasTrueIf)
+                        pushEnv(Scope(false, Scope::SKIP_IF, true));
+                    else
+                        error("Syntax Error: Unexpected 'else' statement.\n");
+                    return Token(Token::KEYWORD, "else");
+                }
+                else
+                {
+                    error("Syntax Error: Unexpected keyword at the beginning of a line.\n");
                 }
             }
-            else
+            else if(state == READY)
+            {
+                if(false)  // Put keywords here that can be used at the start of any expression
+                    ;
+                else
+                {
+                    error("Syntax Error: Unexpected keyword at the beginning of an expression.\n");
+                }
+            }
+            else if (state == VAR_DECL)
+            {
+                error("Syntax Error: Unexpected keyword.  Expected a variable to be declared.\n");
+            }
+            else if (state == VAR)
+            {
+                error("Syntax Error1: Unexpected keyword.  Expected an operator or parenthesis.\n");
+            }
+            else if (state == VAR_OP)
+            {
+                error("Syntax Error: Unexpected keyword.  Expected a variable or parenthesis.\n");
+            }
+            else if(state == VAR_OP_VAR)
+            {
+                error("Syntax Error2: Unexpected keyword.  Expected an operator or parenthesis.\n");
+            }
+        }
+        else
+        {
+            if (state == BEGIN)
+            {
+                error("Syntax Error: Unexpected token at the beginning of a line.\n");
+            }
+            else if(state == READY)
+            {
+                error("Syntax Error: Unexpected token at the beginning of an expression.\n");
+            }
+            else if (state == VAR_DECL)
+            {
+                error("Syntax Error: Unexpected token.  Expected a variable to be declared.\n");
+            }
+            else if (state == VAR)
+            {
+                error("Syntax Error1: Unexpected token.  Expected an operator or parenthesis.\n");
+            }
+            else if (state == VAR_OP)
+            {
+                error("Syntax Error: Unexpected token.  Expected a variable or parenthesis.\n");
+            }
+            else if(state == VAR_OP_VAR)
             {
                 error("Syntax Error2: Unexpected token.  Expected an operator or parenthesis.\n");
             }
         }
+          
         
         
         // Get next token...
@@ -777,6 +916,13 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning)
         }
         
     }
+    
+    if(!subExpression && currentScope().singleLine)
+    {
+        popEnv();
+        return Token(Token::KEYWORD, "true if");
+    }
+    
     
     UI_debug_pile("Done evaluation");
     if(firstVar.type == Token::OPERATOR)

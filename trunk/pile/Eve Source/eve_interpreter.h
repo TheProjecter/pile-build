@@ -915,7 +915,7 @@ public:
                 else if(num == 0 && e->sep == COMMA)
                 {
                     tokens.splice(tokens.begin(), arguments, f, e);
-                    Token eval = evalTokens(tokens, false);
+                    Token eval = evalTokens(tokens, false, false, false, true);
                     if(eval.var != NULL)
                         args.push_back(eval.var);
                     else
@@ -934,7 +934,7 @@ public:
             if(e == arguments.end())
             {
                 tokens.splice(tokens.begin(), arguments, f, e);
-                Token eval = evalTokens(tokens, false);
+                Token eval = evalTokens(tokens, false, false, false, true);
                 if(eval.var != NULL)
                     args.push_back(eval.var);
                 else
@@ -1001,7 +1001,7 @@ public:
             tokens.splice(tokens.end(), tok2);
             
             if(!continuation || str.eof())  // Skip the eval if we're continuing, but not if the file ends!
-                returnValue = evalTokens(tokens, true);
+                returnValue = evalTokens(tokens, true, false, false, true);
             //if(returnValue.isReturn())
             //    break;
         }
@@ -1046,7 +1046,7 @@ public:
     
     Variable* getArrayLiteral(std::list<Token>& tokens, std::list<Token>::iterator& e);
 
-    Token evalTokens(std::list<Token>& tokens, bool beginning);
+    Token evalTokens(std::list<Token>& tokens, bool beginning, bool wasTrueIf = false, bool wasFalseIf = false, bool subExpression = false);
     
     //bool interpret(std::string line);
 
@@ -1123,15 +1123,9 @@ public:
         env.push_front(Scope(isolated));
     }
 
-    Scope currentScope()
+    Scope& currentScope()
     {
-        if(env.size() >= 1)
-            return (env.front());
-        else
-        {
-            UI_debug_pile("ERROR: Popped the last scope!\n");
-            return Scope(false);
-        }
+        return (env.front());
     }
 
     void popEnv()

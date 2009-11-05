@@ -68,6 +68,8 @@ bool Interpreter::readFile(string filename)
     }
     
     bool continuation = false;
+    bool wasTrueIf = false;
+    bool wasFalseIf = false;
     list<Token> tokens;
     string line;
     while(!fin.eof())
@@ -83,32 +85,22 @@ bool Interpreter::readFile(string filename)
         
         if(!continuation || fin.eof())  // Skip the eval if we're continuing, but not if the file ends!
         {
-            bool popThatScope = currentScope().singleLine;
-            
-            if(currentScope().state == Scope::SKIP_IF)
+            Token result = evalTokens(tokens, true, wasTrueIf, wasFalseIf);
+            wasTrueIf = wasFalseIf = false;
+            if(result.type == Token::KEYWORD)
             {
-                // Nada
-            }
-            else
-            {
-                Token result = evalTokens(tokens, true);
-                if(result.type == Token::KEYWORD)
+                if(result.text == "true if")
                 {
-                    // FIXME: These use 'true' for 'singleLine'
-                    // They should allow for blocks
-                    if(result.text == "if")
-                    {
-                        pushEnv(Scope(false, Scope::IF_BLOCK, true));
-                    }
-                    else if(result.text == "false if")
-                    {
-                        pushEnv(Scope(false, Scope::SKIP_IF, true));
-                    }
+                    wasTrueIf = true;
+                    wasFalseIf = false;
+                }
+                else if(result.text == "false if")
+                {
+                    wasTrueIf = false;
+                    wasFalseIf = true;
                 }
             }
             lineNumber++;
-            if(popThatScope)
-                popEnv();
         }
         else if(continuation)
             lineNumber++;  // Skip an extra line if the last one was continued...  This probably isn't right for multiple-line continues...
@@ -1154,7 +1146,7 @@ Variable* Interpreter::getArrayLiteral(list<Token>& tokens, list<Token>::iterato
             e++;
         }
         
-        Token t = evalTokens(tok2, false);
+        Token t = evalTokens(tok2, false, false, false, true);
         if(t.type == Token::OPERATOR)
         {
             interpreter.error("Error: Unexpected operator when reading an array literal.\n");
