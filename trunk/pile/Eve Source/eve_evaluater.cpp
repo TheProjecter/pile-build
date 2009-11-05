@@ -920,7 +920,12 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
     if(!subExpression && currentScope().singleLine)
     {
         popEnv();
-        return Token(Token::KEYWORD, "true if");
+        if(wasTrueIf)
+            return Token(Token::KEYWORD, "true if");
+        else if(wasFalseIf)
+            return Token(Token::KEYWORD, "false if");
+        else
+            return Token();
     }
     
     

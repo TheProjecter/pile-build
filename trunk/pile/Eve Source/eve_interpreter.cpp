@@ -100,6 +100,7 @@ bool Interpreter::readFile(string filename)
                     wasFalseIf = true;
                 }
             }
+            
             lineNumber++;
         }
         else if(continuation)
