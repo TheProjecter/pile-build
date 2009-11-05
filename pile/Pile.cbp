@@ -29,8 +29,10 @@
 			<Add library="SDL_image" />
 			<Add library="SDL_ttf" />
 		</Linker>
+		<Unit filename="Eve Source/eve_evaluater.cpp" />
 		<Unit filename="Eve Source/eve_interpreter.cpp" />
 		<Unit filename="Eve Source/eve_interpreter.h" />
+		<Unit filename="Eve Source/eve_tokenizer.cpp" />
 		<Unit filename="External Code/NFont.cpp" />
 		<Unit filename="External Code/NFont.h" />
 		<Unit filename="External Code/goodio.cpp" />
