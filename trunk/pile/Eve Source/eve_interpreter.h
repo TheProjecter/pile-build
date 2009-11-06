@@ -43,7 +43,7 @@ bool isOperator(const char& c);
 bool isSeparator(const char& c);
 
 
-enum TypeEnum{NOT_A_TYPE, VOID, TYPENAME, BOOL, INT, FLOAT, STRING, MACRO, ARRAY, LIST, FUNCTION, PROCEDURE};
+enum TypeEnum{NOT_A_TYPE, VOID, TYPENAME, BOOL, INT, FLOAT, STRING, MACRO, ARRAY, LIST, FUNCTION, PROCEDURE, CLASS};
 
 enum OperatorEnum{NOT_AN_OPERATOR, ADD, SUBTRACT, NEGATE, ASSIGN, ADD_ASSIGN, SUBTRACT_ASSIGN, MULTIPLY_ASSIGN, DIVIDE_ASSIGN,
                   MULTIPLY, DIVIDE, MODULUS, EQUALS, NOT_EQUALS, LESS, GREATER, LESS_EQUAL,
@@ -492,7 +492,39 @@ public:
 };
 
 
-Variable* equals(Variable* A, Variable* B);
+
+class Class : public Variable
+{
+private:
+    std::string name;
+    std::map<std::string, Variable*> vars;
+public:
+    Class()
+            : Variable(CLASS)
+    {}
+    Class(const std::string& name)
+            : Variable(CLASS)
+            , name(name)
+    {}
+    Variable* getVariable(const std::string& var)
+    {
+        std::map<std::string, Variable*>::iterator e = vars.find(var);
+        if(e == vars.end())
+            return NULL;
+        return e->second;
+    }
+    void addVariable(const std::string& varname, Variable* var)
+    {
+        vars.insert(std::make_pair(varname, var));
+    }
+    virtual std::string getValueString()
+    {
+        return name;
+    }
+};
+
+
+Variable* comparison(Variable* A, Variable* B, OperatorEnum oper);
 
 Variable* assign(Variable* A, Variable* B);
 
@@ -1025,7 +1057,19 @@ public:
     Variable* evaluateExpression(Variable* A, OperatorEnum operation, Variable* B)
     {
         if (operation == EQUALS)
-            return equals(A, B);
+            return comparison(A, B, EQUALS);
+        if (operation == LESS_EQUAL)
+            return comparison(A, B, LESS_EQUAL);
+        if (operation == GREATER_EQUAL)
+            return comparison(A, B, GREATER_EQUAL);
+        if (operation == LESS)
+            return comparison(A, B, LESS);
+        if (operation == GREATER)
+            return comparison(A, B, GREATER);
+        if (operation == AND)
+            return comparison(A, B, AND);
+        if (operation == OR)
+            return comparison(A, B, OR);
         if (operation == ASSIGN)
             return assign(A, B);
         if (operation == ADD)
