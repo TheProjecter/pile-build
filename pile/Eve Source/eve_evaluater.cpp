@@ -359,6 +359,7 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     if(isFn)
                     {
                         Function* f = new Function;
+                        f->lineNumber = lineNumber;
                         f->returnType = newType;
                         string name = e->text;
                         

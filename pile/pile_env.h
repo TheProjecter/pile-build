@@ -32,22 +32,16 @@ class Environment
     {
         // Add builtin variables
         Scope& s = *(inter.env.begin());
-        s.env["print"] = new Function(FN_PRINT);
-        s.env["type"] = new Function(FN_TYPE);
-        s.env["bool"] = new Function(FN_BOOL);
-        s.env["int"] = new Function(FN_INT);
-        s.env["float"] = new Function(FN_FLOAT);
-        s.env["string"] = new Function(FN_STRING);
-        s.env["output"] = new String("a.out");
-        s.env["sources"] = new Array(STRING);
-        s.env["cflags"] = new Array(STRING);
-        s.env["lflags"] = new Array(STRING);
-        s.env["host_platform"] = new String(getSystemName());
-        s.env["target_platform"] = new String(config.languages["TARGET_PLATFORM"]);
-        s.env["compiler"] = new String(config.languages["CPP_COMPILER"]);
+        s.env["OUTPUT"] = new String("a.out");
+        s.env["SOURCES"] = new Array(STRING);
+        s.env["CFLAGS"] = new Array(STRING);
+        s.env["LFLAGS"] = new Array(STRING);
+        s.env["HOST_PLATFORM"] = new String(getSystemName());
+        s.env["TARGET_PLATFORM"] = new String(config.languages["TARGET_PLATFORM"]);
+        //s.env["CPP_COMPILER"] = new Compiler(config.languages["CPP_COMPILER"]);
         
         Array* variants = new Array(STRING);
-        s.env["variants"] = variants;
+        s.env["VARIANTS"] = variants;
         // includeDirs
         // libDirs
     }
