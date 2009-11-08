@@ -53,6 +53,8 @@ class Configuration
         languages["FORTRAN_LINKER_S"] = DEFAULT_FORTRAN_LINKER_S;
         languages["FORTRAN_SYNTAX"] = DEFAULT_FORTRAN_SYNTAX;
         
+        languages["TARGET_PLATFORM"] = getSystemName();
+        
         
         #ifdef PILE_LINUX
         includePaths.push_back("/usr/include");

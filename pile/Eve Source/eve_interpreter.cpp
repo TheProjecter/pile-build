@@ -230,6 +230,10 @@ string getOperatorString(OperatorEnum type)
             return "<";
         case GREATER:
             return ">";
+        case NOT_LESS:
+            return "!<";
+        case NOT_GREATER:
+            return "!>";
         case LESS_EQUAL:
             return "<=";
         case GREATER_EQUAL:
@@ -346,14 +350,18 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
             {
                 case EQUALS:
                     return new Bool(C->getValue() == D->getValue());
+                case NOT_GREATER:
                 case LESS_EQUAL:
                     return new Bool(C->getValue() <= D->getValue());
+                case NOT_LESS:
                 case GREATER_EQUAL:
                     return new Bool(C->getValue() >= D->getValue());
                 case LESS:
                     return new Bool(C->getValue() < D->getValue());
                 case GREATER:
                     return new Bool(C->getValue() > D->getValue());
+                case NOT_EQUALS:
+                    return new Bool(C->getValue() != D->getValue());
                 default:
                     UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                     return A;
@@ -374,8 +382,10 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                 {
                     case EQUALS:
                         return new Bool(C->getValue() == D->getValue());
+                    case NOT_GREATER:
                     case LESS_EQUAL:
                         return new Bool(C->getValue() <= D->getValue());
+                    case NOT_LESS:
                     case GREATER_EQUAL:
                         return new Bool(C->getValue() >= D->getValue());
                     case LESS:
@@ -386,6 +396,8 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() && D->getValue());
                     case OR:
                         return new Bool(C->getValue() || D->getValue());
+                    case NOT_EQUALS:
+                        return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                         return A;
@@ -398,8 +410,10 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                 {
                     case EQUALS:
                         return new Bool(C->getValue() == D->getValue());
+                    case NOT_GREATER:
                     case LESS_EQUAL:
                         return new Bool(C->getValue() <= D->getValue());
+                    case NOT_LESS:
                     case GREATER_EQUAL:
                         return new Bool(C->getValue() >= D->getValue());
                     case LESS:
@@ -410,6 +424,8 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() && D->getValue());
                     case OR:
                         return new Bool(C->getValue() || D->getValue());
+                    case NOT_EQUALS:
+                        return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                         return A;
@@ -422,8 +438,10 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                 {
                     case EQUALS:
                         return new Bool(C->getValue() == D->getValue());
+                    case NOT_GREATER:
                     case LESS_EQUAL:
                         return new Bool(C->getValue() <= D->getValue());
+                    case NOT_LESS:
                     case GREATER_EQUAL:
                         return new Bool(C->getValue() >= D->getValue());
                     case LESS:
@@ -434,6 +452,8 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() && D->getValue());
                     case OR:
                         return new Bool(C->getValue() || D->getValue());
+                    case NOT_EQUALS:
+                        return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                         return A;
@@ -455,8 +475,10 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                 {
                     case EQUALS:
                         return new Bool(C->getValue() == D->getValue());
+                    case NOT_GREATER:
                     case LESS_EQUAL:
                         return new Bool(C->getValue() <= D->getValue());
+                    case NOT_LESS:
                     case GREATER_EQUAL:
                         return new Bool(C->getValue() >= D->getValue());
                     case LESS:
@@ -467,6 +489,8 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() && D->getValue());
                     case OR:
                         return new Bool(C->getValue() || D->getValue());
+                    case NOT_EQUALS:
+                        return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                         return A;
@@ -479,8 +503,10 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                 {
                     case EQUALS:
                         return new Bool(C->getValue() == D->getValue());
+                    case NOT_GREATER:
                     case LESS_EQUAL:
                         return new Bool(C->getValue() <= D->getValue());
+                    case NOT_LESS:
                     case GREATER_EQUAL:
                         return new Bool(C->getValue() >= D->getValue());
                     case LESS:
@@ -491,6 +517,8 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() && D->getValue());
                     case OR:
                         return new Bool(C->getValue() || D->getValue());
+                    case NOT_EQUALS:
+                        return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                         return A;
@@ -503,8 +531,10 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                 {
                     case EQUALS:
                         return new Bool(C->getValue() == D->getValue());
+                    case NOT_GREATER:
                     case LESS_EQUAL:
                         return new Bool(C->getValue() <= D->getValue());
+                    case NOT_LESS:
                     case GREATER_EQUAL:
                         return new Bool(C->getValue() >= D->getValue());
                     case LESS:
@@ -515,6 +545,8 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() && D->getValue());
                     case OR:
                         return new Bool(C->getValue() || D->getValue());
+                    case NOT_EQUALS:
+                        return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                         return A;
@@ -536,8 +568,10 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                 {
                     case EQUALS:
                         return new Bool(C->getValue() == D->getValue());
+                    case NOT_GREATER:
                     case LESS_EQUAL:
                         return new Bool(C->getValue() <= D->getValue());
+                    case NOT_LESS:
                     case GREATER_EQUAL:
                         return new Bool(C->getValue() >= D->getValue());
                     case LESS:
@@ -548,6 +582,8 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() && D->getValue());
                     case OR:
                         return new Bool(C->getValue() || D->getValue());
+                    case NOT_EQUALS:
+                        return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                         return A;
@@ -560,8 +596,10 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                 {
                     case EQUALS:
                         return new Bool(C->getValue() == D->getValue());
+                    case NOT_GREATER:
                     case LESS_EQUAL:
                         return new Bool(C->getValue() <= D->getValue());
+                    case NOT_LESS:
                     case GREATER_EQUAL:
                         return new Bool(C->getValue() >= D->getValue());
                     case LESS:
@@ -572,6 +610,8 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() && D->getValue());
                     case OR:
                         return new Bool(C->getValue() || D->getValue());
+                    case NOT_EQUALS:
+                        return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                         return A;
@@ -584,8 +624,10 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                 {
                     case EQUALS:
                         return new Bool(C->getValue() == D->getValue());
+                    case NOT_GREATER:
                     case LESS_EQUAL:
                         return new Bool(C->getValue() <= D->getValue());
+                    case NOT_LESS:
                     case GREATER_EQUAL:
                         return new Bool(C->getValue() >= D->getValue());
                     case LESS:
@@ -596,6 +638,8 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() && D->getValue());
                     case OR:
                         return new Bool(C->getValue() || D->getValue());
+                    case NOT_EQUALS:
+                        return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                         return A;
@@ -615,14 +659,18 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
             {
                 case EQUALS:
                     return new Bool(C->getValue() == D->getValue());
+                case NOT_GREATER:
                 case LESS_EQUAL:
                     return new Bool(C->getValue() <= D->getValue());
+                case NOT_LESS:
                 case GREATER_EQUAL:
                     return new Bool(C->getValue() >= D->getValue());
                 case LESS:
                     return new Bool(C->getValue() < D->getValue());
                 case GREATER:
                     return new Bool(C->getValue() > D->getValue());
+                case NOT_EQUALS:
+                    return new Bool(C->getValue() != D->getValue());
                 default:
                     UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                     return A;
@@ -649,14 +697,18 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
             {
                 case EQUALS:
                     return new Bool(C->getValue() == D->getValue());
+                case NOT_GREATER:
                 case LESS_EQUAL:
                     return new Bool(C->getValue() <= D->getValue());
+                case NOT_LESS:
                 case GREATER_EQUAL:
                     return new Bool(C->getValue() >= D->getValue());
                 case LESS:
                     return new Bool(C->getValue() < D->getValue());
                 case GREATER:
                     return new Bool(C->getValue() > D->getValue());
+                case NOT_EQUALS:
+                    return new Bool(C->getValue() != D->getValue());
                 default:
                     UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                     return A;
@@ -675,14 +727,18 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
             {
                 case EQUALS:
                     return new Bool(C->getValue() == D->getValue());
+                case NOT_GREATER:
                 case LESS_EQUAL:
                     return new Bool(C->getValue() <= D->getValue());
+                case NOT_LESS:
                 case GREATER_EQUAL:
                     return new Bool(C->getValue() >= D->getValue());
                 case LESS:
                     return new Bool(C->getValue() < D->getValue());
                 case GREATER:
                     return new Bool(C->getValue() > D->getValue());
+                case NOT_EQUALS:
+                    return new Bool(C->getValue() != D->getValue());
                 default:
                     UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                     return A;
@@ -701,14 +757,18 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
             {
                 case EQUALS:
                     return new Bool(C->getValue() == D->getValue());
+                case NOT_GREATER:
                 case LESS_EQUAL:
                     return new Bool(C->getValue() <= D->getValue());
+                case NOT_LESS:
                 case GREATER_EQUAL:
                     return new Bool(C->getValue() >= D->getValue());
                 case LESS:
                     return new Bool(C->getValue() < D->getValue());
                 case GREATER:
                     return new Bool(C->getValue() > D->getValue());
+                case NOT_EQUALS:
+                    return new Bool(C->getValue() != D->getValue());
                 default:
                     UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                     return A;
@@ -727,14 +787,18 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
             {
                 case EQUALS:
                     return new Bool(C->getValue() == D->getValue());
+                case NOT_GREATER:
                 case LESS_EQUAL:
                     return new Bool(C->getValue() <= D->getValue());
+                case NOT_LESS:
                 case GREATER_EQUAL:
                     return new Bool(C->getValue() >= D->getValue());
                 case LESS:
                     return new Bool(C->getValue() < D->getValue());
                 case GREATER:
                     return new Bool(C->getValue() > D->getValue());
+                case NOT_EQUALS:
+                    return new Bool(C->getValue() != D->getValue());
                 default:
                     UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
                     return A;
@@ -1548,6 +1612,26 @@ void fn_print(Variable* arg)
     }
 }
 
+Bool* boolCast(Variable* v)
+{
+    if(v->getType() == BOOL)
+    {
+        Bool* b = static_cast<Bool*>(v);
+        return new Bool(b->getValue());
+    }
+    if(v->getType() == INT)
+    {
+        Int* i = static_cast<Int*>(v);
+        return new Bool(i->getValue());
+    }
+    if(v->getType() == FLOAT)
+    {
+        Float* f = static_cast<Float*>(v);
+        return new Bool(f->getValue());
+    }
+    return NULL;
+}
+
 Int* intCast(Variable* v)
 {
     if(v->getType() == BOOL)
@@ -1610,6 +1694,11 @@ Variable* callBuiltIn(FunctionEnum fn, vector<Variable*>& args)
             if(args.size() != 1)
                 return NULL;
             result = new String(args[0]->getValueString());
+            break;
+        case FN_BOOL:
+            if(args.size() != 1)
+                return NULL;
+            result = boolCast(args[0]);
             break;
         case FN_INT:
             if(args.size() != 1)
@@ -1723,16 +1812,19 @@ Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
     }
     
     interpreter.popEnv();
-    if(returnType.getValue() == VOID)
-        return NULL;
-    if(returnValue.text != "return")
+    
+    if(returnValue.text != "return" && returnType.getValue() != VOID)
     {
-        interpreter.error("Error: No return statement at end of function.\n");
+        interpreter.error("Error: No return statement at end of non-void function.\n");
     }
     else
     {
+        // Explicitly returning a value
         if(returnValue.var == NULL)
-            UI_debug_pile("Returning void (NULL)\n");
+        {
+            if(returnType.getValue() != VOID)
+                interpreter.error("Error: Returning 'void' from a function which expects '%s'.\n", returnType.text.c_str());
+        }
         else
         {
             if(returnValue.var->getTypeString() != returnType.text)

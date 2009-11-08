@@ -28,18 +28,24 @@ class Environment
         outfile = ("a.out" + config.exe_ext);
     }
     
-    void initInterpreter(Interpreter& inter)
+    void initInterpreter(Interpreter& inter, Configuration& config)
     {
         // Add builtin variables
-        (*(inter.env.begin())).env["print"] = new Function(FN_PRINT);
-        (*(inter.env.begin())).env["type"] = new Function(FN_TYPE);
-        (*(inter.env.begin())).env["string"] = new Function(FN_STRING);
-        (*(inter.env.begin())).env["int"] = new Function(FN_INT);
-        (*(inter.env.begin())).env["float"] = new Function(FN_FLOAT);
-        (*(inter.env.begin())).env["output"] = new String("a.out");
-        (*(inter.env.begin())).env["sources"] = new Array(STRING);
-        (*(inter.env.begin())).env["cflags"] = new Array(STRING);
-        (*(inter.env.begin())).env["lflags"] = new Array(STRING);
+        Scope& s = *(inter.env.begin());
+        s.env["print"] = new Function(FN_PRINT);
+        s.env["type"] = new Function(FN_TYPE);
+        s.env["string"] = new Function(FN_STRING);
+        s.env["bool"] = new Function(FN_BOOL);
+        s.env["int"] = new Function(FN_INT);
+        s.env["float"] = new Function(FN_FLOAT);
+        s.env["output"] = new String("a.out");
+        s.env["sources"] = new Array(STRING);
+        s.env["cflags"] = new Array(STRING);
+        s.env["lflags"] = new Array(STRING);
+        s.env["variants"] = new Array(STRING);
+        s.env["host_platform"] = new String(getSystemName());
+        s.env["target_platform"] = new String(config.languages["TARGET_PLATFORM"]);
+        s.env["compiler"] = new String(config.languages["CPP_COMPILER"]);
         // includeDirs
         // libDirs
     }

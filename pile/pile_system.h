@@ -59,4 +59,6 @@ void systemCall(std::string command);
 
 void delay(unsigned int milliseconds);
 
+std::string getSystemName();
+
 #endif

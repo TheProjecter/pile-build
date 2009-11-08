@@ -16,6 +16,16 @@ System-specific functions
 
 
 
+string getSystemName()
+{
+    #ifdef PILE_WIN32
+    return "Win32";
+    #endif
+    #ifdef PILE_LINUX
+    return "Linux";
+    #endif
+    return "Unknown";
+}
 
 
 string getHomeDir()
