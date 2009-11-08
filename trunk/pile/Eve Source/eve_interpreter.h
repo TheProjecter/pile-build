@@ -26,7 +26,7 @@ bool isQuantizer(const char& c);
 
 inline bool isAlpha(const char& c)
 {
-    return (65 <= c && c <= 90) || (97 <= c && c <= 122);
+    return (65 <= c && c <= 90) || (97 <= c && c <= 122) || c == '_';
 }
 
 inline bool isNumeric(const char& c)
@@ -47,7 +47,7 @@ bool isSeparator(const char& c);
 enum TypeEnum{NOT_A_TYPE, VOID, TYPENAME, BOOL, INT, FLOAT, STRING, MACRO, ARRAY, LIST, FUNCTION, PROCEDURE, CLASS, CLASS_OBJECT};
 
 enum OperatorEnum{NOT_AN_OPERATOR, ADD, SUBTRACT, NEGATE, ASSIGN, ADD_ASSIGN, SUBTRACT_ASSIGN, MULTIPLY_ASSIGN, DIVIDE_ASSIGN,
-                  MULTIPLY, DIVIDE, MODULUS, EQUALS, NOT_EQUALS, LESS, GREATER, LESS_EQUAL,
+                  MULTIPLY, DIVIDE, MODULUS, EQUALS, NOT_EQUALS, LESS, GREATER, NOT_LESS, NOT_GREATER, LESS_EQUAL,
                   GREATER_EQUAL, NOT, AND, OR, CALL, CONTINUATION, COLON, DOT
                  };
                  
@@ -58,7 +58,7 @@ enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 
 enum KeywordEnum{KW_NONE, KW_IF, KW_ELSE, KW_RETURN};
 
-enum FunctionEnum{FN_NONE, FN_PRINT, FN_TYPE, FN_STRING, FN_INT, FN_FLOAT};
+enum FunctionEnum{FN_NONE, FN_PRINT, FN_TYPE, FN_STRING, FN_BOOL, FN_INT, FN_FLOAT};
 
 KeywordEnum getKeyword(const std::string& str);
 
@@ -447,6 +447,9 @@ public:
             case FN_STRING:
                 argt.push_back(TypeName(VOID));
                 break;
+            case FN_BOOL:
+                argt.push_back(TypeName(VOID));
+                break;
             case FN_INT:
                 argt.push_back(TypeName(VOID));
                 break;
@@ -806,6 +809,16 @@ public:
             oper = GREATER;
             precedence = 6;
         }
+        else if (Oper == "!<")
+        {
+            oper = NOT_LESS;
+            precedence = 6;
+        }
+        else if (Oper == "!>")
+        {
+            oper = NOT_GREATER;
+            precedence = 6;
+        }
         else if (Oper == "<=")
         {
             oper = LESS_EQUAL;
@@ -1118,6 +1131,8 @@ public:
     {
         if (operation == EQUALS)
             return comparison(A, B, EQUALS);
+        if (operation == NOT_EQUALS)
+            return comparison(A, B, NOT_EQUALS);
         if (operation == LESS_EQUAL)
             return comparison(A, B, LESS_EQUAL);
         if (operation == GREATER_EQUAL)
@@ -1126,6 +1141,10 @@ public:
             return comparison(A, B, LESS);
         if (operation == GREATER)
             return comparison(A, B, GREATER);
+        if (operation == NOT_LESS)
+            return comparison(A, B, NOT_LESS);
+        if (operation == NOT_GREATER)
+            return comparison(A, B, NOT_GREATER);
         if (operation == AND)
             return comparison(A, B, AND);
         if (operation == OR)

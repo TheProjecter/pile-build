@@ -4,6 +4,8 @@
 #include <list>
 using namespace std;
 
+Bool* boolCast(Variable* v);
+
 
 bool Interpreter::defineFunction(Variable* functionvar, std::istream* stream)
 {
@@ -897,20 +899,22 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     if(in.type == Token::VARIABLE && in.var != NULL)
                     {
                         // FIXME: Accept other types too!
-                        if(in.var->getType() == BOOL)
+                        if(in.var->getType() != BOOL)
                         {
-                            if(static_cast<Bool*>(in.var)->getValue())
-                            {
-                                // Push a single-line scope that evals the 'if' block
-                                pushEnv(Scope(false, Scope::IF_BLOCK, true));
-                                return Token(Token::KEYWORD, "true if");
-                            }
-                            else
-                            {
-                                // Push a single-line scope that skips the 'if' block
-                                pushEnv(Scope(false, Scope::SKIP_IF, true));
-                                return Token(Token::KEYWORD, "false if");
-                            }
+                            in.var = boolCast(in.var);
+                        }
+                        
+                        if(static_cast<Bool*>(in.var)->getValue())
+                        {
+                            // Push a single-line scope that evals the 'if' block
+                            pushEnv(Scope(false, Scope::IF_BLOCK, true));
+                            return Token(Token::KEYWORD, "true if");
+                        }
+                        else
+                        {
+                            // Push a single-line scope that skips the 'if' block
+                            pushEnv(Scope(false, Scope::SKIP_IF, true));
+                            return Token(Token::KEYWORD, "false if");
                         }
                     }
                     

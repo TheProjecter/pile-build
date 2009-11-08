@@ -7,10 +7,10 @@ Interpreter interpreter;
 
 
 
-bool interpret(string filename, Environment& env)
+bool interpret(string filename, Environment& env, Configuration& config)
 {
     // Put Pile variables into the interpreter.
-    env.initInterpreter(interpreter);
+    env.initInterpreter(interpreter, config);
     
     if(!interpreter.readFile(filename))
         return false;

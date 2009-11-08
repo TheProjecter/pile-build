@@ -133,7 +133,7 @@ bool isDigraphOperator(const char& c, const char& d)
         case '>':
             return (d == '=' || d == '>');
         case '!':
-            return (d == '=');
+            return (d == '=' || d == '>' || d == '<');
         case '^':
             return (d == '=');
         case '&':

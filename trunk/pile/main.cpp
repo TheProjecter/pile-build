@@ -9,7 +9,7 @@
 #include "string_functions.h"
 
 void printDepends(const string& file);
-bool interpret(string filename, Environment& env);
+bool interpret(string filename, Environment& env, Configuration& config);
 
 
 extern string log_file;
@@ -377,7 +377,7 @@ int main(int argc, char* argv[])
         UI_processEvents();
         UI_updateScreen();
         
-        if(!interpret(file, env))
+        if(!interpret(file, env, config))
             errorFlag = interpreterError = true;
         UI_debug_pile("Done interpreting.\n");
         
