@@ -26,8 +26,7 @@ bool Interpreter::defineFunction(Variable* functionvar, std::istream* stream)
     while(!stream->eof() && !done)
     {
         getline(*stream, line);
-        // Assumes curly brackets are on an otherwise empty line
-        fn->setValue(fn->getValue() + "\n" + line);
+        string lineCopy = line;
         
         if(!continuation)  // If we're not continuing the line, then clear the tokens.
             tokens.clear();
@@ -36,6 +35,10 @@ bool Interpreter::defineFunction(Variable* functionvar, std::istream* stream)
         
         tokens.splice(tokens.end(), tok2);
         
+        // This is used to remove the leading '{' line and trailing '}' line.
+        // That avoids pushing an extra scope.
+        bool addThis = true;
+        
         if(!continuation || stream->eof())  // Skip the eval if we're continuing, but not if the file ends!
         {
             for(list<Token>::iterator e = tokens.begin(); e != tokens.end();)
@@ -43,9 +46,17 @@ bool Interpreter::defineFunction(Variable* functionvar, std::istream* stream)
                 if(e->type == Token::SEPARATOR)
                 {
                     if(e->sep == OPEN_CURLY_BRACKET)
+                    {
+                        if(curlies == 0)
+                            addThis = false;
                         curlies++;
+                    }
                     else if(e->sep == CLOSE_CURLY_BRACKET)
+                    {
                         curlies--;
+                        if(curlies == 0)
+                            addThis = false;
+                    }
                 }
                 
                 if(curlies <= 0)
@@ -61,7 +72,12 @@ bool Interpreter::defineFunction(Variable* functionvar, std::istream* stream)
         }
         else if(continuation)
             lineNumber++;  // Skip an extra line if the last one was continued...  This probably isn't right for multiple-line continues...
+            
+        // Assumes curly brackets are on an otherwise empty line
+        if(addThis)
+            fn->setValue(fn->getValue() + "\n" + lineCopy);
     }
+    
     
     return true;
 }
@@ -300,6 +316,8 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                 else
                 {
                     error("Syntax Error: Variable '%s' is not declared.\n", e->text.c_str());
+                    UI_debug_pile("Variable '%s'.  Type '%s'.\n", e->text.c_str(), e->var->getTypeString().c_str());
+                    UI_debug_pile("Num scopes: %d\n", env.size());
                 }
             }
             else if(state == READY)
@@ -316,6 +334,8 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                 else
                 {
                     error("Syntax Error: Variable '%s' is not declared.\n", e->text.c_str());
+                    UI_debug_pile("Variable '%s'.  Type '%s'.\n", e->text.c_str(), e->var->getTypeString().c_str());
+                    UI_debug_pile("Num scopes: %d\n", env.size());
                 }
             }
             else if (state == VAR_DECL)

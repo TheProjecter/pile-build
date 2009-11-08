@@ -34,18 +34,20 @@ class Environment
         Scope& s = *(inter.env.begin());
         s.env["print"] = new Function(FN_PRINT);
         s.env["type"] = new Function(FN_TYPE);
-        s.env["string"] = new Function(FN_STRING);
         s.env["bool"] = new Function(FN_BOOL);
         s.env["int"] = new Function(FN_INT);
         s.env["float"] = new Function(FN_FLOAT);
+        s.env["string"] = new Function(FN_STRING);
         s.env["output"] = new String("a.out");
         s.env["sources"] = new Array(STRING);
         s.env["cflags"] = new Array(STRING);
         s.env["lflags"] = new Array(STRING);
-        s.env["variants"] = new Array(STRING);
         s.env["host_platform"] = new String(getSystemName());
         s.env["target_platform"] = new String(config.languages["TARGET_PLATFORM"]);
         s.env["compiler"] = new String(config.languages["CPP_COMPILER"]);
+        
+        Array* variants = new Array(STRING);
+        s.env["variants"] = variants;
         // includeDirs
         // libDirs
     }

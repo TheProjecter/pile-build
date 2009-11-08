@@ -19,6 +19,10 @@ KeywordEnum getKeyword(const string& str)
 
 bool isConvertable(TypeEnum source, TypeEnum dest)
 {
+    if(source == BOOL)
+    {
+        return (dest == BOOL || dest == INT || dest == FLOAT);
+    }
     if(source == INT)
     {
         return (dest == BOOL || dest == INT || dest == FLOAT);
@@ -1809,6 +1813,8 @@ Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
         }
         else if(continuation)
             lineNum++;  // Skip an extra line if the last one was continued...  This probably isn't right for multiple-line continues...
+        
+        returnValue.var = NULL;
     }
     
     interpreter.popEnv();

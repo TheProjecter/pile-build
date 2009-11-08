@@ -1255,8 +1255,10 @@ public:
 
     void popEnv()
     {
+        UI_debug_pile("Popping environment: %d scopes\n", env.size());
         if (env.size() > 1)
             env.erase(env.begin());
+        UI_debug_pile("Popped environment: %d scopes\n", env.size());
     }
 
     void popAll()
