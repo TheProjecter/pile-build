@@ -1,7 +1,173 @@
 #include "eve_interpreter.h"
+#include <cassert>
 
 #include <list>
 using namespace std;
+
+
+bool Interpreter::defineFunction(Variable* functionvar, std::istream* stream)
+{
+    // FIXME: Assumes there are no prototypes for now...
+    
+    Function* fn = dynamic_cast<Function*>(functionvar);
+    assert(fn != NULL);
+    
+    fn->setValue("");
+    fn->definitionFile = currentFile;
+    
+    int curlies = 0;
+    
+    bool done = false;
+    bool continuation = false;
+    list<Token> tokens;
+    string line;
+    while(!stream->eof() && !done)
+    {
+        getline(*stream, line);
+        // Assumes curly brackets are on an otherwise empty line
+        fn->setValue(fn->getValue() + "\n" + line);
+        
+        if(!continuation)  // If we're not continuing the line, then clear the tokens.
+            tokens.clear();
+        
+        list<Token> tok2 = tokenize1(line, continuation);
+        
+        tokens.splice(tokens.end(), tok2);
+        
+        if(!continuation || stream->eof())  // Skip the eval if we're continuing, but not if the file ends!
+        {
+            for(list<Token>::iterator e = tokens.begin(); e != tokens.end();)
+            {
+                if(e->type == Token::SEPARATOR)
+                {
+                    if(e->sep == OPEN_CURLY_BRACKET)
+                        curlies++;
+                    else if(e->sep == CLOSE_CURLY_BRACKET)
+                        curlies--;
+                }
+                
+                if(curlies <= 0)
+                {
+                    done = true;
+                    break;
+                }
+                
+                e++;
+            }
+            
+            lineNumber++;
+        }
+        else if(continuation)
+            lineNumber++;  // Skip an extra line if the last one was continued...  This probably isn't right for multiple-line continues...
+    }
+    
+    return true;
+}
+
+
+bool Interpreter::defineClass(Variable* classvar, istream* stream)
+{
+    Class* theClass = dynamic_cast<Class*>(classvar);
+    assert(theClass != NULL);
+    
+    int curlies = 0;
+    
+    bool done = false;
+    bool continuation = false;
+    list<Token> tokens;
+    string line;
+    while(!stream->eof() && !done)
+    {
+        getline(*stream, line);
+        
+        if(!continuation)  // If we're not continuing the line, then clear the tokens.
+            tokens.clear();
+        
+        list<Token> tok2 = tokenize1(line, continuation);
+        
+        tokens.splice(tokens.end(), tok2);
+        
+        if(!continuation || stream->eof())  // Skip the eval if we're continuing, but not if the file ends!
+        {
+            for(list<Token>::iterator e = tokens.begin(); e != tokens.end();)
+            {
+                if(e->type == Token::SEPARATOR)
+                {
+                    if(e->sep == OPEN_CURLY_BRACKET)
+                        curlies++;
+                    else if(e->sep == CLOSE_CURLY_BRACKET)
+                        curlies--;
+                }
+                
+                if(curlies <= 0)
+                {
+                    done = true;
+                    break;
+                }
+                
+                if(e->type == Token::VARIABLE)
+                {
+                    if (e->var->getType() == TYPENAME)
+                    {
+                        TypeName* t = static_cast<TypeName*>(e->var);
+                        TypeEnum newType = t->getValue();
+                        
+                        e++;
+                        if(e == tokens.end() || e->type != Token::VARIABLE)
+                        {
+                            error("Error: Loose type name.\n");
+                            break;
+                        }
+                        
+                        if (e->var->getType() == VOID)
+                        {
+                            UI_debug_pile(" Adding a variable\n");
+                            theClass->addVariable(getTypeString(newType), e->text);
+                            e++;
+                            if(e != tokens.end())
+                            {
+                                error("Error: Unexpected tokens after variable declaration.\n");
+                            }
+                        }
+                        else
+                        {
+                            error("Error: Unexpected token after type name.\n");
+                        }
+                        
+                    }
+                }
+                e++;
+            }
+            //returnValue = interpreter.evalTokens(tokens, true, wasTrueIf, wasFalseIf);
+            /*if(returnValue.type == Token::VARIABLE)
+            {
+                if(returnValue.var->getType() == CLASS)
+                {
+                    Class* aClass = dynamic_cast<Class*>(returnValue.var);
+                    if(aClass != NULL)
+                    {
+                        interpreter.defineClass(aClass, &str);
+                    }
+                }
+                else if(returnValue.var->getType() == FUNCTION)
+                {
+                    Function* aFn = dynamic_cast<Function*>(returnValue.var);
+                    if(aFn != NULL)
+                    {
+                        interpreter.defineFunction(aFn, &str);
+                    }
+                }
+            }*/
+            lineNumber++;
+        }
+        else if(continuation)
+            lineNumber++;  // Skip an extra line if the last one was continued...  This probably isn't right for multiple-line continues...
+    }
+    
+    return true;
+}
+
+
 
 
 
@@ -23,6 +189,7 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
             UI_debug_pile("['%s' (%s)] ", e->var->getTypeString().c_str(), e->var->getValueString().c_str());
     }
     UI_debug_pile("\n");
+    TypeName* newTypeName = NULL;  // Used for Variable declarations
     TypeEnum newType = NOT_A_TYPE;  // Used for Variable declarations
     Token firstVar;
     Token firstOp;
@@ -116,12 +283,15 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                 if (e->var->getType() == TYPENAME) // Should probably be an operator...
                 {
                     TypeName* t = static_cast<TypeName*>(e->var);
+                    t->text = e->text;
+                    newTypeName = t;
                     newType = t->getValue();
                     UI_debug_pile(" Found a type name\n");
                     state = VAR_DECL;
                 }
                 else if (e->var->getType() != VOID && e->var->getType() != NOT_A_TYPE)
                 {
+                    UI_debug_pile("Found a variable at beginning.\n");
                     firstVar = *e;
                     state = VAR;
                 }
@@ -153,6 +323,123 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                 {
                     UI_debug_pile(" Adding a variable\n");
                     Variable* v = NULL;
+                    bool isFn = false;
+                    list<Token>::iterator g = e;
+                    g++;
+                    if(g != tokens.end())
+                    {
+                        if(g->type == Token::SEPARATOR && g->sep == OPEN_PARENTHESIS)
+                            isFn = true;
+                    }
+                    
+                    
+                    
+                    if(isFn)
+                    {
+                        Function* f = new Function;
+                        f->returnType = newType;
+                        string name = e->text;
+                        
+                        
+                        delete e->var;
+                        e->var = f;
+                        
+                        firstVar = *e;
+                        
+                        // Read signature: void fn(int a, bool b)
+                        e++;
+                        if(e == tokens.end() || e->type != Token::SEPARATOR || e->sep != OPEN_PARENTHESIS)
+                        {
+                            error("Error: Expected open parenthesis.\n");
+                            return Token();
+                        }
+                        // void fn(int
+                        e++;
+                        if(e == tokens.end())
+                        {
+                            error("Error: Expected parameter list or closing parenthesis.\n");
+                            return Token();
+                        }
+                        UI_debug_pile("Loading function declaration.\n");
+                        TypeName* gotType = NULL;
+                        while(e != tokens.end())
+                        {
+                            UI_debug_pile("Checking token: %s\n", e->text.c_str());
+                            if(gotType == NULL)
+                            {
+                                // Find type name, comma, or close paren.
+                                if(e->type == Token::VARIABLE)
+                                {
+                                    assert(e->var != NULL);
+                                    if(e->var->getType() == TYPENAME)
+                                    {
+                                        gotType = dynamic_cast<TypeName*>(e->var);
+                                        UI_debug_pile("Got type\n");
+                                    }
+                                    else
+                                    {
+                                        error("Error: Unexpected token in function declaration.\n");
+                                        return Token();
+                                    }
+                                }
+                                else if(e->type == Token::SEPARATOR)
+                                {
+                                    if(e->sep == CLOSE_PARENTHESIS)
+                                    {
+                                        UI_debug_pile("Done with parameters.\n");
+                                        break;
+                                    }
+                                    else if(e->sep == COMMA)
+                                    {
+                                        UI_debug_pile("Got comma\n");
+                                        gotType = NULL;
+                                    }
+                                    else
+                                    {
+                                        error("Error: Unexpected separator in function declaration.\n");
+                                        return Token();
+                                    }
+                                }
+                                else
+                                {
+                                    error("Error: Unexpected token in function declaration.\n");
+                                    return Token();
+                                }
+                            }
+                            else
+                            {
+                                // Find variable name
+                                if(e->type == Token::VARIABLE)
+                                {
+                                    assert(e->var != NULL);
+                                    if(e->var->getType() != TYPENAME && e->var->getType() != NOT_A_TYPE && e->var->getType() != CLASS_OBJECT)
+                                    {
+                                        // Add the variable to the function
+                                        f->addArg(*gotType, e->text);
+                                        gotType = NULL;
+                                        UI_debug_pile("Got parameter.\n");
+                                    }
+                                    else
+                                    {
+                                        error("Error: Unexpected variable in function declaration.\n");
+                                        return Token();
+                                    }
+                                }
+                                else
+                                {
+                                    error("Error: Unexpected token in function declaration.\n");
+                                    return Token();
+                                }
+                            }
+                            e++;
+                        }
+                        
+                        UI_debug_pile("Adding function declaration.\n");
+                        addVar(name, f);
+                        
+                        return firstVar;
+                    }
+                    
                     // Set the new variable
                     if (newType == STRING)
                         v = new String;
@@ -172,6 +459,19 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                         v = new Function;
                     else if (newType == PROCEDURE)
                         v = new Procedure;
+                    else if (newType == CLASS)
+                        v = new Class;
+                    else if (newType == CLASS_OBJECT)
+                    {
+                        ClassObject* c = new ClassObject(newTypeName->text);
+                        if(c->className == "")
+                            error("Error: Unknown class, %s, for variable '%s'\n", newTypeName->text.c_str(), e->text.c_str());
+                        v = c;
+                    }
+                    else if (newType == VOID)
+                    {
+                        error("Error: Void type for variable '%s'\n");
+                    }
                     else
                     {
                         error("Error: Unknown type for variable '%s'\n", e->text.c_str());
@@ -191,7 +491,7 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
             }
             else if (state == VAR)
             {
-                error("Syntax Error1: Unexpected variable.  Expected an operator or parenthesis.\n");
+                error("Syntax Error1: Unexpected variable (%s).  Expected an operator or parenthesis.\n", e->text.c_str());
             }
             else if (state == VAR_OP)
             {
@@ -416,17 +716,23 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     }
                     tok2.splice(tok2.begin(), tokens, f, e);
                     
+                    UI_debug_pile("Just before function call.\n");
+                    
                     // Push the function stack
                     stack.push_back(list<Token>());
                     
                     // Call the function
                     if(firstVar.var->getType() == FUNCTION)
-                        firstVar.var = callFn(static_cast<Function*>(firstVar.var), tok2);
+                    {
+                        firstVar = Token(callFn(static_cast<Function*>(firstVar.var), tok2), "function result");
+                    }
                     
                     // Pop the outer stack
                     vector<list<Token> >::iterator g = stack.end();
                     g--;
                     stack.erase(g);
+                    
+                    UI_debug_pile("Just finished function call.\n");
                     
                     if(firstVar.type == Token::NOT_A_TOKEN)
                     {
@@ -626,6 +932,11 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                         error("Syntax Error: Unexpected 'else' statement.\n");
                     return Token(Token::KEYWORD, "else");
                 }
+                else if(e->keyword == KW_RETURN)
+                {
+                    state = READY;
+                    stack[0].push_front(Token(Token::KEYWORD, "return"));
+                }
                 else
                 {
                     error("Syntax Error: Unexpected keyword at the beginning of a line.\n");
@@ -781,6 +1092,13 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                         // This shouldn't happen
                         error("Error: Unexpected separator when evaluating expression.\n");
                     }
+                    else if(prev.type == Token::KEYWORD)
+                    {
+                        if(prev.keyword == KW_RETURN)
+                        {
+                            return Token(Token::KEYWORD, "return");
+                        }
+                    }
                     else
                     {
                         secondVar = prev;
@@ -823,6 +1141,15 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     {
                         firstOp = prev;
                         state = VAR_OP;
+                    }
+                    else if(prev.type == Token::KEYWORD)
+                    {
+                        if(prev.keyword == KW_RETURN)
+                        {
+                            Token t = Token(Token::KEYWORD, "return");
+                            t.var = secondVar.var;
+                            return t;
+                        }
                     }
                     else
                     {

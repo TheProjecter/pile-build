@@ -12,6 +12,8 @@ KeywordEnum getKeyword(const string& str)
         return KW_IF;
     if(str == "else")
         return KW_ELSE;
+    if(str == "return")
+        return KW_RETURN;
     return KW_NONE;
 }
 
@@ -100,7 +102,27 @@ bool Interpreter::readFile(string filename)
                     wasFalseIf = true;
                 }
             }
-            
+            if(result.type == Token::VARIABLE && result.var != NULL)
+            {
+                UI_debug_pile("Returned a variable.\n");
+                if(result.var->getType() == CLASS)
+                {
+                    Class* aClass = dynamic_cast<Class*>(result.var);
+                    if(aClass != NULL)
+                    {
+                        defineClass(aClass, &fin);
+                    }
+                }
+                else if(result.var->getType() == FUNCTION)
+                {
+                    Function* aFn = dynamic_cast<Function*>(result.var);
+                    if(aFn != NULL)
+                    {
+                        UI_debug_pile("Defining function.\n");
+                        defineFunction(aFn, &fin);
+                    }
+                }
+            }
             lineNumber++;
         }
         else if(continuation)
@@ -222,6 +244,8 @@ string getOperatorString(OperatorEnum type)
             return ",";*/
         case CALL:
             return "()";
+        case DOT:
+            return ".";
         /*case OPEN_PARENTHESIS:
             return "(";
         case CLOSE_PARENTHESIS:
@@ -277,6 +301,8 @@ string getTypeString(TypeEnum type)
 {
     switch(type)
     {
+        case VOID:
+            return "void";
         case BOOL:
             return "bool";
         case INT:
@@ -1604,3 +1630,118 @@ Variable* callBuiltIn(FunctionEnum fn, vector<Variable*>& args)
     }
     return result;
 }
+
+Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
+{
+    if(builtIn != FN_NONE)
+        return callBuiltIn(builtIn, args);
+    // FIXME: Execute function body here
+    
+    if(definitionFile == "")
+    {
+        interpreter.error("Error: Function not defined.\n");
+        return NULL;
+    }
+    
+    
+    interpreter.pushEnv(Scope(true));
+    
+    // Add the argument variables
+    for(unsigned int i = 0; i < args.size(); i++)
+    {
+        interpreter.addVar(this->args[i], args[i]);
+    }
+    
+    
+    
+    int lineNum = lineNumber;
+    
+    Token returnValue;
+    
+    // Interpret the function...
+    std::stringstream str(getValue());
+    bool continuation = false;
+    bool wasTrueIf = false;
+    bool wasFalseIf = false;
+    list<Token> tokens;
+    string line;
+    while(!str.eof())
+    {
+        getline(str, line);
+        
+        if(!continuation)  // If we're not continuing the line, then clear the tokens.
+            tokens.clear();
+        
+        list<Token> tok2 = tokenize1(line, continuation);
+        
+        tokens.splice(tokens.end(), tok2);
+        
+        if(!continuation || str.eof())  // Skip the eval if we're continuing, but not if the file ends!
+        {
+            returnValue = interpreter.evalTokens(tokens, true, wasTrueIf, wasFalseIf);
+            wasTrueIf = wasFalseIf = false;
+            if(returnValue.type == Token::KEYWORD)
+            {
+                if(returnValue.text == "true if")
+                {
+                    wasTrueIf = true;
+                    wasFalseIf = false;
+                }
+                else if(returnValue.text == "false if")
+                {
+                    wasTrueIf = false;
+                    wasFalseIf = true;
+                }
+                else if(returnValue.text == "return")
+                {
+                    break;
+                }
+            }
+            if(returnValue.type == Token::VARIABLE && returnValue.var != NULL)
+            {
+                if(returnValue.var->getType() == CLASS)
+                {
+                    Class* aClass = dynamic_cast<Class*>(returnValue.var);
+                    if(aClass != NULL)
+                    {
+                        interpreter.defineClass(aClass, &str);
+                    }
+                }
+                else if(returnValue.var->getType() == FUNCTION)
+                {
+                    Function* aFn = dynamic_cast<Function*>(returnValue.var);
+                    if(aFn != NULL)
+                    {
+                        interpreter.defineFunction(aFn, &str);
+                    }
+                }
+            }
+            lineNum++;
+        }
+        else if(continuation)
+            lineNum++;  // Skip an extra line if the last one was continued...  This probably isn't right for multiple-line continues...
+    }
+    
+    interpreter.popEnv();
+    if(returnType.getValue() == VOID)
+        return NULL;
+    if(returnValue.text != "return")
+    {
+        interpreter.error("Error: No return statement at end of function.\n");
+    }
+    else
+    {
+        if(returnValue.var == NULL)
+            UI_debug_pile("Returning void (NULL)\n");
+        else
+        {
+            if(returnValue.var->getTypeString() != returnType.text)
+            {
+                interpreter.error("Error: Returning type '%s' from a function which expects '%s'.\n", returnValue.var->getTypeString().c_str(), returnType.text.c_str());
+            }
+            UI_debug_pile("Returning type: %s\n", returnValue.var->getTypeString().c_str());
+        }
+    }
+    return returnValue.var;
+}
+

@@ -7,6 +7,8 @@ extern Interpreter interpreter;
 
 TypeEnum getTypeFromString(const string& str)
 {
+    if(str == "void")
+        return VOID;
     if(str == "string")
         return STRING;
     if(str == "int")
@@ -25,6 +27,8 @@ TypeEnum getTypeFromString(const string& str)
         return FUNCTION;
     if(str == "procedure")
         return PROCEDURE;
+    if(str == "class")
+        return CLASS;
     
     return NOT_A_TYPE;
 }
