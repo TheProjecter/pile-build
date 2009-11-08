@@ -1730,7 +1730,8 @@ Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
         return callBuiltIn(builtIn, args);
     // FIXME: Execute function body here
     
-    if(definitionFile == "")
+    //if(definitionFile == "")
+    if(lineNumber == 0)
     {
         interpreter.error("Error: Function not defined.\n");
         return NULL;
@@ -1747,7 +1748,12 @@ Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
     
     
     
-    int lineNum = lineNumber;
+    //int lineNum = lineNumber;
+    // FIXME: Hacky!
+    // Make sure error messages use the right line numbers.
+    unsigned int holdInterpreterLineNum = interpreter.lineNumber;
+    unsigned int& lineNum = interpreter.lineNumber;
+    lineNum = 1 + lineNumber;
     
     Token returnValue;
     
@@ -1840,6 +1846,9 @@ Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
             UI_debug_pile("Returning type: %s\n", returnValue.var->getTypeString().c_str());
         }
     }
+    
+    interpreter.lineNumber = holdInterpreterLineNum;
+    
     return returnValue.var;
 }
 

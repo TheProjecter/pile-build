@@ -416,7 +416,7 @@ public:
     TypeName returnType;
 
     std::string definitionFile;
-    int lineNumber;
+    unsigned int lineNumber;
 
 
     Function()
@@ -1004,6 +1004,15 @@ public:
         , outputter("%s:%d:%s")
     {
         pushEnv(true);  // Push global scope
+        
+        // Add built-in functions
+        Scope& s = *(env.begin());
+        s.env["print"] = new Function(FN_PRINT);
+        s.env["type"] = new Function(FN_TYPE);
+        s.env["bool"] = new Function(FN_BOOL);
+        s.env["int"] = new Function(FN_INT);
+        s.env["float"] = new Function(FN_FLOAT);
+        s.env["string"] = new Function(FN_STRING);
     }
 
     void printEnv()
