@@ -14,6 +14,7 @@ by Jonathan Dearborn
 #include <vector>
 #include <map>
 #include <string>
+#include <istream>
 #include <sstream>
 #include "stdarg.h"  // FIXME: Move into the cpp file
 
@@ -43,11 +44,11 @@ bool isOperator(const char& c);
 bool isSeparator(const char& c);
 
 
-enum TypeEnum{NOT_A_TYPE, VOID, TYPENAME, BOOL, INT, FLOAT, STRING, MACRO, ARRAY, LIST, FUNCTION, PROCEDURE, CLASS};
+enum TypeEnum{NOT_A_TYPE, VOID, TYPENAME, BOOL, INT, FLOAT, STRING, MACRO, ARRAY, LIST, FUNCTION, PROCEDURE, CLASS, CLASS_OBJECT};
 
 enum OperatorEnum{NOT_AN_OPERATOR, ADD, SUBTRACT, NEGATE, ASSIGN, ADD_ASSIGN, SUBTRACT_ASSIGN, MULTIPLY_ASSIGN, DIVIDE_ASSIGN,
                   MULTIPLY, DIVIDE, MODULUS, EQUALS, NOT_EQUALS, LESS, GREATER, LESS_EQUAL,
-                  GREATER_EQUAL, NOT, AND, OR, CALL, CONTINUATION, COLON
+                  GREATER_EQUAL, NOT, AND, OR, CALL, CONTINUATION, COLON, DOT
                  };
                  
 enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS, 
@@ -55,7 +56,7 @@ enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
                 CLOSE_CURLY_BRACKET, SEMICOLON
                  };
 
-enum KeywordEnum{KW_NONE, KW_IF, KW_ELSE};
+enum KeywordEnum{KW_NONE, KW_IF, KW_ELSE, KW_RETURN};
 
 enum FunctionEnum{FN_NONE, FN_PRINT, FN_TYPE, FN_STRING, FN_INT, FN_FLOAT};
 
@@ -68,6 +69,7 @@ std::string getTypeString(TypeEnum type);
 std::string getOperatorString(OperatorEnum type);
 std::string getSeparatorString(SeparatorEnum type);
 
+class Interpreter;
 class Variable;
 Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args);
 
@@ -102,8 +104,19 @@ class TypeName : public Variable
 private:
     TypeEnum value; // What type is being declared?
 public:
+    std::string text;
     TypeName()
             : Variable(TYPENAME)
+    {}
+    TypeName(TypeEnum type)
+            : Variable(TYPENAME)
+            , value(type)
+            , text(::getTypeString(type))
+    {}
+    TypeName(TypeEnum type, const std::string& text)
+            : Variable(TYPENAME)
+            , value(type)
+            , text(text)
     {}
     void setValue(const TypeEnum& val)
     {
@@ -396,40 +409,49 @@ class Function : public Variable
 {
 private:
     std::string value;
-    std::vector<TypeEnum> argt;  // Types of arguments
-    TypeEnum returnType;
+    std::vector<TypeName> argt;  // Types of arguments
+    std::vector<std::string> args;  // Names of arguments
     FunctionEnum builtIn;
 public:
+    TypeName returnType;
+
+    std::string definitionFile;
+    int lineNumber;
+
+
     Function()
             : Variable(FUNCTION)
             , builtIn(FN_NONE)
+            , lineNumber(0)
     {}
-    Function(const std::vector<TypeEnum>& argt, const std::string& value)
+    Function(const std::vector<TypeName>& argt, const std::string& value)
             : Variable(FUNCTION)
             , value(value)
             , argt(argt)
             , builtIn(FN_NONE)
+            , lineNumber(0)
     {}
     Function(FunctionEnum builtIn)
             : Variable(FUNCTION)
             , builtIn(builtIn)
+            , lineNumber(0)
     {
         switch(builtIn)
         {
             case FN_PRINT:
-                argt.push_back(STRING);
+                argt.push_back(TypeName(STRING));
                 break;
             case FN_TYPE:
-                argt.push_back(VOID);
+                argt.push_back(TypeName(VOID));
                 break;
             case FN_STRING:
-                argt.push_back(VOID);
+                argt.push_back(TypeName(VOID));
                 break;
             case FN_INT:
-                argt.push_back(VOID);
+                argt.push_back(TypeName(VOID));
                 break;
             case FN_FLOAT:
-                argt.push_back(VOID);
+                argt.push_back(TypeName(VOID));
                 break;
             case FN_NONE:
                 break;
@@ -439,7 +461,7 @@ public:
     {
         return value;
     }
-    std::vector<TypeEnum>& getArgTypes()
+    std::vector<TypeName>& getArgTypes()
     {
         return argt;
     }
@@ -447,9 +469,14 @@ public:
     {
         value = val;
     }
-    void setArgTypes(const std::vector<TypeEnum>& argTypes)
+    void setArgTypes(const std::vector<TypeName>& argTypes)
     {
         argt = argTypes;
+    }
+    void addArg(const TypeName& argType, const std::string& argName)
+    {
+        argt.push_back(argType);
+        args.push_back(argName);
     }
     /*void loadFromSig(const std::list<Token>& fnSignature)
     {
@@ -467,6 +494,7 @@ public:
     {
         return builtIn;
     }
+    Variable* call(Interpreter& interpreter, std::vector<Variable*>& args);
 };
 
 class Procedure : public Variable
@@ -497,8 +525,23 @@ class Class : public Variable
 {
 private:
     std::string name;
-    std::map<std::string, Variable*> vars;
 public:
+    class VarRecord
+    {
+        public:
+        std::string type;
+        std::string name;
+        std::list<std::string> functionArgs;
+        std::string functionDefinition;
+        VarRecord(const std::string& type, const std::string& name)
+            : type(type), name(name)
+        {}
+        VarRecord(const std::string& name, const std::list<std::string> argtypes, const std::string& definition)
+            : type("function"), name(name), functionArgs(argtypes), functionDefinition(definition)
+        {}
+    };
+    std::list<VarRecord> vars;
+    
     Class()
             : Variable(CLASS)
     {}
@@ -506,16 +549,53 @@ public:
             : Variable(CLASS)
             , name(name)
     {}
+    void addVariable(const std::string& vartype, const std::string& varname)
+    {
+        vars.push_back(VarRecord(vartype, varname));
+    }
+    void addFunction(const std::string& varname, const std::list<std::string> argtypes, const std::string& definition)
+    {
+        vars.push_back(VarRecord(varname, argtypes, definition));
+    }
+    virtual std::string getValueString()
+    {
+        return name;
+    }
+};
+
+class ClassObject : public Variable
+{
+private:
+    std::string name;
+    std::map<std::string, Variable*> vars;
+    
+    void addVariables()
+    {
+        // Use classname and check the interpreter's list of class definitions
+        // to create new variables and add them to the map.
+        //vars.insert(std::make_pair(varname, var));
+    }
+    
+public:
+    std::string className;
+    ClassObject()
+            : Variable(CLASS)
+    {}
+    ClassObject(const std::string& name)
+            : Variable(CLASS)
+            , name(name)
+    {
+        // FIXME
+        // Search the registered classes for the name
+        // If it's found, create all new variables.
+        // If it's not found, set className to ""
+    }
     Variable* getVariable(const std::string& var)
     {
         std::map<std::string, Variable*>::iterator e = vars.find(var);
         if(e == vars.end())
             return NULL;
         return e->second;
-    }
-    void addVariable(const std::string& varname, Variable* var)
-    {
-        vars.insert(std::make_pair(varname, var));
     }
     virtual std::string getValueString()
     {
@@ -884,6 +964,15 @@ class Outputter
 };
 
 
+inline void print_token_list(const std::list<Token>& ls)
+{
+    for(std::list<Token>::const_iterator e = ls.begin(); e != ls.end(); e++)
+    {
+        UI_print("%s\n", e->text.c_str());
+    }
+}
+
+
 class Interpreter
 {
 private:
@@ -946,8 +1035,11 @@ public:
                 // If we're not in parens and it's a comma, take and evaluate the tokens.
                 else if(num == 0 && e->sep == COMMA)
                 {
+                    tokens.clear();
                     tokens.splice(tokens.begin(), arguments, f, e);
+                    
                     Token eval = evalTokens(tokens, false, false, false, true);
+                    
                     if(eval.var != NULL)
                         args.push_back(eval.var);
                     else
@@ -965,8 +1057,12 @@ public:
             e++;
             if(e == arguments.end())
             {
+                tokens.clear();
+                
                 tokens.splice(tokens.begin(), arguments, f, e);
+                
                 Token eval = evalTokens(tokens, false, false, false, true);
+                
                 if(eval.var != NULL)
                     args.push_back(eval.var);
                 else
@@ -981,7 +1077,6 @@ public:
             }
         }
         
-        UI_debug_pile(" Num args in: %d vs %d\n", args.size(), fn->getArgTypes().size());
         
         // Compare number of arguments
         if(args.size() > fn->getArgTypes().size())
@@ -998,50 +1093,15 @@ public:
         for(unsigned int i = 0; i < args.size(); i++)
         {
             // Void will accept anything
-            if(fn->getArgTypes()[i] != VOID && !isConvertable(args[i]->getType(), fn->getArgTypes()[i]))
+            if(fn->getArgTypes()[i].getValue() != VOID && !isConvertable(args[i]->getType(), fn->getArgTypes()[i].getValue()))
             {
                 error("Error: Argument %d has the wrong type in function call.\n", i+1);
                 return NULL;
             }
         }
         
-        Variable* result = NULL;
         
-        // Deal with built-in functions
-        if(fn->isBuiltIn())
-        {
-            result = callBuiltIn(fn->getBuiltIn(), args);
-            
-            return result;
-        }
-        
-        Token returnValue;
-        
-        // Interpret the function...
-        std::stringstream str(fn->getValue());
-        bool continuation = false;
-        tokens.clear();
-        std::string line;
-        while(!str.eof())
-        {
-            getline(str, line);
-            
-            if(!continuation)  // If we're not continuing the line, then clear the tokens.
-                tokens.clear();
-            
-            std::list<Token> tok2 = tokenize1(line, continuation);
-            tokens.splice(tokens.end(), tok2);
-            
-            if(!continuation || str.eof())  // Skip the eval if we're continuing, but not if the file ends!
-                returnValue = evalTokens(tokens, true, false, false, true);
-            //if(returnValue.isReturn())
-            //    break;
-        }
-        
-        if(returnValue.var != NULL)
-            result = returnValue.var;
-        
-        return result;
+        return fn->call(*this, args);
     }
 
     Variable* evaluateExpression(Variable* A, OperatorEnum operation)
@@ -1090,6 +1150,8 @@ public:
     
     Variable* getArrayLiteral(std::list<Token>& tokens, std::list<Token>::iterator& e);
 
+    bool defineClass(Variable* classvar, std::istream* stream);
+    bool defineFunction(Variable* functionvar, std::istream* stream);
     Token evalTokens(std::list<Token>& tokens, bool beginning, bool wasTrueIf = false, bool wasFalseIf = false, bool subExpression = false);
     
     //bool interpret(std::string line);

@@ -214,7 +214,7 @@ int main(int argc, char* argv[])
     log_file = "pile_log.txt";
     
     // Delete log file
-    ioDelete(log_file.c_str());
+    ioDelete(log_file);
     
     UI_debug_pile("Starting up...\n");
     UI_debug_pile("Argc = %d\n", argc);
