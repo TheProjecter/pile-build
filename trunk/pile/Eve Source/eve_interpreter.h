@@ -46,7 +46,7 @@ bool isSeparator(const char& c);
 
 enum TypeEnum{NOT_A_TYPE, VOID, TYPENAME, BOOL, INT, FLOAT, STRING, MACRO, ARRAY, LIST, FUNCTION, PROCEDURE, CLASS, CLASS_OBJECT};
 
-enum OperatorEnum{NOT_AN_OPERATOR, ADD, SUBTRACT, NEGATE, ASSIGN, ADD_ASSIGN, SUBTRACT_ASSIGN, MULTIPLY_ASSIGN, DIVIDE_ASSIGN, EXPONENTIATE_ASSIGN, 
+enum OperatorEnum{NOT_AN_OPERATOR, ADD, SUBTRACT, NEGATE, ASSIGN, ADD_ASSIGN, SUBTRACT_ASSIGN, MULTIPLY_ASSIGN, DIVIDE_ASSIGN, MODULUS_ASSIGN, EXPONENTIATE_ASSIGN, 
                   MULTIPLY, DIVIDE, MODULUS, EXPONENTIATE, EQUALS, NOT_EQUALS, LESS, GREATER, NOT_LESS, NOT_GREATER, LESS_EQUAL,
                   GREATER_EQUAL, NOT, AND, OR, CALL, CONTINUATION, COLON, DOT, BITWISE_AND, BITWISE_XOR, BITWISE_OR
                  };
@@ -735,13 +735,15 @@ Variable* multiply(Variable* A, Variable* B);
 
 Variable* divide(Variable* A, Variable* B);
 
+Variable* modulus(Variable* A, Variable* B);
+
 Variable* exponentiate(Variable* A, Variable* B);
 
 Variable* add_assign(Variable* A, Variable* B);
 Variable* subtract_assign(Variable* A, Variable* B);
 Variable* multiply_assign(Variable* A, Variable* B);
 Variable* divide_assign(Variable* A, Variable* B);
-//Variable* modulus_assign(Variable* A, Variable* B);
+Variable* modulus_assign(Variable* A, Variable* B);
 
 Variable* exponentiate_assign(Variable* A, Variable* B);
 
@@ -893,6 +895,12 @@ public:
         else if (Oper == "/=")
         {
             oper = DIVIDE_ASSIGN;
+            associativeLeftToRight = false;
+            precedence = 16;
+        }
+        else if (Oper == "%=")
+        {
+            oper = MODULUS_ASSIGN;
             associativeLeftToRight = false;
             precedence = 16;
         }
@@ -1341,8 +1349,8 @@ public:
             return multiply_assign(A, B);
         if (operation == DIVIDE_ASSIGN)
             return divide_assign(A, B);
-        //if (operation == MODULUS_ASSIGN)
-        //    return modulus_assign(A, B);
+        if (operation == MODULUS_ASSIGN)
+            return modulus_assign(A, B);
         if (operation == EXPONENTIATE_ASSIGN)
             return exponentiate_assign(A, B);
         if (operation == SUBTRACT)
@@ -1351,6 +1359,8 @@ public:
             return multiply(A, B);
         if (operation == DIVIDE)
             return divide(A, B);
+        if (operation == MODULUS)
+            return ::modulus(A, B);
         if (operation == EXPONENTIATE)
             return exponentiate(A, B);
         error("Error: Undefined operation\n");
