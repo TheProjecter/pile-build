@@ -82,12 +82,16 @@ string getOperatorString(OperatorEnum type)
             return "*=";
         case DIVIDE_ASSIGN:
             return "/=";
+        case EXPONENTIATE_ASSIGN:
+            return "**=";
         case MULTIPLY:
             return "*";
         case DIVIDE:
             return "/";
         case MODULUS:
             return "%";
+        case EXPONENTIATE:
+            return "**";
         case EQUALS:
             return "==";
         case NOT_EQUALS:

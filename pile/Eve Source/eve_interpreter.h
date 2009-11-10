@@ -46,8 +46,8 @@ bool isSeparator(const char& c);
 
 enum TypeEnum{NOT_A_TYPE, VOID, TYPENAME, BOOL, INT, FLOAT, STRING, MACRO, ARRAY, LIST, FUNCTION, PROCEDURE, CLASS, CLASS_OBJECT};
 
-enum OperatorEnum{NOT_AN_OPERATOR, ADD, SUBTRACT, NEGATE, ASSIGN, ADD_ASSIGN, SUBTRACT_ASSIGN, MULTIPLY_ASSIGN, DIVIDE_ASSIGN,
-                  MULTIPLY, DIVIDE, MODULUS, EQUALS, NOT_EQUALS, LESS, GREATER, NOT_LESS, NOT_GREATER, LESS_EQUAL,
+enum OperatorEnum{NOT_AN_OPERATOR, ADD, SUBTRACT, NEGATE, ASSIGN, ADD_ASSIGN, SUBTRACT_ASSIGN, MULTIPLY_ASSIGN, DIVIDE_ASSIGN, EXPONENTIATE_ASSIGN, 
+                  MULTIPLY, DIVIDE, MODULUS, EXPONENTIATE, EQUALS, NOT_EQUALS, LESS, GREATER, NOT_LESS, NOT_GREATER, LESS_EQUAL,
                   GREATER_EQUAL, NOT, AND, OR, CALL, CONTINUATION, COLON, DOT, BITWISE_AND, BITWISE_XOR, BITWISE_OR
                  };
                  
@@ -58,7 +58,7 @@ enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 
 enum KeywordEnum{KW_NONE, KW_IF, KW_ELSE, KW_RETURN};
 
-enum FunctionEnum{FN_NONE, FN_PRINT, FN_PRINTLN, FN_TYPE, FN_STRING, FN_BOOL, FN_INT, FN_FLOAT};
+enum FunctionEnum{FN_NONE, FN_PRINT, FN_PRINTLN, FN_WARNING, FN_ERROR, FN_DEBUG, FN_TYPE, FN_STRING, FN_BOOL, FN_INT, FN_FLOAT};
 
 KeywordEnum getKeyword(const std::string& str);
 
@@ -517,6 +517,15 @@ public:
             case FN_PRINTLN:
                 argt.push_back(TypeName(STRING));
                 break;
+            case FN_WARNING:
+                argt.push_back(TypeName(STRING));
+                break;
+            case FN_ERROR:
+                argt.push_back(TypeName(STRING));
+                break;
+            case FN_DEBUG:
+                argt.push_back(TypeName(STRING));
+                break;
             case FN_TYPE:
                 argt.push_back(TypeName(VOID));
                 break;
@@ -726,7 +735,11 @@ Variable* multiply(Variable* A, Variable* B);
 
 Variable* divide(Variable* A, Variable* B);
 
+Variable* exponentiate(Variable* A, Variable* B);
+
 Variable* add_assign(Variable* A, Variable* B);
+
+Variable* exponentiate_assign(Variable* A, Variable* B);
 
 class Scope
 {
@@ -879,6 +892,12 @@ public:
             associativeLeftToRight = false;
             precedence = 16;
         }
+        else if (Oper == "**=")
+        {
+            oper = EXPONENTIATE_ASSIGN;
+            associativeLeftToRight = false;
+            precedence = 16;
+        }
         else if (Oper == "*")
         {
             oper = MULTIPLY;
@@ -893,6 +912,11 @@ public:
         {
             oper = MODULUS;
             precedence = 5;
+        }
+        else if (Oper == "**")
+        {
+            oper = EXPONENTIATE;
+            precedence = 2;
         }
         else if (Oper == "==")
         {
@@ -1129,6 +1153,9 @@ public:
         Scope& s = *(env.begin());
         s.env["print"] = new Function(FN_PRINT);
         s.env["println"] = new Function(FN_PRINTLN);
+        s.env["warning"] = new Function(FN_PRINT);
+        s.env["error"] = new Function(FN_PRINT);
+        s.env["debug"] = new Function(FN_PRINT);
         s.env["type"] = new Function(FN_TYPE);
         s.env["bool"] = new Function(FN_BOOL);
         s.env["int"] = new Function(FN_INT);
@@ -1304,12 +1331,16 @@ public:
             return add(A, B);
         if (operation == ADD_ASSIGN)
             return add_assign(A, B);
+        if (operation == EXPONENTIATE_ASSIGN)
+            return exponentiate_assign(A, B);
         if (operation == SUBTRACT)
             return subtract(A, B);
         if (operation == MULTIPLY)
             return multiply(A, B);
         if (operation == DIVIDE)
             return divide(A, B);
+        if (operation == EXPONENTIATE)
+            return exponentiate(A, B);
         error("Error: Undefined operation\n");
         return A;
     }
