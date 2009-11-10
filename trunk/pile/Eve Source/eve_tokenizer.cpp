@@ -114,6 +114,66 @@ Variable* getCorrectVariable(string token, bool isFunction = false)
 
 
 
+bool isOperator(const char& c)
+{
+    switch(c)
+    {
+        case '=':
+            return true;
+        case '+':
+            return true;
+        case '-':
+            return true;
+        case '*':
+            return true;
+        case '/':
+            return true;
+        case '<':
+            return true;
+        case '>':
+            return true;
+        case '!':
+            return true;
+        case '^':
+            return true;
+        case '&':
+            return true;
+        case '|':
+            return true;
+        case '%':
+            return true;
+        case '.':
+            return true;
+        case ':':
+            return true;
+    }
+    return false;
+}
+
+bool isSeparator(const char& c)
+{
+    switch(c)
+    {
+        case '(':
+            return true;
+        case ')':
+            return true;
+        case ',':
+            return true;
+        case '[':
+            return true;
+        case ']':
+            return true;
+        case '{':
+            return true;
+        case '}':
+            return true;
+        case ';':
+            return true;
+    }
+    return false;
+}
+
 bool isDigraphOperator(const char& c, const char& d)
 {
     switch(c)
@@ -148,6 +208,17 @@ bool isDigraphOperator(const char& c, const char& d)
 
 
 
+
+KeywordEnum getKeyword(const string& str)
+{
+    if(str == "if")
+        return KW_IF;
+    if(str == "else")
+        return KW_ELSE;
+    if(str == "return")
+        return KW_RETURN;
+    return KW_NONE;
+}
 
 
 

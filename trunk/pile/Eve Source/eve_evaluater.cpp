@@ -361,6 +361,8 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                         Function* f = new Function;
                         f->lineNumber = lineNumber;
                         f->returnType = newType;
+                        f->reference = true;
+                        
                         string name = e->text;
                         
                         
@@ -376,7 +378,7 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                             error("Error: Expected open parenthesis.\n");
                             return Token();
                         }
-                        // void fn(int
+                        // void fn(
                         e++;
                         if(e == tokens.end())
                         {
@@ -398,6 +400,14 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                                     {
                                         gotType = dynamic_cast<TypeName*>(e->var);
                                         UI_debug_pile("Got type\n");
+                                        // Check if it's a reference
+                                        list<Token>::iterator g = e;
+                                        g++;
+                                        if(g != tokens.end() && g->type == Token::OPERATOR && g->oper == BITWISE_AND)
+                                        {
+                                            gotType->reference = true;
+                                            e++;
+                                        }
                                     }
                                     else
                                     {
@@ -499,6 +509,10 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     {
                         error("Error: Unknown type for variable '%s'\n", e->text.c_str());
                     }
+                    
+                    if(!e->var->literal)
+                        v->reference = true;
+                    
                     addVar(e->text, v);
                     delete e->var;
                     e->var = v;
