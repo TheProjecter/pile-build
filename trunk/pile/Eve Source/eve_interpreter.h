@@ -738,6 +738,10 @@ Variable* divide(Variable* A, Variable* B);
 Variable* exponentiate(Variable* A, Variable* B);
 
 Variable* add_assign(Variable* A, Variable* B);
+Variable* subtract_assign(Variable* A, Variable* B);
+Variable* multiply_assign(Variable* A, Variable* B);
+Variable* divide_assign(Variable* A, Variable* B);
+//Variable* modulus_assign(Variable* A, Variable* B);
 
 Variable* exponentiate_assign(Variable* A, Variable* B);
 
@@ -1331,6 +1335,14 @@ public:
             return add(A, B);
         if (operation == ADD_ASSIGN)
             return add_assign(A, B);
+        if (operation == SUBTRACT_ASSIGN)
+            return subtract_assign(A, B);
+        if (operation == MULTIPLY_ASSIGN)
+            return multiply_assign(A, B);
+        if (operation == DIVIDE_ASSIGN)
+            return divide_assign(A, B);
+        //if (operation == MODULUS_ASSIGN)
+        //    return modulus_assign(A, B);
         if (operation == EXPONENTIATE_ASSIGN)
             return exponentiate_assign(A, B);
         if (operation == SUBTRACT)
