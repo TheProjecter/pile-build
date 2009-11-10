@@ -17,10 +17,18 @@ class Environment
     std::map<std::string, FileData*> fileDataHash;
     std::list<std::string> cflags;
     std::list<std::string> lflags;
+    std::list<std::string> variants;
+    
+    bool dryRun;
+    bool noCompile;
+    bool noLink;
     
     std::string pilefile;
     
     Environment()
+        : dryRun(false)
+        , noCompile(false)
+        , noLink(false)
     {}
     
     void loadConfig(Configuration& config)
@@ -40,8 +48,23 @@ class Environment
         s.env["TARGET_PLATFORM"] = new String(config.languages["TARGET_PLATFORM"]);
         //s.env["CPP_COMPILER"] = new Compiler(config.languages["CPP_COMPILER"]);
         
-        Array* variants = new Array(STRING);
-        s.env["VARIANTS"] = variants;
+        Array* vars = new Array(STRING);
+        if(variants.size() == 0)
+            vars->push_back(new String("default"));
+        for(std::list<std::string>::iterator e = variants.begin(); e != variants.end(); e++)
+        {
+            vars->push_back(new String(*e));
+        }
+        s.env["VARIANTS"] = vars;
+        
+        Array* opts = new Array(STRING);
+        if(dryRun)
+            opts->push_back(new String("dry_run"));
+        if(noCompile)
+            opts->push_back(new String("no_compile"));
+        if(noLink)
+            opts->push_back(new String("no_link"));
+        s.env["OPTIONS"] = opts;
         // includeDirs
         // libDirs
     }

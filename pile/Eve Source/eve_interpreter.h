@@ -48,7 +48,7 @@ enum TypeEnum{NOT_A_TYPE, VOID, TYPENAME, BOOL, INT, FLOAT, STRING, MACRO, ARRAY
 
 enum OperatorEnum{NOT_AN_OPERATOR, ADD, SUBTRACT, NEGATE, ASSIGN, ADD_ASSIGN, SUBTRACT_ASSIGN, MULTIPLY_ASSIGN, DIVIDE_ASSIGN,
                   MULTIPLY, DIVIDE, MODULUS, EQUALS, NOT_EQUALS, LESS, GREATER, NOT_LESS, NOT_GREATER, LESS_EQUAL,
-                  GREATER_EQUAL, NOT, AND, OR, CALL, CONTINUATION, COLON, DOT
+                  GREATER_EQUAL, NOT, AND, OR, CALL, CONTINUATION, COLON, DOT, BITWISE_AND, BITWISE_XOR, BITWISE_OR
                  };
                  
 enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS, 
@@ -58,7 +58,7 @@ enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 
 enum KeywordEnum{KW_NONE, KW_IF, KW_ELSE, KW_RETURN};
 
-enum FunctionEnum{FN_NONE, FN_PRINT, FN_TYPE, FN_STRING, FN_BOOL, FN_INT, FN_FLOAT};
+enum FunctionEnum{FN_NONE, FN_PRINT, FN_PRINTLN, FN_TYPE, FN_STRING, FN_BOOL, FN_INT, FN_FLOAT};
 
 KeywordEnum getKeyword(const std::string& str);
 
@@ -82,19 +82,29 @@ protected:
     TypeEnum type;
 public:
     bool literal;
+    bool temp;
+    bool reference;  // Used as a message to callFn that this should be passed by reference.
     Variable(TypeEnum type)
             : type(type)
             , literal(false)
+            , temp(false)
+            , reference(false)
     {}
     TypeEnum getType()
     {
         return type;
     }
+    virtual Variable* copy() = 0;
     virtual std::string getValueString() = 0;
     // This could easily be a virtual function instead... and then it'd be independent of some external stuff.
     std::string getTypeString()
     {
         return ::getTypeString(type);
+    }
+    Variable* makeTemp()
+    {
+        temp = true;
+        return this;
     }
 };
 
@@ -130,6 +140,13 @@ public:
     {
         return ::getTypeString(value);
     }
+    virtual Variable* copy()
+    {
+        Variable* cp = new TypeName(*this);
+        cp->temp = false;
+        cp->reference = false;
+        return cp;
+    }
 };
 
 // This class represents an undefined variable.
@@ -157,6 +174,13 @@ public:
     {
         return value;
     }
+    virtual Variable* copy()
+    {
+        Variable* cp = new Void(*this);
+        cp->temp = false;
+        cp->reference = false;
+        return cp;
+    }
 };
 
 class String : public Variable
@@ -182,6 +206,13 @@ public:
     virtual std::string getValueString()
     {
         return value;
+    }
+    virtual Variable* copy()
+    {
+        Variable* cp = new String(*this);
+        cp->temp = false;
+        cp->reference = false;
+        return cp;
     }
 };
 
@@ -212,6 +243,13 @@ public:
         sprintf(buff, "%d", value);
         return buff;
     }
+    virtual Variable* copy()
+    {
+        Variable* cp = new Int(*this);
+        cp->temp = false;
+        cp->reference = false;
+        return cp;
+    }
 };
 
 class Float : public Variable
@@ -241,6 +279,13 @@ public:
         sprintf(buff, "%f", value);
         return buff;
     }
+    virtual Variable* copy()
+    {
+        Variable* cp = new Float(*this);
+        cp->temp = false;
+        cp->reference = false;
+        return cp;
+    }
 };
 
 class Bool : public Variable
@@ -268,6 +313,13 @@ public:
     {
         return (value? "true" : "false");
     }
+    virtual Variable* copy()
+    {
+        Variable* cp = new Bool(*this);
+        cp->temp = false;
+        cp->reference = false;
+        return cp;
+    }
 };
 
 class Macro : public Variable
@@ -289,6 +341,13 @@ public:
     virtual std::string getValueString()
     {
         return value;
+    }
+    virtual Variable* copy()
+    {
+        Variable* cp = new Macro(*this);
+        cp->temp = false;
+        cp->reference = false;
+        return cp;
     }
 };
 
@@ -354,6 +413,13 @@ public:
                 value.push_back(*e);
         }
     }
+    virtual Variable* copy()
+    {
+        Variable* cp = new Array(*this);
+        cp->temp = false;
+        cp->reference = false;
+        return cp;
+    }
 };
 
 class List : public Variable
@@ -403,6 +469,13 @@ public:
         if(var != NULL)
             value.push_back(var);
     }
+    virtual Variable* copy()
+    {
+        Variable* cp = new List(*this);
+        cp->temp = false;
+        cp->reference = false;
+        return cp;
+    }
 };
 
 class Function : public Variable
@@ -439,6 +512,9 @@ public:
         switch(builtIn)
         {
             case FN_PRINT:
+                argt.push_back(TypeName(STRING));
+                break;
+            case FN_PRINTLN:
                 argt.push_back(TypeName(STRING));
                 break;
             case FN_TYPE:
@@ -498,6 +574,14 @@ public:
         return builtIn;
     }
     Variable* call(Interpreter& interpreter, std::vector<Variable*>& args);
+    
+    virtual Variable* copy()
+    {
+        Variable* cp = new Function(*this);
+        cp->temp = false;
+        cp->reference = false;
+        return cp;
+    }
 };
 
 class Procedure : public Variable
@@ -519,6 +603,13 @@ public:
     virtual std::string getValueString()
     {
         return value;
+    }
+    virtual Variable* copy()
+    {
+        Variable* cp = new Procedure(*this);
+        cp->temp = false;
+        cp->reference = false;
+        return cp;
     }
 };
 
@@ -564,6 +655,13 @@ public:
     {
         return name;
     }
+    virtual Variable* copy()
+    {
+        Variable* cp = new Class(*this);
+        cp->temp = false;
+        cp->reference = false;
+        return cp;
+    }
 };
 
 class ClassObject : public Variable
@@ -603,6 +701,13 @@ public:
     virtual std::string getValueString()
     {
         return name;
+    }
+    virtual Variable* copy()
+    {
+        Variable* cp = new ClassObject(*this);
+        cp->temp = false;
+        cp->reference = false;
+        return cp;
     }
 };
 
@@ -731,123 +836,123 @@ public:
         if (Oper == "+")
         {
             oper = ADD;
-            precedence = 4;
+            precedence = 6;
         }
         if (Oper == "-")
         {
             oper = SUBTRACT;
-            precedence = 4;
+            precedence = 6;
         }
         else if (Oper == "-X") // The weird one...
         {
             oper = NEGATE;
             associativeLeftToRight = false;
-            precedence = 2;
+            precedence = 3;
         }
         else if (Oper == "=")
         {
             oper = ASSIGN;
             associativeLeftToRight = false;
-            precedence = 14;
+            precedence = 16;
         }
         else if (Oper == "+=")
         {
             oper = ADD_ASSIGN;
             associativeLeftToRight = false;
-            precedence = 14;
+            precedence = 16;
         }
         else if (Oper == "-=")
         {
             oper = SUBTRACT_ASSIGN;
             associativeLeftToRight = false;
-            precedence = 14;
+            precedence = 16;
         }
         else if (Oper == "*=")
         {
             oper = MULTIPLY_ASSIGN;
             associativeLeftToRight = false;
-            precedence = 14;
+            precedence = 16;
         }
         else if (Oper == "/=")
         {
             oper = DIVIDE_ASSIGN;
             associativeLeftToRight = false;
-            precedence = 14;
+            precedence = 16;
         }
         else if (Oper == "*")
         {
             oper = MULTIPLY;
-            precedence = 3;
+            precedence = 5;
         }
         else if (Oper == "/")
         {
             oper = DIVIDE;
-            precedence = 3;
+            precedence = 5;
         }
         else if (Oper == "%")
         {
             oper = MODULUS;
-            precedence = 3;
+            precedence = 5;
         }
         else if (Oper == "==")
         {
             oper = EQUALS;
-            precedence = 7;
+            precedence = 9;
         }
         else if (Oper == "!=")
         {
             oper = NOT_EQUALS;
-            precedence = 7;
+            precedence = 9;
         }
         else if (Oper == "<")
         {
             oper = LESS;
-            precedence = 6;
+            precedence = 8;
         }
         else if (Oper == ">")
         {
             oper = GREATER;
-            precedence = 6;
+            precedence = 8;
         }
         else if (Oper == "!<")
         {
             oper = NOT_LESS;
-            precedence = 6;
+            precedence = 8;
         }
         else if (Oper == "!>")
         {
             oper = NOT_GREATER;
-            precedence = 6;
+            precedence = 8;
         }
         else if (Oper == "<=")
         {
             oper = LESS_EQUAL;
-            precedence = 6;
+            precedence = 8;
         }
         else if (Oper == ">=")
         {
             oper = GREATER_EQUAL;
-            precedence = 6;
+            precedence = 8;
         }
         else if (Oper == "!")
         {
             oper = NOT;
-            precedence = 2;
+            precedence = 3;
         }
         else if (Oper == "&&")
         {
             oper = AND;
-            precedence = 11;
+            precedence = 13;
         }
         else if (Oper == "||")
         {
             oper = OR;
-            precedence = 12;
+            precedence = 14;
         }
         /*else if (Oper == ",")
         {
             oper = COMMA;
-            precedence = 15;
+            precedence = 18;
         }
         */
         else if (Oper == "...")
@@ -863,6 +968,21 @@ public:
         {
             oper = SEMICOLON;
         }*/
+        else if (Oper == "&")
+        {
+            oper = BITWISE_AND;
+            precedence = 10;
+        }
+        else if (Oper == "^")
+        {
+            oper = BITWISE_XOR;
+            precedence = 11;
+        }
+        else if (Oper == "|")
+        {
+            oper = BITWISE_OR;
+            precedence = 12;
+        }
     }
     
     void setSeparator(std::string s)
@@ -1008,6 +1128,7 @@ public:
         // Add built-in functions
         Scope& s = *(env.begin());
         s.env["print"] = new Function(FN_PRINT);
+        s.env["println"] = new Function(FN_PRINTLN);
         s.env["type"] = new Function(FN_TYPE);
         s.env["bool"] = new Function(FN_BOOL);
         s.env["int"] = new Function(FN_INT);
@@ -1063,7 +1184,9 @@ public:
                     Token eval = evalTokens(tokens, false, false, false, true);
                     
                     if(eval.var != NULL)
+                    {
                         args.push_back(eval.var);
+                    }
                     else
                     {
                         error("Error: Argument %d of function call is invalid.\n", argNum);
@@ -1086,7 +1209,9 @@ public:
                 Token eval = evalTokens(tokens, false, false, false, true);
                 
                 if(eval.var != NULL)
+                {
                     args.push_back(eval.var);
+                }
                 else
                 {
                     error("Error: Argument %d of function call is invalid.\n", argNum);
@@ -1119,6 +1244,21 @@ public:
             {
                 error("Error: Argument %d has the wrong type in function call.\n", i+1);
                 return NULL;
+            }
+            // If it must be a reference, make sure that it is.
+            if(fn->getArgTypes()[i].reference)
+            {
+                if(!args[i]->reference)
+                {
+                    error("Error: Argument %d must be a reference in function call.\n", i+1);
+                    return NULL;
+                }
+            }
+            else  // If it is not a reference, pass it by value.
+            {
+                args[i] = args[i]->copy();
+                // This is a new variable declaration, so it will now be a reference within the function
+                args[i]->reference = true;
             }
         }
         

@@ -239,9 +239,9 @@ int main(int argc, char* argv[])
     
     
     int cleaning = 0;  // Interpret without actions or messages
-    bool dryRun = false;  // Interpret without actions, but with messages
-    bool noLink = false;
-    bool noCompile = false;
+    //bool dryRun = false;  // Interpret without actions, but with messages
+    //bool noLink = false;
+    //bool noCompile = false;
     bool changedOutfile = false;
     bool graphical = false;
     // Check for graphical flag
@@ -314,15 +314,15 @@ int main(int argc, char* argv[])
         }
         else if(string("dryrun") == argv[i])
         {
-            dryRun = true;
+            env.dryRun = true;
         }
         else if(string("--nocompile") == argv[i])
         {
-            noCompile = true;
+            env.noCompile = true;
         }
         else if(string("--nolink") == argv[i])
         {
-            noLink = true;
+            env.noLink = true;
         }
         // FIXME: Change this to check for substring 'out=', grab the file name, then strip the (optional) quotes.
         else if(string("out:") == argv[i] || string("output:") == argv[i])
@@ -401,13 +401,13 @@ int main(int argc, char* argv[])
                 }
             }
             
-            if(!dryRun && !cleaning && !errorFlag)
+            if(!env.dryRun && !cleaning && !errorFlag)
             {
                 UI_debug_pile("Building and linking.\n");
-                if(!noCompile && !build(env, config))
+                if(!env.noCompile && !build(env, config))
                     errorFlag = true;
                 if(!errorFlag)
-                    if(!noLink && !link(config.languages.find("CPP_LINKER_D")->second, env, config))
+                    if(!env.noLink && !link(config.languages.find("CPP_LINKER_D")->second, env, config))
                         errorFlag = true;
             }
         }
@@ -432,11 +432,11 @@ int main(int argc, char* argv[])
             }
             
             UI_debug_pile("Building and linking.\n");
-            if(!dryRun && !cleaning && !errorFlag)
+            if(!env.dryRun && !cleaning && !errorFlag)
             {
-                if(!noCompile && !build(env, config))
+                if(!env.noCompile && !build(env, config))
                     errorFlag = true;
-                if(!errorFlag && !noLink && !link(config.languages.find("CPP_LINKER_D")->second, env, config))
+                if(!errorFlag && !env.noLink && !link(config.languages.find("CPP_LINKER_D")->second, env, config))
                     errorFlag = true;
             }
         }
