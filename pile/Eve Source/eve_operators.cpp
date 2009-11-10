@@ -840,6 +840,13 @@ Variable* divide_assign(Variable* A, Variable* B)
     return C;
 }
 
+Variable* modulus_assign(Variable* A, Variable* B)
+{
+    Variable* C = ::modulus(A, B);
+    C = assign(A, C);
+    return C;
+}
+
 Variable* exponentiate_assign(Variable* A, Variable* B)
 {
     Variable* C = exponentiate(A, B);
@@ -1166,6 +1173,53 @@ Variable* divide(Variable* A, Variable* B)
             Float* R = new Float;
             R->setValue(C->getValue() / D->getValue());
             return R;
+        }
+    }
+    return A;
+}
+
+Variable* modulus(Variable* A, Variable* B)
+{
+    if(A == NULL || B == NULL)
+    {
+        interpreter.error("Error: Void variable in modulus.\n");
+        return NULL;
+    }
+    TypeEnum a = A->getType();
+    TypeEnum b = B->getType();
+    if(a == STRING || a == BOOL || a == MACRO || a == ARRAY || a == LIST || a == FUNCTION || a == PROCEDURE
+      || b == STRING || b == BOOL || b == MACRO || b == ARRAY || b == LIST || b == FUNCTION || b == PROCEDURE)
+    {
+        interpreter.error("Error: Modulus not defined for types '%s' and '%s'\n", getTypeString(a).c_str(), getTypeString(b).c_str());
+        return NULL;
+    }
+    if(a == INT)
+    {
+        Int* C = static_cast<Int*>(A);
+        if(b == INT)
+        {
+            Int* D = static_cast<Int*>(B);
+            Int* R = new Int;
+            R->setValue(C->getValue() % D->getValue());
+            return R;
+        }
+        else if(b == FLOAT)
+        {
+            interpreter.error("Error: Modulus not defined for types '%s' and '%s'\n", getTypeString(a).c_str(), getTypeString(b).c_str());
+            return NULL;
+        }
+    }
+    else if(a == FLOAT)
+    {
+        if(b == INT)
+        {
+            interpreter.error("Error: Modulus not defined for types '%s' and '%s'\n", getTypeString(a).c_str(), getTypeString(b).c_str());
+            return NULL;
+        }
+        else if(b == FLOAT)
+        {
+            interpreter.error("Error: Modulus not defined for types '%s' and '%s'\n", getTypeString(a).c_str(), getTypeString(b).c_str());
+            return NULL;
         }
     }
     return A;
