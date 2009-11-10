@@ -1,6 +1,7 @@
 #include "eve_interpreter.h"
 
 
+#include <cmath>
 #include <string>
 using namespace std;
 
@@ -839,6 +840,13 @@ Variable* divide_assign(Variable* A, Variable* B)
     return C;
 }
 
+Variable* exponentiate_assign(Variable* A, Variable* B)
+{
+    Variable* C = exponentiate(A, B);
+    C = assign(A, C);
+    return C;
+}
+
 Variable* add(Variable* A, Variable* B)
 {
     if(A == NULL || B == NULL)
@@ -1162,6 +1170,61 @@ Variable* divide(Variable* A, Variable* B)
     }
     return A;
 }
+
+Variable* exponentiate(Variable* A, Variable* B)
+{
+    if(A == NULL || B == NULL)
+    {
+        interpreter.error("Error: Void variable in exponentiation.\n");
+        return NULL;
+    }
+    TypeEnum a = A->getType();
+    TypeEnum b = B->getType();
+    if(a == STRING || a == BOOL || a == MACRO || a == ARRAY || a == LIST || a == FUNCTION || a == PROCEDURE
+      || b == STRING || b == BOOL || b == MACRO || b == ARRAY || b == LIST || b == FUNCTION || b == PROCEDURE)
+    {
+        interpreter.error("Error: Exponentiation not defined for types '%s' and '%s'\n", getTypeString(a).c_str(), getTypeString(b).c_str());
+        return NULL;
+    }
+    if(a == INT)
+    {
+        Int* C = static_cast<Int*>(A);
+        if(b == INT)
+        {
+            Int* D = static_cast<Int*>(B);
+            Int* R = new Int;
+            R->setValue(pow(C->getValue(), D->getValue()));
+            return R;
+        }
+        else if(b == FLOAT)
+        {
+            Float* D = static_cast<Float*>(B);
+            Float* R = new Float;
+            R->setValue(pow(C->getValue(), D->getValue()));
+            return R;
+        }
+    }
+    else if(a == FLOAT)
+    {
+        Float* C = static_cast<Float*>(A);
+        if(b == INT)
+        {
+            Int* D = static_cast<Int*>(B);
+            Float* R = new Float;
+            R->setValue(pow(C->getValue(), D->getValue()));
+            return R;
+        }
+        else if(b == FLOAT)
+        {
+            Float* D = static_cast<Float*>(B);
+            Float* R = new Float;
+            R->setValue(pow(C->getValue(), D->getValue()));
+            return R;
+        }
+    }
+    return A;
+}
+
 
 Variable* negate(Variable* A)
 {

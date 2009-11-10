@@ -185,7 +185,7 @@ bool isDigraphOperator(const char& c, const char& d)
         case '-':
             return (d == '=' || d == '-');
         case '*':
-            return (d == '=');
+            return (d == '=' || d == '*');
         case '/':
             return (d == '=');
         case '<':
@@ -204,6 +204,11 @@ bool isDigraphOperator(const char& c, const char& d)
             return (d == '=');
     }
     return false;
+}
+
+bool isTrigraphOperator(const char& c, const char& d, const char& e)
+{
+    return (c == '*' && d == '*' && e == '=');
 }
 
 
@@ -456,6 +461,12 @@ Token nextToken1(string& line, bool startingLine)
                         line.erase(0, i+1);
                         return Token();
                     }
+                }
+                if(i+1 < line.size() && isTrigraphOperator(line[i-1], line[i], line[i+1]))  // A trigraph operator...  "**="
+                {
+                    string token = line.substr(found, i - found + 2);
+                    line.erase(0, i+2);
+                    return Token(Token::OPERATOR, token);
                 }
                 if(isDigraphOperator(line[i-1], line[i]))  // A digraph operator...  "==", ">=", "+=", etc.
                 {
