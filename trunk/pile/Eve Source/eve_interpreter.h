@@ -626,9 +626,9 @@ public:
 
 class Class : public Variable
 {
-private:
-    std::string name;
 public:
+    std::string name;
+    
     class VarRecord
     {
         public:
@@ -636,6 +636,7 @@ public:
         std::string name;
         std::list<std::string> functionArgs;
         std::string functionDefinition;
+        
         VarRecord(const std::string& type, const std::string& name)
             : type(type), name(name)
         {}
@@ -691,15 +692,8 @@ public:
     ClassObject()
             : Variable(CLASS)
     {}
-    ClassObject(const std::string& name)
-            : Variable(CLASS)
-            , name(name)
-    {
-        // FIXME
-        // Search the registered classes for the name
-        // If it's found, create all new variables.
-        // If it's not found, set className to ""
-    }
+    ClassObject(const std::string& name);
+    
     Variable* getVariable(const std::string& var)
     {
         std::map<std::string, Variable*>::iterator e = vars.find(var);
@@ -738,6 +732,8 @@ Variable* divide(Variable* A, Variable* B);
 Variable* modulus(Variable* A, Variable* B);
 
 Variable* exponentiate(Variable* A, Variable* B);
+
+Variable* dot(Variable* A, Variable* B);
 
 Variable* add_assign(Variable* A, Variable* B);
 Variable* subtract_assign(Variable* A, Variable* B);
@@ -1019,6 +1015,11 @@ public:
             oper = BITWISE_OR;
             precedence = 12;
         }
+        else if (Oper == ".")
+        {
+            oper = DOT;
+            precedence = 2;
+        }
     }
     
     void setSeparator(std::string s)
@@ -1148,6 +1149,7 @@ private:
 
 public:
     std::list<Scope> env;
+    std::list<Class*> classDefs;
     std::string currentFile;
     unsigned int lineNumber;
     bool errorFlag;
@@ -1173,6 +1175,26 @@ public:
         s.env["int"] = new Function(FN_INT);
         s.env["float"] = new Function(FN_FLOAT);
         s.env["string"] = new Function(FN_STRING);
+    }
+    
+    void addClass(Class* c)
+    {
+        if(c == NULL)
+        {
+            error("Error: Error adding class definition.\n");
+            return;
+        }
+        
+        for(std::list<Class*>::iterator e = classDefs.begin(); e != classDefs.end(); e++)
+        {
+            if((*e)->name == c->name)
+            {
+                error("Error: Class already defined.\n");
+                return;
+            }
+        }
+        
+        classDefs.push_back(c);
     }
 
     void printEnv()
@@ -1363,6 +1385,8 @@ public:
             return ::modulus(A, B);
         if (operation == EXPONENTIATE)
             return exponentiate(A, B);
+        if (operation == DOT)
+            return dot(A, B);
         error("Error: Undefined operation\n");
         return A;
     }

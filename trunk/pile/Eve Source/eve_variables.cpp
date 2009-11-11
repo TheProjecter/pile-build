@@ -5,6 +5,8 @@ using namespace std;
 
 extern Interpreter interpreter;
 
+TypeEnum getTypeFromString(const string& str);
+
 
 string getTypeString(TypeEnum type)
 {
@@ -170,3 +172,47 @@ bool isConvertable(TypeEnum source, TypeEnum dest)
     return false;
 }
 
+
+ClassObject::ClassObject(const std::string& name)
+    : Variable(CLASS_OBJECT)
+    , name(name)
+{
+    
+    // Search the registered classes for the name
+    // If it's found, create all new variables.
+    // If it's not found, set className to ""
+    for(std::list<Class*>::iterator e = interpreter.classDefs.begin(); e != interpreter.classDefs.end(); e++)
+    {
+        if((*e)->name == name)
+        {
+            // Found it.  Create the variables.
+            Class* def = *e;
+            className = name;
+            for(std::list<Class::VarRecord>::iterator r = def->vars.begin(); r != def->vars.end(); r++)
+            {
+                TypeEnum t = getTypeFromString(r->type);
+                Variable* v = NULL;
+                switch(t)
+                {
+                    case BOOL:
+                        v = new Bool();
+                        break;
+                    case INT:
+                        v = new Int();
+                        break;
+                    case FLOAT:
+                        v = new Float();
+                        break;
+                    default:
+                        break;
+                }
+                if(v != NULL)
+                {
+                    v->reference = true;
+                    vars.insert(make_pair(r->name, v));
+                }
+            }
+            return;
+        }
+    }
+}

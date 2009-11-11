@@ -82,6 +82,7 @@ bool Interpreter::readFile(string filename)
                     if(aClass != NULL)
                     {
                         defineClass(aClass, &fin);
+                        addClass(aClass);
                     }
                 }
                 else if(result.var->getType() == FUNCTION)
