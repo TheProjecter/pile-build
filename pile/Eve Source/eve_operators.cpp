@@ -1279,6 +1279,28 @@ Variable* exponentiate(Variable* A, Variable* B)
     return A;
 }
 
+Variable* dot(Variable* A, Variable* B)
+{
+    if(A == NULL || B == NULL)
+    {
+        interpreter.error("Error: Void variable in division.\n");
+        return NULL;
+    }
+    TypeEnum a = A->getType();
+    TypeEnum b = B->getType();
+    if(a != CLASS_OBJECT || b != VOID)
+    {
+        interpreter.error("Error: 'Dot' not defined for types '%s' and '%s'\n", getTypeString(a).c_str(), getTypeString(b).c_str());
+        return NULL;
+    }
+    ClassObject* C = static_cast<ClassObject*>(A);
+    Void* D = static_cast<Void*>(B);
+    Variable* result = C->getVariable(D->getValue());
+    if(result == NULL)
+        interpreter.error("Error: %s is not a member of %s.\n", D->getValue().c_str(), C->className.c_str());
+    return result;
+}
+
 
 Variable* negate(Variable* A)
 {

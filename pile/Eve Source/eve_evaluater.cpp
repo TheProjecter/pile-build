@@ -151,8 +151,8 @@ bool Interpreter::defineClass(Variable* classvar, istream* stream)
                         {
                             error("Error: Unexpected token after type name.\n");
                         }
-                        
                     }
+                    break;
                 }
                 e++;
             }
@@ -305,6 +305,15 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     newTypeName = t;
                     newType = t->getValue();
                     UI_debug_pile(" Found a type name\n");
+                    state = VAR_DECL;
+                }
+                else if (e->var->getType() == CLASS) // Should probably be an operator...
+                {
+                    TypeName* t = new TypeName(CLASS_OBJECT, e->text);
+                    t->text = e->text;
+                    newTypeName = t;
+                    newType = CLASS_OBJECT;
+                    UI_debug_pile(" Found a class name\n");
                     state = VAR_DECL;
                 }
                 else if (e->var->getType() != VOID && e->var->getType() != NOT_A_TYPE)
@@ -493,7 +502,11 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     else if (newType == PROCEDURE)
                         v = new Procedure;
                     else if (newType == CLASS)
-                        v = new Class;
+                    {
+                        Class* c = new Class;
+                        c->name = e->text;
+                        v = c;
+                    }
                     else if (newType == CLASS_OBJECT)
                     {
                         ClassObject* c = new ClassObject(newTypeName->text);
