@@ -58,7 +58,7 @@ enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 
 enum KeywordEnum{KW_NONE, KW_IF, KW_ELSE, KW_RETURN};
 
-enum FunctionEnum{FN_NONE, FN_PRINT, FN_PRINTLN, FN_WARNING, FN_ERROR, FN_DEBUG, FN_TYPE, FN_STRING, FN_BOOL, FN_INT, FN_FLOAT};
+enum FunctionEnum{FN_NONE, FN_EXTERNAL, FN_PRINT, FN_PRINTLN, FN_WARNING, FN_ERROR, FN_DEBUG, FN_TYPE, FN_STRING, FN_BOOL, FN_INT, FN_FLOAT, FN_INCLUDE};
 
 KeywordEnum getKeyword(const std::string& str);
 
@@ -481,10 +481,14 @@ public:
 class Function : public Variable
 {
 private:
-    std::string value;
+    std::string value;  // Definition
     std::vector<TypeName> argt;  // Types of arguments
     std::vector<std::string> args;  // Names of arguments
     FunctionEnum builtIn;
+    Variable* (*external_fn0)();
+    Variable* (*external_fn1)(Variable*);
+    Variable* (*external_fn2)(Variable*, Variable*);
+    Variable* (*external_fn3)(Variable*, Variable*, Variable*);
 public:
     TypeName returnType;
 
@@ -502,6 +506,15 @@ public:
             , value(value)
             , argt(argt)
             , builtIn(FN_NONE)
+            , lineNumber(0)
+    {}
+    Function(Variable* (*external_fn)(Variable*, Variable*, Variable*), TypeEnum type1, TypeEnum type2, TypeEnum type3)
+            : Variable(FUNCTION)
+            , builtIn(FN_EXTERNAL)
+            , external_fn0(NULL)
+            , external_fn1(NULL)
+            , external_fn2(NULL)
+            , external_fn3(external_fn)
             , lineNumber(0)
     {}
     Function(FunctionEnum builtIn)
@@ -540,6 +553,11 @@ public:
                 break;
             case FN_FLOAT:
                 argt.push_back(TypeName(VOID));
+                break;
+            case FN_INCLUDE:
+                argt.push_back(TypeName(VOID));
+                break;
+            case FN_EXTERNAL:
                 break;
             case FN_NONE:
                 break;
@@ -634,14 +652,16 @@ public:
         public:
         std::string type;
         std::string name;
-        std::list<std::string> functionArgs;
-        std::string functionDefinition;
+        Function* fn;
         
         VarRecord(const std::string& type, const std::string& name)
-            : type(type), name(name)
+            : type(type), name(name), fn(NULL)
         {}
-        VarRecord(const std::string& name, const std::list<std::string> argtypes, const std::string& definition)
+        /*VarRecord(const std::string& name, const std::list<std::string> argtypes, const std::string& definition)
             : type("function"), name(name), functionArgs(argtypes), functionDefinition(definition)
+        {}*/
+        VarRecord(const std::string& name, Function* f)
+            : type("function"), name(name), fn(f)
         {}
     };
     std::list<VarRecord> vars;
@@ -657,9 +677,11 @@ public:
     {
         vars.push_back(VarRecord(vartype, varname));
     }
-    void addFunction(const std::string& varname, const std::list<std::string> argtypes, const std::string& definition)
+    void addFunction(std::string name, Function* f)
     {
-        vars.push_back(VarRecord(varname, argtypes, definition));
+        //vars.push_back(VarRecord(varname, argtypes, definition));
+        if(f != NULL)
+            vars.push_back(VarRecord(name, f));
     }
     virtual std::string getValueString()
     {
@@ -696,9 +718,19 @@ public:
     
     Variable* getVariable(const std::string& var)
     {
+        /*UI_print("Searching for: %s\n", var.c_str());
+        for(std::map<std::string, Variable*>::iterator f = vars.begin(); f != vars.end(); f++)
+        {
+            UI_print("Name: %s\n", f->first.c_str());
+        }*/
         std::map<std::string, Variable*>::iterator e = vars.find(var);
         if(e == vars.end())
             return NULL;
+        // Found it
+        if(e->second != NULL)
+            UI_debug_pile("Returning member of type: %s\n", e->second->getTypeString().c_str());
+        else
+            UI_debug_pile("Returning NULL member\n");
         return e->second;
     }
     virtual std::string getValueString()
@@ -1175,6 +1207,7 @@ public:
         s.env["int"] = new Function(FN_INT);
         s.env["float"] = new Function(FN_FLOAT);
         s.env["string"] = new Function(FN_STRING);
+        s.env["include"] = new Function(FN_INCLUDE);
     }
     
     void addClass(Class* c)
@@ -1287,6 +1320,8 @@ public:
         
         
         // Compare number of arguments
+        if(fn->getBuiltIn() == FN_EXTERNAL)
+            return fn->call(*this, args);
         if(args.size() > fn->getArgTypes().size())
         {
             error("Error: Too many arguments in function call.\n");

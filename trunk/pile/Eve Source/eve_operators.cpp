@@ -1283,7 +1283,7 @@ Variable* dot(Variable* A, Variable* B)
 {
     if(A == NULL || B == NULL)
     {
-        interpreter.error("Error: Void variable in division.\n");
+        interpreter.error("Error: Void variable in dot operation.\n");
         return NULL;
     }
     TypeEnum a = A->getType();

@@ -194,6 +194,9 @@ ClassObject::ClassObject(const std::string& name)
                 Variable* v = NULL;
                 switch(t)
                 {
+                    case VOID:
+                        interpreter.error("Member type 'void' is not allowed.\n");
+                        break;
                     case BOOL:
                         v = new Bool();
                         break;
@@ -203,7 +206,25 @@ ClassObject::ClassObject(const std::string& name)
                     case FLOAT:
                         v = new Float();
                         break;
+                    case STRING:
+                        v = new String();
+                        break;
+                    case MACRO:
+                        v = new Macro();
+                        break;
+                    case ARRAY:
+                        v = new Array();
+                        break;
+                    case LIST:
+                        v = new List();
+                        break;
+                    case FUNCTION:
+                        if(r->fn != NULL)
+                            v = new Function(*(r->fn));
+                        break;
                     default:
+                        // FIXME
+                        interpreter.error("Member type '%s' not implemented yet.\n", r->type.c_str());
                         break;
                 }
                 if(v != NULL)
