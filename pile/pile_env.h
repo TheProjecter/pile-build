@@ -6,6 +6,8 @@
 #include "pile_config.h"
 #include "Eve Source/eve_interpreter.h"
 
+Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3);
+
 class Environment
 {
     public:
@@ -41,12 +43,34 @@ class Environment
         // Add builtin variables
         Scope& s = *(inter.env.begin());
         s.env["OUTPUT"] = new String("a.out");
+        s.env["OUTPUT"]->reference = true;
         s.env["SOURCES"] = new Array(STRING);
+        s.env["SOURCES"]->reference = true;
         s.env["CFLAGS"] = new Array(STRING);
+        s.env["CFLAGS"]->reference = true;
         s.env["LFLAGS"] = new Array(STRING);
+        s.env["LFLAGS"]->reference = true;
         s.env["HOST_PLATFORM"] = new String(getSystemName());
         s.env["TARGET_PLATFORM"] = new String(config.languages["TARGET_PLATFORM"]);
         //s.env["CPP_COMPILER"] = new Compiler(config.languages["CPP_COMPILER"]);
+        
+        // Compiler
+        Class* compiler = new Class("Compiler");
+        compiler->addVariable("string", "name");
+        compiler->addVariable("string", "path");
+        Function* compile = new Function(&fn_build, CLASS_OBJECT, ARRAY, ARRAY);
+        compiler->addFunction("compile", compile);
+        //s.env["Compiler"] = compiler;
+        inter.addClass(compiler);
+        ClassObject* cpp_compiler = new ClassObject("Compiler");
+        Variable* cpp_name = cpp_compiler->getVariable("name");
+        Variable* cpp_path = cpp_compiler->getVariable("path");
+        if(cpp_name != NULL && cpp_path != NULL && cpp_name->getType() == STRING && cpp_path->getType() == STRING)
+        {
+            static_cast<String*>(cpp_name)->setValue(config.languages["CPP_COMPILER"]);
+            static_cast<String*>(cpp_path)->setValue(config.languages["CPP_COMPILER"]);
+        }
+        s.env["cpp_compiler"] = cpp_compiler;
         
         Array* vars = new Array(STRING);
         if(variants.size() == 0)

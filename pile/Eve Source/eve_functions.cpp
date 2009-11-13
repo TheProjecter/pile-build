@@ -196,6 +196,31 @@ Float* floatCast(Variable* v)
     return NULL;
 }
 
+Void* include(Variable* v)
+{
+    if(v->getType() != STRING)
+    {
+        return NULL;
+    }
+    String* s = static_cast<String*>(v);
+    string file = s->getValue();
+    
+    // Save old stuff
+    string oldFile = interpreter.currentFile;
+    unsigned int oldLine = interpreter.lineNumber;
+    bool oldErrorFlag = interpreter.errorFlag;
+    
+    // Call the interpreter on this file.
+    interpreter.readFile(file);
+    
+    // Restore old stuff
+    interpreter.currentFile = oldFile;
+    interpreter.lineNumber = oldLine;
+    interpreter.errorFlag = oldErrorFlag;
+    
+    return NULL;
+}
+
 
 Variable* callBuiltIn(FunctionEnum fn, vector<Variable*>& args)
 {
@@ -252,6 +277,13 @@ Variable* callBuiltIn(FunctionEnum fn, vector<Variable*>& args)
             if(args.size() != 1)
                 return NULL;
             result = floatCast(args[0]);
+            break;
+        case FN_INCLUDE:
+            if(args.size() != 1)
+                return NULL;
+            result = include(args[0]);
+            break;
+        case FN_EXTERNAL:
             break;
         default:
             break;

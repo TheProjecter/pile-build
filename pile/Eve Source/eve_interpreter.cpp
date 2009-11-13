@@ -87,6 +87,8 @@ bool Interpreter::readFile(string filename)
                 }
                 else if(result.var->getType() == FUNCTION)
                 {
+                    // FIXME: This happens whenever a function is the result??
+                    // I might want to add Token::SPECIAL so I can define classes/functions
                     Function* aFn = dynamic_cast<Function*>(result.var);
                     if(aFn != NULL)
                     {
@@ -207,6 +209,19 @@ Variable* Interpreter::getArrayLiteral(list<Token>& tokens, list<Token>::iterato
 // This kinda belongs in eve_variables.cpp, but it is so similar to readFile()...
 Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
 {
+    if(builtIn == FN_EXTERNAL)
+    {
+        if(external_fn0 != NULL && args.size() == 0)
+            return external_fn0();
+        if(external_fn1 != NULL && args.size() == 1)
+            return external_fn1(args[0]);
+        if(external_fn2 != NULL && args.size() == 2)
+            return external_fn2(args[0], args[1]);
+        if(external_fn3 != NULL && args.size() == 3)
+            return external_fn3(args[0], args[1], args[2]);
+        interpreter.error("Error calling external function.\n");
+        return NULL;
+    }
     if(builtIn != FN_NONE)
         return callBuiltIn(builtIn, args);
     // FIXME: Execute function body here

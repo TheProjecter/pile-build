@@ -10,6 +10,8 @@ bool isCPPExt(const string& ext);
 bool isFORTRANExt(const string& ext);
 string getBaseName(string file);
 
+extern Interpreter interpreter;
+
 /*
 Gets the file extension of a given file.
 
@@ -46,6 +48,248 @@ string getCompiler(Configuration& config, const string& file)
     return "";
 }
 
+
+
+// Returns VOID (NULL)
+Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
+{
+    ClassObject* c = dynamic_cast<ClassObject*>(arg1);
+    Array* sources = dynamic_cast<Array*>(arg2);
+    Array* opts = dynamic_cast<Array*>(arg3);
+    
+    if(c == NULL || sources == NULL || opts == NULL)
+        return NULL;
+    
+    string path = static_cast<String*>(c->getVariable("path"))->getValue();
+    vector<Variable*> sourceFiles = sources->getValue();
+    
+    string options;
+    for(vector<Variable*>::iterator e = opts->getValue().begin(); e != opts->getValue().end(); e++)
+    {
+        if((*e)->getType() != STRING)
+        {
+            interpreter.error("Wrong type in array sent to build().\n");
+            return NULL;
+        }
+        String* s = static_cast<String*>(*e);
+        options += s->getValue() + " ";
+    }
+    
+    
+    char buffer[5000];
+    string objName;
+    string sourceFile, sourceFileQuoted;
+    string tempname = ".pile.tmp";
+    list<string> failedFiles;
+    ioDelete(tempname.c_str());
+    
+    UI_debug_pile("Checking sources for building.\n");
+    //UI_debug_pile("Sources size: %d\n", env.sources.size());
+    for(vector<Variable*>::iterator e = sourceFiles.begin(); e != sourceFiles.end(); e++)
+    {
+        if((*e)->getType() != STRING)
+        {
+            interpreter.error("Wrong type in array sent to build().\n");
+            return NULL;
+        }
+        String* s = static_cast<String*>(*e);
+        sourceFile = s->getValue();
+        
+        
+        if(!ioExists(sourceFile))
+        {
+            UI_error("Source file \"%s\" not found.\n", sourceFile.c_str());
+            continue;
+        }
+        sourceFileQuoted = quoteWhitespace(sourceFile);
+        //sourceFile = quoteWhitespace(*e);
+        //FileData* fd = env.fileDataHash[*e];
+        //objName = getObjectName(*e, config.objPath, config.useSourceObjPath);
+        //mkpath(ioStripToDir(objName));
+        //objName = quoteWhitespace(objName);
+        objName = quoteWhitespace(sourceFile + ".o");
+        
+        
+        // FIXME: mustRebuild() is crashing... Is it fixed yet?
+        //if(mustRebuild(objName, env.depends, fd))
+        {
+            sprintf(buffer, "%s %s -c %s -o %s", path.c_str(), options.c_str(), sourceFileQuoted.c_str(), objName.c_str());
+            
+            
+            string buff = buffer;
+            convertSlashes(buff);
+            
+            UI_print(" Building %s\n  %s\n", sourceFile.c_str(), buff.c_str());
+            
+            
+            UI_debug_pile("Actual call:\n %s\n", buff.c_str());
+            
+            // Needed for success check
+            bool objExists = ioExists(objName);
+            time_t objTime = 0;
+            if(objExists)
+                objTime = ioTimeModified(objName);
+            
+            systemCall(buff.c_str());
+            
+            UI_print_file(tempname);
+            ioDelete(tempname.c_str());
+            
+            // Check to see if the build was successful.
+            if(objExists)
+            {
+                // FIXME: This looks like it could fail if the build is quick (and the object had been modified...)!!!
+                if(!ioExists(objName) || objTime >= ioTimeModified(objName))
+                    failedFiles.push_back(sourceFile);
+            }
+            else
+            {
+                if(!ioExists(objName))
+                    failedFiles.push_back(sourceFile);
+            }
+        }
+        /*else
+        {
+            UI_print(" Up to date: %s\n", sourceFileQuoted);
+        }*/
+        if(UI_processEvents() < 0)
+            return NULL;
+        UI_updateScreen();
+    }
+    
+    if(failedFiles.size() > 0)
+    {
+        UI_error("Some files failed to build:\n");
+        for(list<string>::iterator e = failedFiles.begin(); e != failedFiles.end(); e++)
+        {
+            UI_error("  %s\n", e->c_str());
+        }
+        UI_error("\n");
+    }
+    
+    return NULL;
+}
+
+
+// Returns VOID (NULL)
+Variable* fn_link(Variable* arg1, Variable* arg2, Variable* arg3)
+{
+    ClassObject* c = dynamic_cast<ClassObject*>(arg1);
+    Array* sources = dynamic_cast<Array*>(arg2);
+    Array* opts = dynamic_cast<Array*>(arg3);
+    
+    if(c == NULL || sources == NULL || opts == NULL)
+        return NULL;
+    
+    string path = static_cast<String*>(c->getVariable("path"))->getValue();
+    vector<Variable*> sourceFiles = sources->getValue();
+    
+    string options;
+    for(vector<Variable*>::iterator e = opts->getValue().begin(); e != opts->getValue().end(); e++)
+    {
+        if((*e)->getType() != STRING)
+        {
+            interpreter.error("Wrong type in array sent to build().\n");
+            return NULL;
+        }
+        String* s = static_cast<String*>(*e);
+        options += s->getValue() + " ";
+    }
+    
+    
+    char buffer[5000];
+    string objName;
+    string sourceFile, sourceFileQuoted;
+    string tempname = ".pile.tmp";
+    list<string> failedFiles;
+    ioDelete(tempname.c_str());
+    
+    UI_debug_pile("Checking sources for building.\n");
+    //UI_debug_pile("Sources size: %d\n", env.sources.size());
+    for(vector<Variable*>::iterator e = sourceFiles.begin(); e != sourceFiles.end(); e++)
+    {
+        if((*e)->getType() != STRING)
+        {
+            interpreter.error("Wrong type in array sent to build().\n");
+            return NULL;
+        }
+        String* s = static_cast<String*>(*e);
+        sourceFile = s->getValue();
+        
+        
+        if(!ioExists(sourceFile))
+        {
+            UI_error("Source file \"%s\" not found.\n", sourceFile.c_str());
+            continue;
+        }
+        sourceFileQuoted = quoteWhitespace(sourceFile);
+        //sourceFile = quoteWhitespace(*e);
+        //FileData* fd = env.fileDataHash[*e];
+        //objName = getObjectName(*e, config.objPath, config.useSourceObjPath);
+        //mkpath(ioStripToDir(objName));
+        //objName = quoteWhitespace(objName);
+        objName = quoteWhitespace(sourceFile + ".o");
+        
+        
+        // FIXME: mustRebuild() is crashing... Is it fixed yet?
+        //if(mustRebuild(objName, env.depends, fd))
+        {
+            sprintf(buffer, "%s %s -c %s -o %s", path.c_str(), options.c_str(), sourceFileQuoted.c_str(), objName.c_str());
+            
+            
+            string buff = buffer;
+            convertSlashes(buff);
+            
+            UI_print(" Building %s\n  %s\n", sourceFile.c_str(), buff.c_str());
+            
+            
+            UI_debug_pile("Actual call:\n %s\n", buff.c_str());
+            
+            // Needed for success check
+            bool objExists = ioExists(objName);
+            time_t objTime = 0;
+            if(objExists)
+                objTime = ioTimeModified(objName);
+            
+            systemCall(buff.c_str());
+            
+            UI_print_file(tempname);
+            ioDelete(tempname.c_str());
+            
+            // Check to see if the build was successful.
+            if(objExists)
+            {
+                // FIXME: This looks like it could fail if the build is quick (and the object had been modified...)!!!
+                if(!ioExists(objName) || objTime >= ioTimeModified(objName))
+                    failedFiles.push_back(sourceFile);
+            }
+            else
+            {
+                if(!ioExists(objName))
+                    failedFiles.push_back(sourceFile);
+            }
+        }
+        /*else
+        {
+            UI_print(" Up to date: %s\n", sourceFileQuoted);
+        }*/
+        if(UI_processEvents() < 0)
+            return NULL;
+        UI_updateScreen();
+    }
+    
+    if(failedFiles.size() > 0)
+    {
+        UI_error("Some files failed to build:\n");
+        for(list<string>::iterator e = failedFiles.begin(); e != failedFiles.end(); e++)
+        {
+            UI_error("  %s\n", e->c_str());
+        }
+        UI_error("\n");
+    }
+    
+    return NULL;
+}
 
 /*
 Calls the compiler on the given source files, creating object files.
