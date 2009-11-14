@@ -274,6 +274,7 @@ bool Interpreter::defineClass(Variable* classvar, istream* stream)
                                 
                                 //addVar(name, f);
                                 //return firstVar;
+                                
                                 defineFunction(f, stream);
                                 theClass->addFunction(name, f);
                                 break;

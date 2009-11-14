@@ -172,17 +172,20 @@ Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
 
 
 // Returns VOID (NULL)
-Variable* fn_link(Variable* arg1, Variable* arg2, Variable* arg3)
+// Params: ClassObject linker, string outfile, array objects, array options, array libraries
+Variable* fn_link(Variable* arg1, Variable* arg2, Variable* arg3, Variable* arg4, Variable* arg5)
 {
     ClassObject* c = dynamic_cast<ClassObject*>(arg1);
-    Array* sources = dynamic_cast<Array*>(arg2);
-    Array* opts = dynamic_cast<Array*>(arg3);
+    String* outname = dynamic_cast<String*>(arg2);
+    Array* objs = dynamic_cast<Array*>(arg3);
+    Array* opts = dynamic_cast<Array*>(arg4);
+    Array* libs = dynamic_cast<Array*>(arg5);
     
-    if(c == NULL || sources == NULL || opts == NULL)
+    if(c == NULL || outname == NULL || objs == NULL || opts == NULL)
         return NULL;
     
     string path = static_cast<String*>(c->getVariable("path"))->getValue();
-    vector<Variable*> sourceFiles = sources->getValue();
+    vector<Variable*> objects = objs->getValue();
     
     string options;
     for(vector<Variable*>::iterator e = opts->getValue().begin(); e != opts->getValue().end(); e++)
@@ -196,17 +199,8 @@ Variable* fn_link(Variable* arg1, Variable* arg2, Variable* arg3)
         options += s->getValue() + " ";
     }
     
-    
-    char buffer[5000];
-    string objName;
-    string sourceFile, sourceFileQuoted;
-    string tempname = ".pile.tmp";
-    list<string> failedFiles;
-    ioDelete(tempname.c_str());
-    
-    UI_debug_pile("Checking sources for building.\n");
-    //UI_debug_pile("Sources size: %d\n", env.sources.size());
-    for(vector<Variable*>::iterator e = sourceFiles.begin(); e != sourceFiles.end(); e++)
+    string libraries;
+    for(vector<Variable*>::iterator e = libs->getValue().begin(); e != libs->getValue().end(); e++)
     {
         if((*e)->getType() != STRING)
         {
@@ -214,80 +208,39 @@ Variable* fn_link(Variable* arg1, Variable* arg2, Variable* arg3)
             return NULL;
         }
         String* s = static_cast<String*>(*e);
-        sourceFile = s->getValue();
-        
-        
-        if(!ioExists(sourceFile))
-        {
-            UI_error("Source file \"%s\" not found.\n", sourceFile.c_str());
-            continue;
-        }
-        sourceFileQuoted = quoteWhitespace(sourceFile);
-        //sourceFile = quoteWhitespace(*e);
-        //FileData* fd = env.fileDataHash[*e];
-        //objName = getObjectName(*e, config.objPath, config.useSourceObjPath);
-        //mkpath(ioStripToDir(objName));
-        //objName = quoteWhitespace(objName);
-        objName = quoteWhitespace(sourceFile + ".o");
-        
-        
-        // FIXME: mustRebuild() is crashing... Is it fixed yet?
-        //if(mustRebuild(objName, env.depends, fd))
-        {
-            sprintf(buffer, "%s %s -c %s -o %s", path.c_str(), options.c_str(), sourceFileQuoted.c_str(), objName.c_str());
-            
-            
-            string buff = buffer;
-            convertSlashes(buff);
-            
-            UI_print(" Building %s\n  %s\n", sourceFile.c_str(), buff.c_str());
-            
-            
-            UI_debug_pile("Actual call:\n %s\n", buff.c_str());
-            
-            // Needed for success check
-            bool objExists = ioExists(objName);
-            time_t objTime = 0;
-            if(objExists)
-                objTime = ioTimeModified(objName);
-            
-            systemCall(buff.c_str());
-            
-            UI_print_file(tempname);
-            ioDelete(tempname.c_str());
-            
-            // Check to see if the build was successful.
-            if(objExists)
-            {
-                // FIXME: This looks like it could fail if the build is quick (and the object had been modified...)!!!
-                if(!ioExists(objName) || objTime >= ioTimeModified(objName))
-                    failedFiles.push_back(sourceFile);
-            }
-            else
-            {
-                if(!ioExists(objName))
-                    failedFiles.push_back(sourceFile);
-            }
-        }
-        /*else
-        {
-            UI_print(" Up to date: %s\n", sourceFileQuoted);
-        }*/
-        if(UI_processEvents() < 0)
-            return NULL;
-        UI_updateScreen();
+        libraries += s->getValue() + " ";
     }
     
-    if(failedFiles.size() > 0)
+    string objectstr;
+    for(vector<Variable*>::iterator e = objects.begin(); e != objects.end(); e++)
     {
-        UI_error("Some files failed to build:\n");
-        for(list<string>::iterator e = failedFiles.begin(); e != failedFiles.end(); e++)
+        if((*e)->getType() != STRING)
         {
-            UI_error("  %s\n", e->c_str());
+            interpreter.error("Wrong type in array sent to build().\n");
+            return NULL;
         }
-        UI_error("\n");
+        String* s = static_cast<String*>(*e);
+        objectstr += quoteWhitespace(s->getValue()) + " ";
     }
     
+    
+    char buffer[5000];
+    string out = quoteWhitespace(outname->getValue() + EXE_EXT);
+    string tempname = ".pile.tmp";
+    ioDelete(tempname.c_str());
+    
+    sprintf(buffer, "%s -o %s %s %s %s", path.c_str(), out.c_str(), objectstr.c_str(), options.c_str(), libraries.c_str());
+    UI_print("Linking: %s\n", buffer);
+    string buff = buffer;
+    convertSlashes(buff);
+    
+    systemCall(buff);
+    
+    UI_print_file(tempname);
+    ioDelete(tempname.c_str());
+    
+    UI_processEvents();
+    UI_updateScreen();
     return NULL;
 }
 

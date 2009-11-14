@@ -71,7 +71,10 @@ std::string getSeparatorString(SeparatorEnum type);
 
 class Interpreter;
 class Variable;
+class Bool;
+class ClassObject;
 Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args);
+Bool* boolCast(Variable* v);
 
 
 bool isConvertable(TypeEnum source, TypeEnum dest);
@@ -489,126 +492,41 @@ private:
     Variable* (*external_fn1)(Variable*);
     Variable* (*external_fn2)(Variable*, Variable*);
     Variable* (*external_fn3)(Variable*, Variable*, Variable*);
+    Variable* (*external_fn4)(Variable*, Variable*, Variable*, Variable*);
+    Variable* (*external_fn5)(Variable*, Variable*, Variable*, Variable*, Variable*);
 public:
     TypeName returnType;
 
     std::string definitionFile;
     unsigned int lineNumber;
+    bool isMethod;
+    ClassObject* parentClass;
 
 
-    Function()
-            : Variable(FUNCTION)
-            , builtIn(FN_NONE)
-            , lineNumber(0)
-    {}
-    Function(const std::vector<TypeName>& argt, const std::string& value)
-            : Variable(FUNCTION)
-            , value(value)
-            , argt(argt)
-            , builtIn(FN_NONE)
-            , lineNumber(0)
-    {}
-    Function(Variable* (*external_fn)(Variable*, Variable*, Variable*), TypeEnum type1, TypeEnum type2, TypeEnum type3)
-            : Variable(FUNCTION)
-            , builtIn(FN_EXTERNAL)
-            , external_fn0(NULL)
-            , external_fn1(NULL)
-            , external_fn2(NULL)
-            , external_fn3(external_fn)
-            , lineNumber(0)
-    {}
-    Function(FunctionEnum builtIn)
-            : Variable(FUNCTION)
-            , builtIn(builtIn)
-            , lineNumber(0)
-    {
-        switch(builtIn)
-        {
-            case FN_PRINT:
-                argt.push_back(TypeName(STRING));
-                break;
-            case FN_PRINTLN:
-                argt.push_back(TypeName(STRING));
-                break;
-            case FN_WARNING:
-                argt.push_back(TypeName(STRING));
-                break;
-            case FN_ERROR:
-                argt.push_back(TypeName(STRING));
-                break;
-            case FN_DEBUG:
-                argt.push_back(TypeName(STRING));
-                break;
-            case FN_TYPE:
-                argt.push_back(TypeName(VOID));
-                break;
-            case FN_STRING:
-                argt.push_back(TypeName(VOID));
-                break;
-            case FN_BOOL:
-                argt.push_back(TypeName(VOID));
-                break;
-            case FN_INT:
-                argt.push_back(TypeName(VOID));
-                break;
-            case FN_FLOAT:
-                argt.push_back(TypeName(VOID));
-                break;
-            case FN_INCLUDE:
-                argt.push_back(TypeName(VOID));
-                break;
-            case FN_EXTERNAL:
-                break;
-            case FN_NONE:
-                break;
-        }
-    }
-    std::string& getValue()
-    {
-        return value;
-    }
-    std::vector<TypeName>& getArgTypes()
-    {
-        return argt;
-    }
-    void setValue(const std::string& val)
-    {
-        value = val;
-    }
-    void setArgTypes(const std::vector<TypeName>& argTypes)
-    {
-        argt = argTypes;
-    }
-    void addArg(const TypeName& argType, const std::string& argName)
-    {
-        argt.push_back(argType);
-        args.push_back(argName);
-    }
+    Function();
+    Function(const std::vector<TypeName>& argt, const std::string& value);
+    Function(Variable* (*external_fn)(Variable*, Variable*, Variable*));
+    Function(Variable* (*external_fn)(Variable*, Variable*, Variable*, Variable*));
+    Function(Variable* (*external_fn)(Variable*, Variable*, Variable*, Variable*, Variable*));
+    Function(FunctionEnum builtIn);
+    
+    std::string& getValue();
+    std::vector<TypeName>& getArgTypes();
+    void setValue(const std::string& val);
+    void setArgTypes(const std::vector<TypeName>& argTypes);
+    void addArg(const TypeName& argType, const std::string& argName);
     /*void loadFromSig(const std::list<Token>& fnSignature)
     {
         // ...
     }*/
-    virtual std::string getValueString()
-    {
-        return value;
-    }
-    bool isBuiltIn()
-    {
-        return (builtIn != FN_NONE);
-    }
-    FunctionEnum getBuiltIn()
-    {
-        return builtIn;
-    }
+    // Convert into a class method
+    void makeAsMethod(std::string className);
+    virtual std::string getValueString();
+    bool isBuiltIn();
+    FunctionEnum getBuiltIn();
     Variable* call(Interpreter& interpreter, std::vector<Variable*>& args);
     
-    virtual Variable* copy()
-    {
-        Variable* cp = new Function(*this);
-        cp->temp = false;
-        cp->reference = false;
-        return cp;
-    }
+    virtual Variable* copy();
 };
 
 class Procedure : public Variable
@@ -681,7 +599,10 @@ public:
     {
         //vars.push_back(VarRecord(varname, argtypes, definition));
         if(f != NULL)
+        {
+            f->makeAsMethod(this->name);
             vars.push_back(VarRecord(name, f));
+        }
     }
     virtual std::string getValueString()
     {
@@ -731,6 +652,11 @@ public:
             UI_debug_pile("Returning member of type: %s\n", e->second->getTypeString().c_str());
         else
             UI_debug_pile("Returning NULL member\n");
+        if(e->second->getType() == FUNCTION)
+        {
+            Function* f = static_cast<Function*>(e->second);
+            f->parentClass = this;
+        }
         return e->second;
     }
     virtual std::string getValueString()
@@ -1318,6 +1244,10 @@ public:
             }
         }
         
+        if(fn->isMethod && fn->parentClass != NULL)
+        {
+            args.insert(args.begin(), fn->parentClass);
+        }
         
         // Compare number of arguments
         if(fn->getBuiltIn() == FN_EXTERNAL)

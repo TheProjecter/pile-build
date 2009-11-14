@@ -152,17 +152,19 @@ string getOperatorString(OperatorEnum type)
 
 bool isConvertable(TypeEnum source, TypeEnum dest)
 {
+    if(source == dest)
+        return true;
     if(source == BOOL)
     {
-        return (dest == BOOL || dest == INT || dest == FLOAT);
+        return (dest == INT || dest == FLOAT);
     }
     if(source == INT)
     {
-        return (dest == BOOL || dest == INT || dest == FLOAT);
+        return (dest == BOOL || dest == FLOAT);
     }
     if(source == FLOAT)
     {
-        return (dest == BOOL || dest == INT || dest == FLOAT);
+        return (dest == BOOL || dest == INT);
     }
     if(source == STRING)
     {

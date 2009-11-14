@@ -6,291 +6,323 @@ using namespace std;
 
 extern Interpreter interpreter;
 
-string replaceEscapes(string s)
+
+Function::Function()
+        : Variable(FUNCTION)
+        , builtIn(FN_NONE)
+        , lineNumber(0)
+        , isMethod(false)
+        , parentClass(NULL)
+{}
+
+Function::Function(const std::vector<TypeName>& argt, const std::string& value)
+        : Variable(FUNCTION)
+        , value(value)
+        , argt(argt)
+        , builtIn(FN_NONE)
+        , lineNumber(0)
+        , isMethod(false)
+        , parentClass(NULL)
+{}
+
+Function::Function(Variable* (*external_fn)(Variable*, Variable*, Variable*))
+        : Variable(FUNCTION)
+        , builtIn(FN_EXTERNAL)
+        , external_fn0(NULL)
+        , external_fn1(NULL)
+        , external_fn2(NULL)
+        , external_fn3(external_fn)
+        , external_fn4(NULL)
+        , external_fn5(NULL)
+        , lineNumber(0)
+        , isMethod(false)
+        , parentClass(NULL)
+{}
+
+Function::Function(Variable* (*external_fn)(Variable*, Variable*, Variable*, Variable*))
+        : Variable(FUNCTION)
+        , builtIn(FN_EXTERNAL)
+        , external_fn0(NULL)
+        , external_fn1(NULL)
+        , external_fn2(NULL)
+        , external_fn3(NULL)
+        , external_fn4(external_fn)
+        , external_fn5(NULL)
+        , lineNumber(0)
+        , isMethod(false)
+        , parentClass(NULL)
+{}
+
+Function::Function(Variable* (*external_fn)(Variable*, Variable*, Variable*, Variable*, Variable*))
+        : Variable(FUNCTION)
+        , builtIn(FN_EXTERNAL)
+        , external_fn0(NULL)
+        , external_fn1(NULL)
+        , external_fn2(NULL)
+        , external_fn3(NULL)
+        , external_fn4(NULL)
+        , external_fn5(external_fn)
+        , lineNumber(0)
+        , isMethod(false)
+        , parentClass(NULL)
+{}
+
+Function::Function(FunctionEnum builtIn)
+        : Variable(FUNCTION)
+        , builtIn(builtIn)
+        , lineNumber(0)
+        , isMethod(false)
+        , parentClass(NULL)
 {
-    // Replace the escape sequences...
-    for(string::iterator e = s.begin(); e != s.end();)
-    {
-        if(*e == '\\')
-        {
-            string::iterator f = e;
-            //UI_debug_pile("String: %s\n", s.c_str());
-            //e++;  // Get the next character
-            s.erase(f);  // Erase the backslash
-            //UI_debug_pile("Erased1 String: %s\n", s.c_str());
-            if(e != s.end())
-            {
-                //UI_debug_pile("Checking escape sequence.\n");
-                if(*e == 'n')
-                {
-                    //UI_debug_pile("Replacing escape sequence.\n");
-                    f = e;
-                    //e++;
-                    s.erase(f);
-                    //UI_debug_pile(" Erased2 String: %s\n", s.c_str());
-                    s.insert(e, '\n');
-                    //UI_debug_pile(" Inserted String: %s\n", s.c_str());
-                    e++;
-                }
-                else  // Unknown escape sequence...
-                {
-                    UI_warning(" Warning: Unknown escape sequence, '\\%c'", *e);
-                    f = e;
-                    //e++;
-                    s.erase(f);  // Erase the escaped character
-                }
-            }
-        }
-        else
-            e++;
-    }
-    return s;
-}
-
-
-void fn_print(Variable* arg)
-{
-    assert(arg->getType() == STRING);
-    
-    UI_print("%s", replaceEscapes(static_cast<String*>(arg)->getValue()).c_str());
-}
-
-void fn_println(Variable* arg)
-{
-    if(arg->getType() == STRING)
-    {
-        string s = static_cast<String*>(arg)->getValue();
-        // Every string in here has double quotes (so it's at least size 2)
-        // Maybe I should move this out to the tokenizing or eval step.
-        //s = s.substr(1, s.size()-2);
-        
-        s = replaceEscapes(s);
-        
-        // Do it
-        UI_print("%s\n", s.c_str());
-    }
-    else
-    {
-        interpreter.error("Error: println() was not given a string.\n");
-    }
-}
-
-void fn_warning(Variable* arg)
-{
-    if(arg->getType() == STRING)
-    {
-        string s = static_cast<String*>(arg)->getValue();
-        // Every string in here has double quotes (so it's at least size 2)
-        // Maybe I should move this out to the tokenizing or eval step.
-        //s = s.substr(1, s.size()-2);
-        
-        s = replaceEscapes(s);
-        
-        // Do it
-        UI_warning("%s", s.c_str());
-    }
-    else
-    {
-        interpreter.error("Error: warning() was not given a string.\n");
-    }
-}
-
-void fn_error(Variable* arg)
-{
-    if(arg->getType() == STRING)
-    {
-        string s = static_cast<String*>(arg)->getValue();
-        // Every string in here has double quotes (so it's at least size 2)
-        // Maybe I should move this out to the tokenizing or eval step.
-        //s = s.substr(1, s.size()-2);
-        
-        s = replaceEscapes(s);
-        
-        // Do it
-        UI_error("%s", s.c_str());
-    }
-    else
-    {
-        interpreter.error("Error: error() was not given a string.\n");
-    }
-}
-
-void fn_debug(Variable* arg)
-{
-    if(arg->getType() == STRING)
-    {
-        string s = static_cast<String*>(arg)->getValue();
-        // Every string in here has double quotes (so it's at least size 2)
-        // Maybe I should move this out to the tokenizing or eval step.
-        //s = s.substr(1, s.size()-2);
-        
-        s = replaceEscapes(s);
-        
-        // Do it
-        UI_debug("%s", s.c_str());
-    }
-    else
-    {
-        interpreter.error("Error: debug() was not given a string.\n");
-    }
-}
-
-
-Bool* boolCast(Variable* v)
-{
-    if(v->getType() == BOOL)
-    {
-        Bool* b = static_cast<Bool*>(v);
-        return new Bool(b->getValue());
-    }
-    if(v->getType() == INT)
-    {
-        Int* i = static_cast<Int*>(v);
-        return new Bool(i->getValue());
-    }
-    if(v->getType() == FLOAT)
-    {
-        Float* f = static_cast<Float*>(v);
-        return new Bool(f->getValue());
-    }
-    return NULL;
-}
-
-Int* intCast(Variable* v)
-{
-    if(v->getType() == BOOL)
-    {
-        Bool* b = static_cast<Bool*>(v);
-        return new Int(int(b->getValue()));
-    }
-    if(v->getType() == INT)
-    {
-        Int* i = static_cast<Int*>(v);
-        return new Int(i->getValue());
-    }
-    if(v->getType() == FLOAT)
-    {
-        Float* f = static_cast<Float*>(v);
-        return new Int(int(f->getValue()));
-    }
-    return NULL;
-}
-
-Float* floatCast(Variable* v)
-{
-    if(v->getType() == BOOL)
-    {
-        Bool* b = static_cast<Bool*>(v);
-        return new Float(float(b->getValue()));
-    }
-    if(v->getType() == INT)
-    {
-        Int* i = static_cast<Int*>(v);
-        return new Float(float(i->getValue()));
-    }
-    if(v->getType() == FLOAT)
-    {
-        Float* f = static_cast<Float*>(v);
-        return new Float(f->getValue());
-    }
-    return NULL;
-}
-
-Void* include(Variable* v)
-{
-    if(v->getType() != STRING)
-    {
-        return NULL;
-    }
-    String* s = static_cast<String*>(v);
-    string file = s->getValue();
-    
-    // Save old stuff
-    string oldFile = interpreter.currentFile;
-    unsigned int oldLine = interpreter.lineNumber;
-    bool oldErrorFlag = interpreter.errorFlag;
-    
-    // Call the interpreter on this file.
-    interpreter.readFile(file);
-    
-    // Restore old stuff
-    interpreter.currentFile = oldFile;
-    interpreter.lineNumber = oldLine;
-    interpreter.errorFlag = oldErrorFlag;
-    
-    return NULL;
-}
-
-
-Variable* callBuiltIn(FunctionEnum fn, vector<Variable*>& args)
-{
-    Variable* result = NULL;
-    
-    switch(fn)
+    switch(builtIn)
     {
         case FN_PRINT:
-            if(args.size() != 1)
-                return NULL;
-            fn_print(args[0]);
+            argt.push_back(TypeName(STRING));
             break;
         case FN_PRINTLN:
-            if(args.size() != 1)
-                return NULL;
-            fn_println(args[0]);
+            argt.push_back(TypeName(STRING));
             break;
         case FN_WARNING:
-            if(args.size() != 1)
-                return NULL;
-            fn_warning(args[0]);
+            argt.push_back(TypeName(STRING));
             break;
         case FN_ERROR:
-            if(args.size() != 1)
-                return NULL;
-            fn_error(args[0]);
+            argt.push_back(TypeName(STRING));
             break;
         case FN_DEBUG:
-            if(args.size() != 1)
-                return NULL;
-            fn_debug(args[0]);
+            argt.push_back(TypeName(STRING));
             break;
         case FN_TYPE:
-            if(args.size() != 1)
-                return NULL;
-            result = new String(args[0]->getTypeString());
+            argt.push_back(TypeName(VOID));
             break;
         case FN_STRING:
-            if(args.size() != 1)
-                return NULL;
-            result = new String(args[0]->getValueString());
+            argt.push_back(TypeName(VOID));
             break;
         case FN_BOOL:
-            if(args.size() != 1)
-                return NULL;
-            result = boolCast(args[0]);
+            argt.push_back(TypeName(VOID));
             break;
         case FN_INT:
-            if(args.size() != 1)
-                return NULL;
-            result = intCast(args[0]);
+            argt.push_back(TypeName(VOID));
             break;
         case FN_FLOAT:
-            if(args.size() != 1)
-                return NULL;
-            result = floatCast(args[0]);
+            argt.push_back(TypeName(VOID));
             break;
         case FN_INCLUDE:
-            if(args.size() != 1)
-                return NULL;
-            result = include(args[0]);
+            argt.push_back(TypeName(VOID));
             break;
         case FN_EXTERNAL:
             break;
-        default:
+        case FN_NONE:
             break;
     }
-    if(result != NULL)
+}
+
+std::string& Function::getValue()
+{
+    return value;
+}
+
+std::vector<TypeName>& Function::getArgTypes()
+{
+    return argt;
+}
+
+void Function::setValue(const std::string& val)
+{
+    value = val;
+}
+
+void Function::setArgTypes(const std::vector<TypeName>& argTypes)
+{
+    argt = argTypes;
+}
+
+void Function::addArg(const TypeName& argType, const std::string& argName)
+{
+    argt.push_back(argType);
+    args.push_back(argName);
+}
+
+/*void loadFromSig(const std::list<Token>& fnSignature)
+{
+    // ...
+}*/
+// Converts into a class method
+void Function::makeAsMethod(std::string className)
+{
+    argt.insert(argt.begin(), CLASS_OBJECT);
+    args.insert(args.begin(), className);  // It will be called 'this' by default
+    isMethod = true;
+}
+
+std::string Function::getValueString()
+{
+    return value;
+}
+
+bool Function::isBuiltIn()
+{
+    return (builtIn != FN_NONE);
+}
+
+FunctionEnum Function::getBuiltIn()
+{
+    return builtIn;
+}
+
+// See readFile() since they're similar
+Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
+{
+    
+    if(builtIn == FN_EXTERNAL)
     {
-        UI_debug_pile("Built-in fn result: '%s' (%s)\n", result->getTypeString().c_str(), result->getValueString().c_str());
+        if(external_fn0 != NULL && args.size() == 0)
+            return external_fn0();
+        if(external_fn1 != NULL && args.size() == 1)
+            return external_fn1(args[0]);
+        if(external_fn2 != NULL && args.size() == 2)
+            return external_fn2(args[0], args[1]);
+        if(external_fn3 != NULL && args.size() == 3)
+            return external_fn3(args[0], args[1], args[2]);
+        if(external_fn4 != NULL && args.size() == 4)
+            return external_fn4(args[0], args[1], args[2], args[3]);
+        if(external_fn5 != NULL && args.size() == 5)
+            return external_fn5(args[0], args[1], args[2], args[3], args[4]);
+        interpreter.error("Error calling external function.\n");
+        return NULL;
     }
-    return result;
+    if(builtIn != FN_NONE)
+        return callBuiltIn(builtIn, args);
+    // FIXME: Execute function body here
+    
+    //if(definitionFile == "")
+    if(lineNumber == 0)
+    {
+        interpreter.error("Error: Function not defined.\n");
+        return NULL;
+    }
+    
+    
+    interpreter.pushEnv(Scope(true));
+    
+    // Add the argument variables
+    for(unsigned int i = 0; i < args.size(); i++)
+    {
+        if(isMethod && i == 0)
+            interpreter.addVar("this", args[i]);
+        else
+            interpreter.addVar(this->args[i], args[i]);
+    }
+    
+    
+    
+    //int lineNum = lineNumber;
+    // FIXME: Hacky!
+    // Make sure error messages use the right line numbers.
+    unsigned int holdInterpreterLineNum = interpreter.lineNumber;
+    unsigned int& lineNum = interpreter.lineNumber;
+    lineNum = 1 + lineNumber;
+    
+    Token returnValue;
+    
+    // Interpret the function...
+    std::stringstream str(getValue());
+    bool continuation = false;
+    bool wasTrueIf = false;
+    bool wasFalseIf = false;
+    list<Token> tokens;
+    string line;
+    while(!str.eof())
+    {
+        getline(str, line);
+        
+        if(!continuation)  // If we're not continuing the line, then clear the tokens.
+            tokens.clear();
+        
+        list<Token> tok2 = tokenize1(line, continuation);
+        
+        tokens.splice(tokens.end(), tok2);
+        
+        if(!continuation || str.eof())  // Skip the eval if we're continuing, but not if the file ends!
+        {
+            returnValue = interpreter.evalTokens(tokens, true, wasTrueIf, wasFalseIf);
+            wasTrueIf = wasFalseIf = false;
+            if(returnValue.type == Token::KEYWORD)
+            {
+                if(returnValue.text == "true if")
+                {
+                    wasTrueIf = true;
+                    wasFalseIf = false;
+                }
+                else if(returnValue.text == "false if")
+                {
+                    wasTrueIf = false;
+                    wasFalseIf = true;
+                }
+                else if(returnValue.text == "return")
+                {
+                    break;
+                }
+            }
+            if(returnValue.type == Token::VARIABLE && returnValue.var != NULL)
+            {
+                if(returnValue.var->getType() == CLASS)
+                {
+                    Class* aClass = dynamic_cast<Class*>(returnValue.var);
+                    if(aClass != NULL)
+                    {
+                        interpreter.defineClass(aClass, &str);
+                    }
+                }
+                else if(returnValue.var->getType() == FUNCTION)
+                {
+                    Function* aFn = dynamic_cast<Function*>(returnValue.var);
+                    if(aFn != NULL)
+                    {
+                        interpreter.defineFunction(aFn, &str);
+                    }
+                }
+            }
+            lineNum++;
+        }
+        else if(continuation)
+            lineNum++;  // Skip an extra line if the last one was continued...  This probably isn't right for multiple-line continues...
+        
+        returnValue.var = NULL;
+    }
+    
+    interpreter.popEnv();
+    
+    if(returnValue.text != "return" && returnType.getValue() != VOID)
+    {
+        interpreter.error("Error: No return statement at end of non-void function.\n");
+    }
+    else
+    {
+        // Explicitly returning a value
+        if(returnValue.var == NULL)
+        {
+            if(returnType.getValue() != VOID)
+                interpreter.error("Error: Returning 'void' from a function which expects '%s'.\n", returnType.text.c_str());
+        }
+        else
+        {
+            if(returnValue.var->getTypeString() != returnType.text)
+            {
+                interpreter.error("Error: Returning type '%s' from a function which expects '%s'.\n", returnValue.var->getTypeString().c_str(), returnType.text.c_str());
+            }
+            UI_debug_pile("Returning type: %s\n", returnValue.var->getTypeString().c_str());
+        }
+    }
+    
+    interpreter.lineNumber = holdInterpreterLineNum;
+    
+    return returnValue.var;
+}
+
+Variable* Function::copy()
+{
+    Variable* cp = new Function(*this);
+    cp->temp = false;
+    cp->reference = false;
+    return cp;
 }

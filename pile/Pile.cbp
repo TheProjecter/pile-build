@@ -29,6 +29,7 @@
 			<Add library="SDL_image" />
 			<Add library="SDL_ttf" />
 		</Linker>
+		<Unit filename="Eve Source/eve_builtInFunctions.cpp" />
 		<Unit filename="Eve Source/eve_evaluater.cpp" />
 		<Unit filename="Eve Source/eve_functions.cpp" />
 		<Unit filename="Eve Source/eve_interpreter.cpp" />
