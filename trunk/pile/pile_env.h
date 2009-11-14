@@ -7,6 +7,7 @@
 #include "Eve Source/eve_interpreter.h"
 
 Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3);
+Variable* fn_link(Variable* arg1, Variable* arg2, Variable* arg3, Variable* arg4, Variable* arg5);
 
 class Environment
 {
@@ -50,6 +51,10 @@ class Environment
         s.env["CFLAGS"]->reference = true;
         s.env["LFLAGS"] = new Array(STRING);
         s.env["LFLAGS"]->reference = true;
+        s.env["OBJECTS"] = new Array(STRING);
+        s.env["OBJECTS"]->reference = true;
+        s.env["LIBRARIES"] = new Array(STRING);
+        s.env["LIBRARIES"]->reference = true;
         s.env["HOST_PLATFORM"] = new String(getSystemName());
         s.env["TARGET_PLATFORM"] = new String(config.languages["TARGET_PLATFORM"]);
         //s.env["CPP_COMPILER"] = new Compiler(config.languages["CPP_COMPILER"]);
@@ -58,7 +63,7 @@ class Environment
         Class* compiler = new Class("Compiler");
         compiler->addVariable("string", "name");
         compiler->addVariable("string", "path");
-        Function* compile = new Function(&fn_build, CLASS_OBJECT, ARRAY, ARRAY);
+        Function* compile = new Function(&fn_build);
         compiler->addFunction("compile", compile);
         //s.env["Compiler"] = compiler;
         inter.addClass(compiler);
@@ -71,6 +76,24 @@ class Environment
             static_cast<String*>(cpp_path)->setValue(config.languages["CPP_COMPILER"]);
         }
         s.env["cpp_compiler"] = cpp_compiler;
+        
+        // Linker
+        Class* linker = new Class("Linker");
+        linker->addVariable("string", "name");
+        linker->addVariable("string", "path");
+        Function* linkit = new Function(&fn_link);
+        linker->addFunction("link", linkit);
+        //s.env["Compiler"] = compiler;
+        inter.addClass(linker);
+        ClassObject* cpp_linker = new ClassObject("Linker");
+        Variable* cpp_linkname = cpp_linker->getVariable("name");
+        Variable* cpp_linkpath = cpp_linker->getVariable("path");
+        if(cpp_linkname != NULL && cpp_linkpath != NULL && cpp_linkname->getType() == STRING && cpp_linkpath->getType() == STRING)
+        {
+            static_cast<String*>(cpp_linkname)->setValue(config.languages["CPP_LINKER_D"]);
+            static_cast<String*>(cpp_linkpath)->setValue(config.languages["CPP_LINKER_D"]);
+        }
+        s.env["cpp_linker"] = cpp_linker;
         
         Array* vars = new Array(STRING);
         if(variants.size() == 0)

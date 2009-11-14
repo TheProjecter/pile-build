@@ -1,0 +1,103 @@
+
+1
+---
+::  Scope resolution
+
+2
+---
+()  Function call
+()  Member initialization
+[]  Array access
+->  Member access from a pointer
+.   Member access from an object
+++  Post-increment
+--  Post-decrement
+
+3
+---
+!   Logical negation
+++  Pre-increment
+--  Pre-decrement
+-   Unary minus
++   Unary plus
+*   Dereference
+&   Address of
+new Dynamic memory allocation
+delete Dynamic memory deallocaton
+
+4
+---
+**  Exponentiation
+
+5
+---
+*   Multiplication
+/   Division
+%   Modulus
+
+6
+---
++   Addition
+-   Subtraction
+~   Concatenation
+
+7
+---
+<<  Left bit shift
+>>  Right bit shift
+
+8
+---
+<   Comparison less
+<=  Comparison less or equal
+!>  Comparison not greater
+>   Comparison greater
+>=  Comparison greater or equal
+!<  Comparison not less
+
+9
+---
+==  Comparison equals
+!=  Comparison not equal
+
+10
+---
+&   Bitwise and
+
+11
+---
+^   Bitwise xor
+
+12
+---
+|   Bitwise or
+
+13
+---
+&&  Logical and
+
+14
+---
+||  Logical or
+
+15
+---
+? : Ternary conditional
+
+16
+---
+=   Assignment
++=  Add assign
+-=  Subtract assign
+*=  Multiply assign
+/=  Divide assign
+%=  Modulus assign
+&=  Bitwise and assign
+^=  Bitwise xor assign
+|=  Bitwise or assign
+<<= Left bit shift assign
+>>= Right bit shift assign
+
+17
+---
+,   Sequential evaluation

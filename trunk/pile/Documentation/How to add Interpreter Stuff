@@ -1,0 +1,80 @@
+
+ADD PILE'S BUILT-IN VARIABLES
+-----------------------------
+pile_env.h:
+    void initInterpreter(Interpreter& inter):
+        Add a new variable to the environment.
+
+ADD EVE'S BUILT-IN VARIABLES
+-----------------------------
+eve_interpreter.h:
+    Interpreter::Interpreter():
+        Add a new variable to the environment.
+
+ADD OPERATOR
+-------------
+eve_interpreter.h:
+    enum OperatorEnum:
+        Add new operator.
+
+    Token::setOperator():
+        Add case for new operator, filling in precedence (smaller is earlier)
+
+    Variable* Interpreter::evaluateExpression(Variable* A, OperatorEnum operation, Variable* B)
+        Add case for new operator
+
+eve_interpreter.cpp:
+    string getOperatorString(OperatorEnum type):
+        Add case for new operator
+
+    bool isOperator(const char& c):
+        If the operator has special characters, add them here.
+
+    Various functions:
+        Add the appropriate code to the functions like assign(), comparison(), etc.
+
+eve_tokenizer.cpp:
+    bool isDigraphOperator(const char& c, const char& d):
+        Add case for the operator's separate characters if necessary.
+
+
+
+ADD KEYWORD
+------------
+eve_interpreter.h:
+    enum KeywordEnum:
+        Add new keyword
+
+eve_evaluator.cpp:
+    Token Interpreter::evalTokens(list<Token>& tokens, bool beginning):
+        Add handling for the keyword
+
+eve_interpreter.cpp:
+    KeywordEnum getKeyword(const string& str):
+        Add case for the keyword
+
+    bool Interpreter::readFile(string filename):
+        Add evalToken() return value handling if necessary
+
+
+ADD BUILT-IN FUNCTION
+----------------------
+pile_env.h:
+    void initInterpreter(Interpreter& inter):
+        Add a new function to the env if it's a Pile fn.
+
+eve_interpreter.cpp:
+    Variable* callBuiltIn(FunctionEnum fn, vector<Variable*>& args):
+        Add case for the fn.
+
+eve_interpreter.h:
+    enum FunctionEnum:
+        Add the function name.
+
+    Function::Function(FunctionEnum builtIn):
+        Add a case for the function.  A VOID argument will accept any type (i.e. a type error would be given elsewhere).
+
+    Interpreter::Interpreter():
+        Add a new function to the env if it's an Eve fn.
+
+

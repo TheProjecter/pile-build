@@ -1,7 +1,0 @@
-
-
-
-7-10-09
-Change Log created.
-Pile status:
- Sub-basic interpreter implemented (no 'if', no loops, no user-defined functions).  "pile", "pile -g", "pile dir/myfile.pile", "pile clean", "pile clean all", "pile edit", "pile edit pile.conf", and "pile main.cpp" working correctly.  Graphical Pile works with double-click and has multiple colors of output.  External program output is captured and sent through Pile's output.
