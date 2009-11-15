@@ -117,18 +117,22 @@ class TypeName : public Variable
 private:
     TypeEnum value; // What type is being declared?
 public:
+    TypeEnum subType; // Used for arrays
     std::string text;
     TypeName()
             : Variable(TYPENAME)
+            , subType(NOT_A_TYPE)
     {}
     TypeName(TypeEnum type)
             : Variable(TYPENAME)
             , value(type)
+            , subType(NOT_A_TYPE)
             , text(::getTypeString(type))
     {}
     TypeName(TypeEnum type, const std::string& text)
             : Variable(TYPENAME)
             , value(type)
+            , subType(NOT_A_TYPE)
             , text(text)
     {}
     void setValue(const TypeEnum& val)
@@ -382,6 +386,10 @@ public:
     void setValue(const std::vector<Variable*>& val)
     {
         value = val;  // Needs copy
+    }
+    void setValueType(TypeEnum newValueType)
+    {
+        valueType = newValueType;
     }
     std::string getValueTypeString()
     {

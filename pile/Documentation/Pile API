@@ -14,3 +14,23 @@ void print(string)
  Side Effect: Prints the string to Pile's stdout
  Return: None
 
+void println(string)
+ Arg 1: string to print
+ Side Effect: Prints the string to Pile's stdout with an appended newline
+ Return: None
+
+void warning(string)
+ Arg 1: string to print
+ Side Effect: Prints the string to Pile's stdout
+ Return: None
+
+void error(string)
+ Arg 1: string to print
+ Side Effect: Prints the string to Pile's stdout
+ Return: None
+
+void debug(string)
+ Arg 1: string to print
+ Side Effect: Prints the string to Pile's stdout
+ Return: None
+

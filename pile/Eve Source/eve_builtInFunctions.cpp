@@ -6,6 +6,10 @@ using namespace std;
 
 extern Interpreter interpreter;
 
+/*
+Returns a new string that has the printing escape sequences (\n, \t, etc.)
+replaced with the appropriate characters.
+*/
 string replaceEscapes(string s)
 {
     // Replace the escape sequences...

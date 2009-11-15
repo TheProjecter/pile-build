@@ -445,6 +445,36 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     newType = t->getValue();
                     UI_debug_pile(" Found a type name\n");
                     state = VAR_DECL;
+                    if(newType == ARRAY)
+                    {
+                        // FIXME: Make this recursible
+                        // Figure out what value type is in the array
+                        Token left, inside, right;
+                        list<Token>::iterator g = e;
+                        g++;
+                        if(g != tokens.end())
+                        {
+                            left = *g;
+                            g++;
+                            if(g != tokens.end())
+                            {
+                                inside = *g;
+                                g++;
+                                if(g != tokens.end())
+                                {
+                                    right = *g;
+                                    // Got all three!
+                                    if(left.type == Token::OPERATOR && left.oper == LESS
+                                       && right.type == Token::OPERATOR && right.oper == GREATER
+                                       && inside.type == Token::VARIABLE && inside.var != NULL)
+                                    {
+                                        e = g;
+                                        t->subType = inside.var->getType();
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 else if (e->var->getType() == CLASS)
                 {
@@ -633,7 +663,12 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     else if (newType == MACRO)
                         v = new Macro;
                     else if (newType == ARRAY)
-                        v = new Array;
+                    {
+                        Array* a = new Array;
+                        if(newTypeName != NULL && newTypeName->subType != NOT_A_TYPE)
+                            a->setValueType(newTypeName->subType);
+                        v = a;
+                    }
                     else if (newType == LIST)
                         v = new List;
                     else if (newType == FUNCTION)
