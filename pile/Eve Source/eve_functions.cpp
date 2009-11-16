@@ -6,6 +6,47 @@ using namespace std;
 
 extern Interpreter interpreter;
 
+// Functions for use in external functions
+
+String* convertArg_String(Variable* arg)
+{
+    if(arg == NULL || arg->getType() != STRING)
+    {
+        interpreter.error("Error: Wrong type passed to function.  Expected string.\n");
+        return NULL;
+    }
+    return static_cast<String*>(arg);
+}
+
+Array* convertArg_Array(Variable* arg, TypeEnum valueType)
+{
+    if(arg == NULL || arg->getType() != ARRAY)
+    {
+        interpreter.error("Error: Wrong type passed to function.  Expected array<%s>.\n", getTypeString(valueType).c_str());
+        return NULL;
+    }
+    Array* a = static_cast<Array*>(arg);
+    if(a->getValueType() != valueType)
+    {
+        interpreter.error("Error: Wrong type passed to function.  Expected array<%s>.\n", getTypeString(valueType).c_str());
+        return NULL;
+    }
+    return a;
+}
+
+ClassObject* convertArg_ClassObject(Variable* arg)
+{
+    if(arg == NULL || arg->getType() != CLASS_OBJECT)
+    {
+        interpreter.error("Error: Wrong type passed to function.  Expected class object.\n");
+        return NULL;
+    }
+    return static_cast<ClassObject*>(arg);
+}
+
+
+
+// ---------------------------------------
 
 Function::Function(const std::string& text, const std::vector<TypeName>& argt, const std::string& value)
         : Variable(FUNCTION, text)

@@ -6,6 +6,7 @@
 #include "pile_config.h"
 #include "Eve Source/eve_interpreter.h"
 
+Variable* fn_scan(Variable* arg1, Variable* arg2);
 Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3);
 Variable* fn_link(Variable* arg1, Variable* arg2, Variable* arg3, Variable* arg4, Variable* arg5);
 
@@ -65,6 +66,8 @@ class Environment
         compiler->addVariable("string", "path");
         Function* compile = new Function("compile", &fn_build);
         compiler->addFunction("compile", compile);
+        Function* scan = new Function("scan", &fn_scan);
+        compiler->addFunction("scan", scan);
         //s.env["Compiler"] = compiler;
         inter.addClass(compiler);
         ClassObject* cpp_compiler = new ClassObject("cpp_compiler", "Compiler");
