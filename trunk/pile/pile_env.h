@@ -45,29 +45,29 @@ class Environment
         Scope& s = *(inter.env.begin());
         s.env["OUTPUT"] = new String("a.out");
         s.env["OUTPUT"]->reference = true;
-        s.env["SOURCES"] = new Array(STRING);
+        s.env["SOURCES"] = new Array("SOURCES", STRING);
         s.env["SOURCES"]->reference = true;
-        s.env["CFLAGS"] = new Array(STRING);
+        s.env["CFLAGS"] = new Array("CFLAGS", STRING);
         s.env["CFLAGS"]->reference = true;
-        s.env["LFLAGS"] = new Array(STRING);
+        s.env["LFLAGS"] = new Array("LFLAGS", STRING);
         s.env["LFLAGS"]->reference = true;
-        s.env["OBJECTS"] = new Array(STRING);
+        s.env["OBJECTS"] = new Array("OBJECTS", STRING);
         s.env["OBJECTS"]->reference = true;
-        s.env["LIBRARIES"] = new Array(STRING);
+        s.env["LIBRARIES"] = new Array("LIBRARIES", STRING);
         s.env["LIBRARIES"]->reference = true;
-        s.env["HOST_PLATFORM"] = new String(getSystemName());
-        s.env["TARGET_PLATFORM"] = new String(config.languages["TARGET_PLATFORM"]);
+        s.env["HOST_PLATFORM"] = new String("HOST_PLATFORM", getSystemName());
+        s.env["TARGET_PLATFORM"] = new String("TARGET_PLATFORM", config.languages["TARGET_PLATFORM"]);
         //s.env["CPP_COMPILER"] = new Compiler(config.languages["CPP_COMPILER"]);
         
         // Compiler
         Class* compiler = new Class("Compiler");
         compiler->addVariable("string", "name");
         compiler->addVariable("string", "path");
-        Function* compile = new Function(&fn_build);
+        Function* compile = new Function("compile", &fn_build);
         compiler->addFunction("compile", compile);
         //s.env["Compiler"] = compiler;
         inter.addClass(compiler);
-        ClassObject* cpp_compiler = new ClassObject("Compiler");
+        ClassObject* cpp_compiler = new ClassObject("cpp_compiler", "Compiler");
         Variable* cpp_name = cpp_compiler->getVariable("name");
         Variable* cpp_path = cpp_compiler->getVariable("path");
         if(cpp_name != NULL && cpp_path != NULL && cpp_name->getType() == STRING && cpp_path->getType() == STRING)
@@ -81,11 +81,11 @@ class Environment
         Class* linker = new Class("Linker");
         linker->addVariable("string", "name");
         linker->addVariable("string", "path");
-        Function* linkit = new Function(&fn_link);
+        Function* linkit = new Function("link", &fn_link);
         linker->addFunction("link", linkit);
         //s.env["Compiler"] = compiler;
         inter.addClass(linker);
-        ClassObject* cpp_linker = new ClassObject("Linker");
+        ClassObject* cpp_linker = new ClassObject("cpp_linker", "Linker");
         Variable* cpp_linkname = cpp_linker->getVariable("name");
         Variable* cpp_linkpath = cpp_linker->getVariable("path");
         if(cpp_linkname != NULL && cpp_linkpath != NULL && cpp_linkname->getType() == STRING && cpp_linkpath->getType() == STRING)
@@ -95,22 +95,22 @@ class Environment
         }
         s.env["cpp_linker"] = cpp_linker;
         
-        Array* vars = new Array(STRING);
+        Array* vars = new Array("VARIANTS", STRING);
         if(variants.size() == 0)
-            vars->push_back(new String("default"));
+            vars->push_back(new String("<temp>", "default"));
         for(std::list<std::string>::iterator e = variants.begin(); e != variants.end(); e++)
         {
-            vars->push_back(new String(*e));
+            vars->push_back(new String("<temp>", *e));
         }
         s.env["VARIANTS"] = vars;
         
-        Array* opts = new Array(STRING);
+        Array* opts = new Array("OPTIONS", STRING);
         if(dryRun)
-            opts->push_back(new String("dry_run"));
+            opts->push_back(new String("<temp>", "dry_run"));
         if(noCompile)
-            opts->push_back(new String("no_compile"));
+            opts->push_back(new String("<temp>", "no_compile"));
         if(noLink)
-            opts->push_back(new String("no_link"));
+            opts->push_back(new String("<temp>", "no_link"));
         s.env["OPTIONS"] = opts;
         // includeDirs
         // libDirs

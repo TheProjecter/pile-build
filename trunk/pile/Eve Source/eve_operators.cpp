@@ -872,7 +872,7 @@ Variable* add(Variable* A, Variable* B)
     {
         String* C = static_cast<String*>(A);
         String* D = static_cast<String*>(B);
-        String* R = new String;
+        String* R = new String("<temp>");
         R->setValue(C->getValue() + D->getValue());
         return R;
     }
@@ -944,7 +944,7 @@ Variable* add(Variable* A, Variable* B)
             va.push_back(*e);
         }
         
-        Array* arr = new Array(va, a);
+        Array* arr = new Array("<temp>", va, a);
         
         return arr;
     }
@@ -960,7 +960,7 @@ Variable* add(Variable* A, Variable* B)
             va.push_back(*e);
         }
         
-        List* lst = new List(va);
+        List* lst = new List("<temp>", va);
         
         return lst;
     }
@@ -968,7 +968,7 @@ Variable* add(Variable* A, Variable* B)
     {
         Function* C = static_cast<Function*>(A);
         Function* D = static_cast<Function*>(B);
-        Function* R = new Function;
+        Function* R = new Function("<temp>", FN_NONE);
         R->setValue(C->getValue() + D->getValue());
         return R;
     }
@@ -976,7 +976,7 @@ Variable* add(Variable* A, Variable* B)
     {
         Procedure* C = static_cast<Procedure*>(A);
         Procedure* D = static_cast<Procedure*>(B);
-        Procedure* R = new Procedure;
+        Procedure* R = new Procedure("<temp>");
         R->setValue(C->getValue() + D->getValue());
         return R;
     }
@@ -1288,16 +1288,62 @@ Variable* dot(Variable* A, Variable* B)
     }
     TypeEnum a = A->getType();
     TypeEnum b = B->getType();
-    if(a != CLASS_OBJECT || b != VOID)
+    if(B->literal)
     {
-        interpreter.error("Error: 'Dot' not defined for types '%s' and '%s'\n", getTypeString(a).c_str(), getTypeString(b).c_str());
+        interpreter.error("Error: Literal variable used in 'dot' operation\n");
         return NULL;
     }
-    ClassObject* C = static_cast<ClassObject*>(A);
-    Void* D = static_cast<Void*>(B);
-    Variable* result = C->getVariable(D->getValue());
+    if(a == CLASS_OBJECT)
+    {
+        ClassObject* C = static_cast<ClassObject*>(A);
+        Variable* result = C->getVariable(B->text);
+        if(result == NULL)
+            interpreter.error("Error: %s is not a member of %s.\n", B->text.c_str(), C->className.c_str());
+        return result;
+    }
+    else if(a == ARRAY)
+    {
+        Array* C = static_cast<Array*>(A);
+        Variable* result = NULL;
+        if(B->text == "size")
+        {
+            interpreter.array_size->parentObject = A;
+            result = interpreter.array_size;
+        }
+        if(result == NULL)
+            interpreter.error("Error: %s is not a member of %s.\n", B->text.c_str(), C->text.c_str());
+        return result;
+    }
+    
+    interpreter.error("Error: 'Dot' not defined for types '%s' and '%s'\n", getTypeString(a).c_str(), getTypeString(b).c_str());
+    return NULL;
+}
+
+Variable* array_access(Variable* A, Variable* B)
+{
+    if(A == NULL || B == NULL)
+    {
+        interpreter.error("Error: Void variable in array_access operation.\n");
+        return NULL;
+    }
+    TypeEnum a = A->getType();
+    TypeEnum b = B->getType();
+    if(a != ARRAY || b != INT)
+    {
+        interpreter.error("Error: Array access not defined for types '%s' and '%s'\n", getTypeString(a).c_str(), getTypeString(b).c_str());
+        return NULL;
+    }
+    Array* C = static_cast<Array*>(A);
+    Int* D = static_cast<Int*>(B);
+    vector<Variable*>& v = C->getValue();
+    Variable* result = NULL;
+    int index = D->getValue();
+    
+    if(index >= 0 && (unsigned int)index < v.size())
+        result = v[index];
+        
     if(result == NULL)
-        interpreter.error("Error: %s is not a member of %s.\n", D->getValue().c_str(), C->className.c_str());
+        interpreter.error("Error: Array index out of bounds.\n");
     return result;
 }
 

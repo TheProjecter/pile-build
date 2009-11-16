@@ -7,26 +7,64 @@ using namespace std;
 extern Interpreter interpreter;
 
 
-Function::Function()
-        : Variable(FUNCTION)
-        , builtIn(FN_NONE)
-        , lineNumber(0)
-        , isMethod(false)
-        , parentClass(NULL)
-{}
-
-Function::Function(const std::vector<TypeName>& argt, const std::string& value)
-        : Variable(FUNCTION)
+Function::Function(const std::string& text, const std::vector<TypeName>& argt, const std::string& value)
+        : Variable(FUNCTION, text)
         , value(value)
         , argt(argt)
         , builtIn(FN_NONE)
+        , returnType("<temp>", NOT_A_TYPE)
         , lineNumber(0)
         , isMethod(false)
-        , parentClass(NULL)
+        , parentObject(NULL)
 {}
 
-Function::Function(Variable* (*external_fn)(Variable*, Variable*, Variable*))
-        : Variable(FUNCTION)
+Function::Function(const std::string& text, Variable* (*external_fn)())
+        : Variable(FUNCTION, text)
+        , builtIn(FN_EXTERNAL)
+        , external_fn0(external_fn)
+        , external_fn1(NULL)
+        , external_fn2(NULL)
+        , external_fn3(NULL)
+        , external_fn4(NULL)
+        , external_fn5(NULL)
+        , returnType("<temp>", NOT_A_TYPE)
+        , lineNumber(0)
+        , isMethod(false)
+        , parentObject(NULL)
+{}
+
+Function::Function(const std::string& text, Variable* (*external_fn)(Variable*))
+        : Variable(FUNCTION, text)
+        , builtIn(FN_EXTERNAL)
+        , external_fn0(NULL)
+        , external_fn1(external_fn)
+        , external_fn2(NULL)
+        , external_fn3(NULL)
+        , external_fn4(NULL)
+        , external_fn5(NULL)
+        , returnType("<temp>", NOT_A_TYPE)
+        , lineNumber(0)
+        , isMethod(false)
+        , parentObject(NULL)
+{}
+
+Function::Function(const std::string& text, Variable* (*external_fn)(Variable*, Variable*))
+        : Variable(FUNCTION, text)
+        , builtIn(FN_EXTERNAL)
+        , external_fn0(NULL)
+        , external_fn1(NULL)
+        , external_fn2(external_fn)
+        , external_fn3(NULL)
+        , external_fn4(NULL)
+        , external_fn5(NULL)
+        , returnType("<temp>", NOT_A_TYPE)
+        , lineNumber(0)
+        , isMethod(false)
+        , parentObject(NULL)
+{}
+
+Function::Function(const std::string& text, Variable* (*external_fn)(Variable*, Variable*, Variable*))
+        : Variable(FUNCTION, text)
         , builtIn(FN_EXTERNAL)
         , external_fn0(NULL)
         , external_fn1(NULL)
@@ -34,13 +72,14 @@ Function::Function(Variable* (*external_fn)(Variable*, Variable*, Variable*))
         , external_fn3(external_fn)
         , external_fn4(NULL)
         , external_fn5(NULL)
+        , returnType("<temp>", NOT_A_TYPE)
         , lineNumber(0)
         , isMethod(false)
-        , parentClass(NULL)
+        , parentObject(NULL)
 {}
 
-Function::Function(Variable* (*external_fn)(Variable*, Variable*, Variable*, Variable*))
-        : Variable(FUNCTION)
+Function::Function(const std::string& text, Variable* (*external_fn)(Variable*, Variable*, Variable*, Variable*))
+        : Variable(FUNCTION, text)
         , builtIn(FN_EXTERNAL)
         , external_fn0(NULL)
         , external_fn1(NULL)
@@ -48,13 +87,14 @@ Function::Function(Variable* (*external_fn)(Variable*, Variable*, Variable*, Var
         , external_fn3(NULL)
         , external_fn4(external_fn)
         , external_fn5(NULL)
+        , returnType("<temp>", NOT_A_TYPE)
         , lineNumber(0)
         , isMethod(false)
-        , parentClass(NULL)
+        , parentObject(NULL)
 {}
 
-Function::Function(Variable* (*external_fn)(Variable*, Variable*, Variable*, Variable*, Variable*))
-        : Variable(FUNCTION)
+Function::Function(const std::string& text, Variable* (*external_fn)(Variable*, Variable*, Variable*, Variable*, Variable*))
+        : Variable(FUNCTION, text)
         , builtIn(FN_EXTERNAL)
         , external_fn0(NULL)
         , external_fn1(NULL)
@@ -62,17 +102,19 @@ Function::Function(Variable* (*external_fn)(Variable*, Variable*, Variable*, Var
         , external_fn3(NULL)
         , external_fn4(NULL)
         , external_fn5(external_fn)
+        , returnType("<temp>", NOT_A_TYPE)
         , lineNumber(0)
         , isMethod(false)
-        , parentClass(NULL)
+        , parentObject(NULL)
 {}
 
-Function::Function(FunctionEnum builtIn)
-        : Variable(FUNCTION)
+Function::Function(const std::string& text, FunctionEnum builtIn)
+        : Variable(FUNCTION, text)
         , builtIn(builtIn)
+        , returnType("<temp>", NOT_A_TYPE)
         , lineNumber(0)
         , isMethod(false)
-        , parentClass(NULL)
+        , parentObject(NULL)
 {
     switch(builtIn)
     {
@@ -114,6 +156,27 @@ Function::Function(FunctionEnum builtIn)
         case FN_NONE:
             break;
     }
+}
+
+
+Function::Function(const std::string& text, const Function& fn)
+    : Variable(FUNCTION, text)
+    , value(fn.value)
+    , argt(fn.argt)
+    , args(fn.args)
+    , builtIn(fn.builtIn)
+    , external_fn0(fn.external_fn0)
+    , external_fn1(fn.external_fn1)
+    , external_fn2(fn.external_fn2)
+    , external_fn3(fn.external_fn3)
+    , external_fn4(fn.external_fn4)
+    , external_fn5(fn.external_fn5)
+    , returnType(fn.returnType)
+    , definitionFile(fn.definitionFile)
+    , lineNumber(fn.lineNumber)
+    , isMethod(fn.isMethod)
+    , parentObject(fn.parentObject)
+{
 }
 
 std::string& Function::getValue()
@@ -172,7 +235,6 @@ FunctionEnum Function::getBuiltIn()
 // See readFile() since they're similar
 Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
 {
-    
     if(builtIn == FN_EXTERNAL)
     {
         if(external_fn0 != NULL && args.size() == 0)

@@ -145,17 +145,17 @@ Bool* boolCast(Variable* v)
     if(v->getType() == BOOL)
     {
         Bool* b = static_cast<Bool*>(v);
-        return new Bool(b->getValue());
+        return new Bool("<temp>", b->getValue());
     }
     if(v->getType() == INT)
     {
         Int* i = static_cast<Int*>(v);
-        return new Bool(i->getValue());
+        return new Bool("<temp>", i->getValue());
     }
     if(v->getType() == FLOAT)
     {
         Float* f = static_cast<Float*>(v);
-        return new Bool(f->getValue());
+        return new Bool("<temp>", f->getValue());
     }
     return NULL;
 }
@@ -165,17 +165,17 @@ Int* intCast(Variable* v)
     if(v->getType() == BOOL)
     {
         Bool* b = static_cast<Bool*>(v);
-        return new Int(int(b->getValue()));
+        return new Int("<temp>", int(b->getValue()));
     }
     if(v->getType() == INT)
     {
         Int* i = static_cast<Int*>(v);
-        return new Int(i->getValue());
+        return new Int("<temp>", i->getValue());
     }
     if(v->getType() == FLOAT)
     {
         Float* f = static_cast<Float*>(v);
-        return new Int(int(f->getValue()));
+        return new Int("<temp>", int(f->getValue()));
     }
     return NULL;
 }
@@ -185,17 +185,17 @@ Float* floatCast(Variable* v)
     if(v->getType() == BOOL)
     {
         Bool* b = static_cast<Bool*>(v);
-        return new Float(float(b->getValue()));
+        return new Float("<temp>", float(b->getValue()));
     }
     if(v->getType() == INT)
     {
         Int* i = static_cast<Int*>(v);
-        return new Float(float(i->getValue()));
+        return new Float("<temp>", float(i->getValue()));
     }
     if(v->getType() == FLOAT)
     {
         Float* f = static_cast<Float*>(v);
-        return new Float(f->getValue());
+        return new Float("<temp>", f->getValue());
     }
     return NULL;
 }
@@ -260,12 +260,12 @@ Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args)
         case FN_TYPE:
             if(args.size() != 1)
                 return NULL;
-            result = new String(args[0]->getTypeString());
+            result = new String("<temp>", args[0]->getTypeString());
             break;
         case FN_STRING:
             if(args.size() != 1)
                 return NULL;
-            result = new String(args[0]->getValueString());
+            result = new String("<temp>", args[0]->getValueString());
             break;
         case FN_BOOL:
             if(args.size() != 1)

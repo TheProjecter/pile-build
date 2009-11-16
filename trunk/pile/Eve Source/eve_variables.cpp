@@ -175,8 +175,8 @@ bool isConvertable(TypeEnum source, TypeEnum dest)
 }
 
 
-ClassObject::ClassObject(const std::string& name)
-    : Variable(CLASS_OBJECT)
+ClassObject::ClassObject(const std::string& text, const std::string& name)
+    : Variable(CLASS_OBJECT, text)
     , name(name)
 {
     
@@ -200,29 +200,32 @@ ClassObject::ClassObject(const std::string& name)
                         interpreter.error("Member type 'void' is not allowed.\n");
                         break;
                     case BOOL:
-                        v = new Bool();
+                        v = new Bool(r->name, false);
                         break;
                     case INT:
-                        v = new Int();
+                        v = new Int(r->name, 0);
                         break;
                     case FLOAT:
-                        v = new Float();
+                        v = new Float(r->name, 0.0f);
                         break;
                     case STRING:
-                        v = new String();
+                        v = new String(r->name, "");
                         break;
                     case MACRO:
-                        v = new Macro();
+                        v = new Macro(r->name);
                         break;
                     case ARRAY:
-                        v = new Array();
+                        v = new Array(r->name, NOT_A_TYPE);
                         break;
                     case LIST:
-                        v = new List();
+                        v = new List(r->name);
                         break;
                     case FUNCTION:
                         if(r->fn != NULL)
-                            v = new Function(*(r->fn));
+                        {
+                            Function* f = new Function(r->name, *(r->fn));
+                            v = f;
+                        }
                         break;
                     default:
                         // FIXME

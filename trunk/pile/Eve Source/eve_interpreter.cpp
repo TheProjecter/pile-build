@@ -171,7 +171,7 @@ Variable* Interpreter::getArrayLiteral(list<Token>& tokens, list<Token>::iterato
                 interpreter.error("Error: Invalid type in array literal.\n");
                 continue;
             }
-            arr = new Array(type);
+            arr = new Array("<temp>", type);
         }
         if(t.var->getType() != type)
         {

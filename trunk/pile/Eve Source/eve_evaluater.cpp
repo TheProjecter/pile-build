@@ -154,7 +154,7 @@ bool Interpreter::defineClass(Variable* classvar, istream* stream)
                             
                             if(isFn)
                             {
-                                Function* f = new Function;
+                                Function* f = new Function(e->text, FN_NONE);
                                 f->lineNumber = lineNumber;
                                 f->returnType = newType;
                                 f->reference = true;
@@ -478,7 +478,7 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                 }
                 else if (e->var->getType() == CLASS)
                 {
-                    TypeName* t = new TypeName(CLASS_OBJECT, e->text);
+                    TypeName* t = new TypeName(e->text, CLASS_OBJECT);
                     t->text = e->text;
                     newTypeName = t;
                     newType = CLASS_OBJECT;
@@ -532,16 +532,16 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                             isFn = true;
                     }
                     
+                        
+                    string name = e->text;
                     
                     
                     if(isFn)
                     {
-                        Function* f = new Function;
+                        Function* f = new Function(e->text, FN_NONE);
                         f->lineNumber = lineNumber;
                         f->returnType = newType;
                         f->reference = true;
-                        
-                        string name = e->text;
                         
                         
                         delete e->var;
@@ -653,37 +653,36 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     
                     // Set the new variable
                     if (newType == STRING)
-                        v = new String;
+                        v = new String(name, "");
                     else if (newType == BOOL)
-                        v = new Bool;
+                        v = new Bool(name, false);
                     else if (newType == INT)
-                        v = new Int;
+                        v = new Int(name, 0);
                     else if (newType == FLOAT)
-                        v = new Float;
+                        v = new Float(name, 0.0f);
                     else if (newType == MACRO)
-                        v = new Macro;
+                        v = new Macro(name);
                     else if (newType == ARRAY)
                     {
-                        Array* a = new Array;
+                        Array* a = new Array(name, NOT_A_TYPE);
                         if(newTypeName != NULL && newTypeName->subType != NOT_A_TYPE)
                             a->setValueType(newTypeName->subType);
                         v = a;
                     }
                     else if (newType == LIST)
-                        v = new List;
+                        v = new List(name);
                     else if (newType == FUNCTION)
-                        v = new Function;
+                        v = new Function(name, FN_NONE);
                     else if (newType == PROCEDURE)
-                        v = new Procedure;
+                        v = new Procedure(name);
                     else if (newType == CLASS)
                     {
-                        Class* c = new Class;
-                        c->name = e->text;
+                        Class* c = new Class(name);
                         v = c;
                     }
                     else if (newType == CLASS_OBJECT)
                     {
-                        ClassObject* c = new ClassObject(newTypeName->text);
+                        ClassObject* c = new ClassObject(name, newTypeName->text);
                         if(c->className == "")
                             error("Error: Unknown class, %s, for variable '%s'\n", newTypeName->text.c_str(), e->text.c_str());
                         v = c;
@@ -969,8 +968,32 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                 }
                 else if(e->sep == OPEN_SQUARE_BRACKET)
                 {
-                    // FIXME: Array indexing
-                    error("Syntax Error: Unexpected separator (FIXME: ARRAY INDEXING).\n");
+                    // Evaluate the contents of the brackets
+                    list<Token> tok2;
+                    e++;
+                    list<Token>::iterator f = e;
+                    int num = 1;
+                    while(e != tokens.end() && num > 0)
+                    {
+                        if(e->type == Token::SEPARATOR)
+                        {
+                            if(e->sep == OPEN_SQUARE_BRACKET)
+                                num++;
+                            else if(e->sep == CLOSE_SQUARE_BRACKET)
+                                num--;
+                        }
+                        if(num > 0)
+                            e++;
+                    }
+                    tok2.splice(tok2.begin(), tokens, f, e);
+                    Token r = evalTokens(tok2, false, false, false, true);
+                    if(r.type == Token::NOT_A_TOKEN)
+                    {
+                        return r;
+                    }
+                    
+                    firstVar = Token(evaluateExpression(firstVar.var, ARRAY_ACCESS, r.var), "");
+                    state = VAR;
                 }
                 else
                 {
@@ -1088,6 +1111,50 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                 else if(e->sep == CLOSE_PARENTHESIS)
                 {
                     error("Syntax Error: Unexpected closing parenthesis.\n");
+                }
+                else if(e->sep == OPEN_SQUARE_BRACKET)
+                {
+                    // FIXME: Hacky
+                    // Compare operators
+                    if(2 < firstOp.precedence // New one goes earlier
+                       || (2 == firstOp.precedence && firstOp.associativeLeftToRight == false))  // Right-to-left assoc.
+                    {
+                        // Push our old stuff
+                        stack[0].push_front(firstVar);
+                        stack[0].push_front(firstOp);
+                        firstVar = secondVar;
+                    }
+                    else  // Evaluate the first operator
+                    {
+                        firstVar = Token(evaluateExpression(firstVar.var, firstOp.oper, secondVar.var), "");
+                    }
+                    
+                    // Evaluate the contents of the brackets
+                    list<Token> tok2;
+                    e++;
+                    list<Token>::iterator f = e;
+                    int num = 1;
+                    while(e != tokens.end() && num > 0)
+                    {
+                        if(e->type == Token::SEPARATOR)
+                        {
+                            if(e->sep == OPEN_SQUARE_BRACKET)
+                                num++;
+                            else if(e->sep == CLOSE_SQUARE_BRACKET)
+                                num--;
+                        }
+                        if(num > 0)
+                            e++;
+                    }
+                    tok2.splice(tok2.begin(), tokens, f, e);
+                    Token r = evalTokens(tok2, false, false, false, true);
+                    if(r.type == Token::NOT_A_TOKEN)
+                    {
+                        return r;
+                    }
+                    
+                    firstVar = Token(evaluateExpression(firstVar.var, ARRAY_ACCESS, r.var), "");
+                    state = VAR;
                 }
                 else
                     error("Syntax Error: Unexpected separator.\n");
@@ -1434,7 +1501,7 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
             {
                 // e.g. "()"
                 error("Error: Empty expression.  Using '1' instead.\n");
-                secondVar = Token(new Int(1), "<temp>");
+                secondVar = Token(new Int("<temp>", 1), "<temp>");
             }
             else if(state == VAR)
             {
