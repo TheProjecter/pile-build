@@ -10,6 +10,8 @@ bool isCPPExt(const string& ext);
 bool isFORTRANExt(const string& ext);
 string getBaseName(string file);
 
+extern Environment env;
+extern Configuration config;
 extern Interpreter interpreter;
 
 /*
@@ -51,6 +53,36 @@ string getCompiler(Configuration& config, const string& file)
 
 
 // Returns VOID (NULL)
+// Takes Compiler, array<string> sources
+Variable* fn_scan(Variable* arg1, Variable* arg2)
+{
+    ClassObject* c = dynamic_cast<ClassObject*>(arg1);
+    Array* sources = dynamic_cast<Array*>(arg2);
+    
+    if(c == NULL || sources == NULL)
+        return NULL;
+    
+    string path = static_cast<String*>(c->getVariable("path"))->getValue();
+    vector<Variable*> sourceFiles = sources->getValue();
+    
+    string sourceFile;
+    for(vector<Variable*>::iterator e = sourceFiles.begin(); e != sourceFiles.end(); e++)
+    {
+        if((*e)->getType() != STRING)
+        {
+            interpreter.error("Wrong type in array sent to build().\n");
+            return NULL;
+        }
+        String* s = static_cast<String*>(*e);
+        sourceFile = s->getValue();
+        
+        recurseIncludes(env.depends, env.fileDataHash, config.includePaths, sourceFile, "");
+    }
+    
+    return NULL;
+}
+
+// Returns array<string> objectFiles
 Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
 {
     ClassObject* c = dynamic_cast<ClassObject*>(arg1);
@@ -74,6 +106,8 @@ Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
         String* s = static_cast<String*>(*e);
         options += s->getValue() + " ";
     }
+    
+    Array* resultObjects = new Array("<temp>", STRING);
     
     
     char buffer[5000];
@@ -103,15 +137,15 @@ Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
         }
         sourceFileQuoted = quoteWhitespace(sourceFile);
         //sourceFile = quoteWhitespace(*e);
-        //FileData* fd = env.fileDataHash[*e];
-        //objName = getObjectName(*e, config.objPath, config.useSourceObjPath);
-        //mkpath(ioStripToDir(objName));
-        //objName = quoteWhitespace(objName);
-        objName = quoteWhitespace(sourceFile + ".o");
+        FileData* fd = env.fileDataHash[sourceFile];
+        objName = getObjectName(sourceFile, config.objPath, config.useSourceObjPath);
+        mkpath(ioStripToDir(objName));
+        objName = quoteWhitespace(objName);
+        //objName = quoteWhitespace(sourceFile + ".o");
         
         
         // FIXME: mustRebuild() is crashing... Is it fixed yet?
-        //if(mustRebuild(objName, env.depends, fd))
+        if(mustRebuild(objName, env.depends, fd))
         {
             sprintf(buffer, "%s %s -c %s -o %s", path.c_str(), options.c_str(), sourceFileQuoted.c_str(), objName.c_str());
             
@@ -141,6 +175,7 @@ Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
                 // FIXME: This looks like it could fail if the build is quick (and the object had been modified...)!!!
                 if(!ioExists(objName) || objTime >= ioTimeModified(objName))
                     failedFiles.push_back(sourceFile);
+                    
             }
             else
             {
@@ -148,10 +183,13 @@ Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
                     failedFiles.push_back(sourceFile);
             }
         }
-        /*else
+        else
         {
-            UI_print(" Up to date: %s\n", sourceFileQuoted);
-        }*/
+            UI_print(" Up to date: %s\n", sourceFile.c_str());
+        }
+        
+        resultObjects->push_back(new String("<temp>", objName));
+        
         if(UI_processEvents() < 0)
             return NULL;
         UI_updateScreen();
@@ -167,7 +205,7 @@ Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
         UI_error("\n");
     }
     
-    return NULL;
+    return resultObjects;
 }
 
 

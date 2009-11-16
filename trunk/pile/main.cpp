@@ -8,6 +8,9 @@
 #include "pile_ui.h"
 #include "string_functions.h"
 
+Environment env;
+Configuration config;
+
 void printDepends(const string& file);
 bool interpret(string filename, Environment& env, Configuration& config);
 
@@ -201,8 +204,6 @@ void generatePilefile(string name)
 
 int main(int argc, char* argv[])
 {
-    Environment env;
-    Configuration config;
     
     //string pileDirectory = ioGetProgramPath();
     
