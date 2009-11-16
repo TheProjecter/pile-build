@@ -48,15 +48,13 @@ Variable* getCorrectVariable(string token, bool isFunction = false)
     
     if(token == "true")
     {
-        Bool* b = new Bool;
-        b->setValue(true);
+        Bool* b = new Bool(true);
         b->literal = true;
         return b;
     }
     if(token == "false")
     {
-        Bool* b = new Bool;
-        b->setValue(false);
+        Bool* b = new Bool(false);
         b->literal = true;
         return b;
     }
@@ -94,7 +92,7 @@ Variable* getCorrectVariable(string token, bool isFunction = false)
     if(!isFunction && t != NOT_A_TYPE)  // This happens if token states a type...
     {
         // Make a new type variable
-        TypeName* v = new TypeName;
+        TypeName* v = new TypeName(NOT_A_TYPE);
         v->setValue(t);
         return v;
     }
@@ -272,7 +270,7 @@ Token nextToken1(string& line, bool startingLine)
             }
             if(foundQuote)  // FIXME: String terminated by a comment???  Maybe this should be an error? :)
             {
-                String* s = new String;
+                String* s = new String("<temp>");
                 token = token.substr(1, string::npos);
                 s->setValue(token);
                 s->literal = true;
@@ -333,7 +331,7 @@ Token nextToken1(string& line, bool startingLine)
             string token = line.substr(found, i+1 - found);
             line.erase(0, i+1);
             token = token.substr(1, token.size()-2);
-            String* s = new String;
+            String* s = new String("<temp>");
             s->setValue(token);
             s->literal = true;
             return Token(s, token);

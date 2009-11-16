@@ -48,7 +48,7 @@ enum TypeEnum{NOT_A_TYPE, VOID, TYPENAME, BOOL, INT, FLOAT, STRING, MACRO, ARRAY
 
 enum OperatorEnum{NOT_AN_OPERATOR, ADD, SUBTRACT, NEGATE, ASSIGN, ADD_ASSIGN, SUBTRACT_ASSIGN, MULTIPLY_ASSIGN, DIVIDE_ASSIGN, MODULUS_ASSIGN, EXPONENTIATE_ASSIGN, 
                   MULTIPLY, DIVIDE, MODULUS, EXPONENTIATE, EQUALS, NOT_EQUALS, LESS, GREATER, NOT_LESS, NOT_GREATER, LESS_EQUAL,
-                  GREATER_EQUAL, NOT, AND, OR, CALL, CONTINUATION, COLON, DOT, BITWISE_AND, BITWISE_XOR, BITWISE_OR
+                  GREATER_EQUAL, NOT, AND, OR, CALL, CONTINUATION, COLON, DOT, BITWISE_AND, BITWISE_XOR, BITWISE_OR, ARRAY_ACCESS
                  };
                  
 enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS, 
@@ -72,6 +72,7 @@ std::string getSeparatorString(SeparatorEnum type);
 class Interpreter;
 class Variable;
 class Bool;
+class Function;
 class ClassObject;
 Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args);
 Bool* boolCast(Variable* v);
@@ -84,11 +85,13 @@ class Variable
 protected:
     TypeEnum type;
 public:
+    std::string text;
     bool literal;
     bool temp;
     bool reference;  // Used as a message to callFn that this should be passed by reference.
-    Variable(TypeEnum type)
+    Variable(TypeEnum type, const std::string& text)
             : type(type)
+            , text(text)
             , literal(false)
             , temp(false)
             , reference(false)
@@ -118,22 +121,20 @@ private:
     TypeEnum value; // What type is being declared?
 public:
     TypeEnum subType; // Used for arrays
-    std::string text;
-    TypeName()
-            : Variable(TYPENAME)
-            , subType(NOT_A_TYPE)
+    TypeName(const TypeName& typeName)
+            : Variable(TYPENAME, ::getTypeString(typeName.value))
+            , value(typeName.value)
+            , subType(typeName.subType)
     {}
     TypeName(TypeEnum type)
-            : Variable(TYPENAME)
+            : Variable(TYPENAME, ::getTypeString(type))
             , value(type)
             , subType(NOT_A_TYPE)
-            , text(::getTypeString(type))
     {}
-    TypeName(TypeEnum type, const std::string& text)
-            : Variable(TYPENAME)
+    TypeName(const std::string& text, TypeEnum type)
+            : Variable(TYPENAME, text)
             , value(type)
             , subType(NOT_A_TYPE)
-            , text(text)
     {}
     void setValue(const TypeEnum& val)
     {
@@ -162,11 +163,8 @@ class Void : public Variable
 private:
     std::string value; // What type is being declared?
 public:
-    Void()
-            : Variable(VOID)
-    {}
     Void(const std::string& val)
-            : Variable(VOID)
+            : Variable(VOID, val)
             , value(val)
     {}
     void setValue(const std::string& val)
@@ -195,11 +193,11 @@ class String : public Variable
 private:
     std::string value;
 public:
-    String()
-            : Variable(STRING)
+    String(const std::string& text)
+            : Variable(STRING, text)
     {}
-    String(const std::string& value)
-            : Variable(STRING)
+    String(const std::string& text, const std::string& value)
+            : Variable(STRING, text)
             , value(value)
     {}
     void setValue(const std::string& val)
@@ -229,11 +227,11 @@ private:
     int value;
 public:
     Int()
-            : Variable(INT)
+            : Variable(INT, "<temp>")
             , value(0)
     {}
-    Int(int value)
-            : Variable(INT)
+    Int(const std::string& text, int value)
+            : Variable(INT, text)
             , value(value)
     {}
     int& getValue()
@@ -265,11 +263,11 @@ private:
     float value;
 public:
     Float()
-            : Variable(FLOAT)
+            : Variable(FLOAT, "<temp>")
             , value(0.0f)
     {}
-    Float(float value)
-            : Variable(FLOAT)
+    Float(const std::string& text, float value)
+            : Variable(FLOAT, text)
             , value(value)
     {}
     float& getValue()
@@ -300,12 +298,12 @@ class Bool : public Variable
 private:
     bool value;
 public:
-    Bool()
-            : Variable(BOOL)
-            , value(false)
-    {}
     Bool(bool value)
-            : Variable(BOOL)
+            : Variable(BOOL, "<temp>")
+            , value(value)
+    {}
+    Bool(const std::string& text, bool value)
+            : Variable(BOOL, text)
             , value(value)
     {}
     bool& getValue()
@@ -335,7 +333,10 @@ private:
     std::string value;
 public:
     Macro()
-            : Variable(MACRO)
+            : Variable(MACRO, "<temp>")
+    {}
+    Macro(const std::string& text)
+            : Variable(MACRO, text)
     {}
     std::string& getValue()
     {
@@ -366,19 +367,28 @@ private:
     TypeEnum valueType;
     std::vector<Variable*> value;
 public:
-    Array()
-            : Variable(ARRAY)
-            , valueType(VOID)
-    {}
-    Array(TypeEnum valueType)
-            : Variable(ARRAY)
+    static Variable* size_fn(Variable* arr)
+    {
+        if(arr == NULL || arr->getType() != ARRAY)
+            return NULL;
+        
+        return new Int("<temp>", static_cast<Array*>(arr)->size());
+    }
+
+    Array(const std::string& text, TypeEnum valueType)
+            : Variable(ARRAY, text)
             , valueType(valueType)
     {}
-    Array(const std::vector<Variable*>& value, TypeEnum valueType)
-            : Variable(ARRAY)
+    Array(const std::string& text, const std::vector<Variable*>& value, TypeEnum valueType)
+            : Variable(ARRAY, text)
             , valueType(valueType)
             , value(value)
-    {}
+    {
+        for(unsigned int i = 0; i < value.size(); i++)
+        {
+            value[i]->reference = true;
+        }
+    }
     std::vector<Variable*>& getValue()
     {
         return value;
@@ -414,16 +424,30 @@ public:
     void push_back(Variable* var)
     {
         if(var != NULL && var->getType() == valueType)
-            value.push_back(var);
+        {
+            Variable* v = (var)->copy();
+            v->reference = true;
+            value.push_back(v);
+        }
     }
     void push_back(const std::vector<Variable*>& vec)
     {
         for(std::vector<Variable*>::const_iterator e = vec.begin(); e != vec.end(); e++)
         {
             if((*e)->getType() == valueType)
-                value.push_back(*e);
+            {
+                Variable* v = (*e)->copy();
+                v->reference = true;
+                value.push_back(v);
+            }
         }
     }
+    
+    unsigned int size()
+    {
+        return value.size();
+    }
+    
     virtual Variable* copy()
     {
         Variable* cp = new Array(*this);
@@ -438,11 +462,11 @@ class List : public Variable
 private:
     std::list<Variable*> value;
 public:
-    List()
-            : Variable(LIST)
+    List(const std::string& text)
+            : Variable(LIST, text)
     {}
-    List(const std::list<Variable*>& value)
-            : Variable(LIST)
+    List(const std::string& text, const std::list<Variable*>& value)
+            : Variable(LIST, text)
             , value(value)
     {}
     std::list<Variable*>& getValue()
@@ -508,15 +532,18 @@ public:
     std::string definitionFile;
     unsigned int lineNumber;
     bool isMethod;
-    ClassObject* parentClass;
+    Variable* parentObject;
 
 
-    Function();
-    Function(const std::vector<TypeName>& argt, const std::string& value);
-    Function(Variable* (*external_fn)(Variable*, Variable*, Variable*));
-    Function(Variable* (*external_fn)(Variable*, Variable*, Variable*, Variable*));
-    Function(Variable* (*external_fn)(Variable*, Variable*, Variable*, Variable*, Variable*));
-    Function(FunctionEnum builtIn);
+    Function(const std::string& text, const std::vector<TypeName>& argt, const std::string& value);
+    Function(const std::string& text, Variable* (*external_fn)());
+    Function(const std::string& text, Variable* (*external_fn)(Variable*));
+    Function(const std::string& text, Variable* (*external_fn)(Variable*, Variable*));
+    Function(const std::string& text, Variable* (*external_fn)(Variable*, Variable*, Variable*));
+    Function(const std::string& text, Variable* (*external_fn)(Variable*, Variable*, Variable*, Variable*));
+    Function(const std::string& text, Variable* (*external_fn)(Variable*, Variable*, Variable*, Variable*, Variable*));
+    Function(const std::string& text, FunctionEnum builtIn);
+    Function(const std::string& text, const Function& fn);
     
     std::string& getValue();
     std::vector<TypeName>& getArgTypes();
@@ -542,8 +569,8 @@ class Procedure : public Variable
 private:
     std::string value;
 public:
-    Procedure()
-            : Variable(PROCEDURE)
+    Procedure(const std::string& text)
+            : Variable(PROCEDURE, text)
     {}
     std::string& getValue()
     {
@@ -592,11 +619,8 @@ public:
     };
     std::list<VarRecord> vars;
     
-    Class()
-            : Variable(CLASS)
-    {}
     Class(const std::string& name)
-            : Variable(CLASS)
+            : Variable(CLASS, name)
             , name(name)
     {}
     void addVariable(const std::string& vartype, const std::string& varname)
@@ -640,10 +664,7 @@ private:
     
 public:
     std::string className;
-    ClassObject()
-            : Variable(CLASS)
-    {}
-    ClassObject(const std::string& name);
+    ClassObject(const std::string& text, const std::string& name);
     
     Variable* getVariable(const std::string& var)
     {
@@ -663,7 +684,7 @@ public:
         if(e->second->getType() == FUNCTION)
         {
             Function* f = static_cast<Function*>(e->second);
-            f->parentClass = this;
+            f->parentObject = this;
         }
         return e->second;
     }
@@ -700,6 +721,8 @@ Variable* modulus(Variable* A, Variable* B);
 Variable* exponentiate(Variable* A, Variable* B);
 
 Variable* dot(Variable* A, Variable* B);
+
+Variable* array_access(Variable* A, Variable* B);
 
 Variable* add_assign(Variable* A, Variable* B);
 Variable* subtract_assign(Variable* A, Variable* B);
@@ -986,6 +1009,11 @@ public:
             oper = DOT;
             precedence = 2;
         }
+        else if (Oper == "[]")
+        {
+            oper = ARRAY_ACCESS;
+            precedence = 2;
+        }
     }
     
     void setSeparator(std::string s)
@@ -1121,6 +1149,8 @@ public:
     bool errorFlag;
     Outputter outputter;
     
+    Function* array_size;
+    
     Interpreter()
         : lineNumber(1)
         , errorFlag(false)
@@ -1131,17 +1161,20 @@ public:
         
         // Add built-in functions
         Scope& s = *(env.begin());
-        s.env["print"] = new Function(FN_PRINT);
-        s.env["println"] = new Function(FN_PRINTLN);
-        s.env["warning"] = new Function(FN_PRINT);
-        s.env["error"] = new Function(FN_PRINT);
-        s.env["debug"] = new Function(FN_PRINT);
-        s.env["type"] = new Function(FN_TYPE);
-        s.env["bool"] = new Function(FN_BOOL);
-        s.env["int"] = new Function(FN_INT);
-        s.env["float"] = new Function(FN_FLOAT);
-        s.env["string"] = new Function(FN_STRING);
-        s.env["include"] = new Function(FN_INCLUDE);
+        s.env["print"] = new Function("print", FN_PRINT);
+        s.env["println"] = new Function("println", FN_PRINTLN);
+        s.env["warning"] = new Function("warning", FN_PRINT);
+        s.env["error"] = new Function("error", FN_PRINT);
+        s.env["debug"] = new Function("debug", FN_PRINT);
+        s.env["type"] = new Function("type", FN_TYPE);
+        s.env["bool"] = new Function("bool", FN_BOOL);
+        s.env["int"] = new Function("int", FN_INT);
+        s.env["float"] = new Function("float", FN_FLOAT);
+        s.env["string"] = new Function("string", FN_STRING);
+        s.env["include"] = new Function("include", FN_INCLUDE);
+        
+        array_size = new Function("size", &Array::size_fn);
+        array_size->isMethod = true;
     }
     
     void addClass(Class* c)
@@ -1252,9 +1285,9 @@ public:
             }
         }
         
-        if(fn->isMethod && fn->parentClass != NULL)
+        if(fn->isMethod && fn->parentObject != NULL)
         {
-            args.insert(args.begin(), fn->parentClass);
+            args.insert(args.begin(), fn->parentObject);
         }
         
         // Compare number of arguments
@@ -1295,7 +1328,6 @@ public:
                 args[i]->reference = true;
             }
         }
-        
         
         return fn->call(*this, args);
     }
@@ -1360,6 +1392,8 @@ public:
             return exponentiate(A, B);
         if (operation == DOT)
             return dot(A, B);
+        if (operation == ARRAY_ACCESS)
+            return array_access(A, B);
         error("Error: Undefined operation\n");
         return A;
     }
