@@ -32,6 +32,12 @@ string getTypeString(TypeEnum type)
             return "function";
         case PROCEDURE:
             return "procedure";
+        case CLASS:
+            return "class";
+        case CLASS_OBJECT:
+            return "class_object";
+        case NOT_A_TYPE:
+            return "not_a_type";
         default:
             return "unknown";
     }
@@ -142,6 +148,12 @@ string getOperatorString(OperatorEnum type)
             return ":";
         /*case SEMICOLON:
             return ";";*/
+        case ARRAY_ACCESS:
+            return "[]";
+        case HAS_ELEMENT:
+            return "<>";
+        case NOT_HAS_ELEMENT:
+            return "><";
         default:
             return "N/A";
     }
@@ -172,6 +184,21 @@ bool isConvertable(TypeEnum source, TypeEnum dest)
     }
     // FIXME: Finish this.
     return false;
+}
+
+
+TypeName::TypeName(const std::string& text, Variable* var)
+        : Variable(TYPENAME, text)
+        , value(NOT_A_TYPE)
+        , subType(NOT_A_TYPE)
+{
+    if(var != NULL)
+    {
+        this->text = var->getTypeString();
+        value = var->getType();
+        if(value == ARRAY)
+            subType = static_cast<Array*>(var)->getValueType();
+    }
 }
 
 

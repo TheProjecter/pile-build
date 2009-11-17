@@ -1207,6 +1207,11 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                         if(in.var->getType() != BOOL)
                         {
                             in.var = boolCast(in.var);
+                            if(in.var == NULL)
+                            {
+                                error("Syntax Error: Could not cast expression to 'bool' in your 'if' statement.\n");
+                                return Token();
+                            }
                         }
                         
                         if(static_cast<Bool*>(in.var)->getValue())

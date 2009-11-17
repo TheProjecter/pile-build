@@ -48,7 +48,7 @@ enum TypeEnum{NOT_A_TYPE, VOID, TYPENAME, BOOL, INT, FLOAT, STRING, MACRO, ARRAY
 
 enum OperatorEnum{NOT_AN_OPERATOR, ADD, SUBTRACT, NEGATE, ASSIGN, ADD_ASSIGN, SUBTRACT_ASSIGN, MULTIPLY_ASSIGN, DIVIDE_ASSIGN, MODULUS_ASSIGN, EXPONENTIATE_ASSIGN, 
                   MULTIPLY, DIVIDE, MODULUS, EXPONENTIATE, EQUALS, NOT_EQUALS, LESS, GREATER, NOT_LESS, NOT_GREATER, LESS_EQUAL,
-                  GREATER_EQUAL, NOT, AND, OR, CALL, CONTINUATION, COLON, DOT, BITWISE_AND, BITWISE_XOR, BITWISE_OR, ARRAY_ACCESS
+                  GREATER_EQUAL, NOT, AND, OR, CALL, CONTINUATION, COLON, DOT, BITWISE_AND, BITWISE_XOR, BITWISE_OR, ARRAY_ACCESS, HAS_ELEMENT, NOT_HAS_ELEMENT
                  };
                  
 enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS, 
@@ -143,6 +143,8 @@ public:
             , value(type)
             , subType(NOT_A_TYPE)
     {}
+    TypeName(const std::string& text, Variable* var);
+    
     void setValue(const TypeEnum& val)
     {
         value = val;
@@ -703,7 +705,7 @@ public:
 };
 
 
-Variable* comparison(Variable* A, Variable* B, OperatorEnum oper);
+Bool* comparison(Variable* A, Variable* B, OperatorEnum oper);
 
 Variable* assign(Variable* A, Variable* B);
 
@@ -724,6 +726,8 @@ Variable* exponentiate(Variable* A, Variable* B);
 Variable* dot(Variable* A, Variable* B);
 
 Variable* array_access(Variable* A, Variable* B);
+Bool* has_element(Variable* A, Variable* B);
+Bool* not_has_element(Variable* A, Variable* B);
 
 Variable* add_assign(Variable* A, Variable* B);
 Variable* subtract_assign(Variable* A, Variable* B);
@@ -1014,6 +1018,16 @@ public:
         {
             oper = ARRAY_ACCESS;
             precedence = 2;
+        }
+        else if (Oper == "<>")
+        {
+            oper = HAS_ELEMENT;
+            precedence = 8;
+        }
+        else if (Oper == "><")
+        {
+            oper = NOT_HAS_ELEMENT;
+            precedence = 8;
         }
     }
     
@@ -1395,6 +1409,10 @@ public:
             return dot(A, B);
         if (operation == ARRAY_ACCESS)
             return array_access(A, B);
+        if (operation == HAS_ELEMENT)
+            return has_element(A, B);
+        if (operation == NOT_HAS_ELEMENT)
+            return not_has_element(A, B);
         error("Error: Undefined operation\n");
         return A;
     }

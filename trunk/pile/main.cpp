@@ -353,7 +353,10 @@ int main(int argc, char* argv[])
             
             list<string> ls = ioExplode(argv[i], ',');
             for(list<string>::iterator e = ls.begin(); e != ls.end(); e++)
-                env.variants.push_back(*e);
+            {
+                if(*e != "")
+                    env.variants.push_back(*e);
+            }
         }
         else
         {
