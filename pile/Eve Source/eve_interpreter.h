@@ -72,10 +72,17 @@ std::string getSeparatorString(SeparatorEnum type);
 class Interpreter;
 class Variable;
 class Bool;
+class String;
+class Array;
 class Function;
 class ClassObject;
 Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args);
 Bool* boolCast(Variable* v);
+
+
+String* convertArg_String(Variable* arg);
+Array* convertArg_Array(Variable* arg, TypeEnum valueType);
+ClassObject* convertArg_ClassObject(Variable* arg, const std::string& className);
 
 
 bool isConvertable(TypeEnum source, TypeEnum dest);
@@ -652,17 +659,11 @@ public:
 class ClassObject : public Variable
 {
 private:
-    std::string name;
-    std::map<std::string, Variable*> vars;
     
-    void addVariables()
-    {
-        // Use classname and check the interpreter's list of class definitions
-        // to create new variables and add them to the map.
-        //vars.insert(std::make_pair(varname, var));
-    }
     
 public:
+    std::string name;
+    std::map<std::string, Variable*> vars;
     std::string className;
     ClassObject(const std::string& text, const std::string& name);
     

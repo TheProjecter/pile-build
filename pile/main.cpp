@@ -343,8 +343,21 @@ int main(int argc, char* argv[])
             ioSetCWD(ioStripToDir(argv[i]));
             file = ioStripToFile(argv[i]);
         }
+        else if(string("-v") == argv[i])
+        {
+            i++;
+            if(i >= argc)
+                break;
+            // Now we grab all the variants from the list here...
+            // It could be var1,var2,... or "var1, var2, ..."
+            
+            list<string> ls = ioExplode(argv[i], ',');
+            for(list<string>::iterator e = ls.begin(); e != ls.end(); e++)
+                env.variants.push_back(*e);
+        }
         else
         {
+            //p
             UI_warning("pile Warning: Command \"%s\" not found, so it will be ignored.\n", argv[i]);
         }
     }
@@ -378,6 +391,7 @@ int main(int argc, char* argv[])
         UI_processEvents();
         UI_updateScreen();
         
+        // Interpret the file
         if(!interpret(file, env, config))
             errorFlag = interpreterError = true;
         UI_debug_pile("Done interpreting.\n");

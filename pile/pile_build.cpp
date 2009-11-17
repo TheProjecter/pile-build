@@ -56,8 +56,8 @@ string getCompiler(Configuration& config, const string& file)
 // Takes Compiler, array<string> sources
 Variable* fn_scan(Variable* arg1, Variable* arg2)
 {
-    ClassObject* c = dynamic_cast<ClassObject*>(arg1);
-    Array* sources = dynamic_cast<Array*>(arg2);
+    ClassObject* c = convertArg_ClassObject(arg1, "Compiler");
+    Array* sources = convertArg_Array(arg2, STRING);
     
     if(c == NULL || sources == NULL)
         return NULL;
@@ -83,11 +83,12 @@ Variable* fn_scan(Variable* arg1, Variable* arg2)
 }
 
 // Returns array<string> objectFiles
+// Takes ClassObject compiler, array<string> sourceFiles, array<string> options
 Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
 {
-    ClassObject* c = dynamic_cast<ClassObject*>(arg1);
-    Array* sources = dynamic_cast<Array*>(arg2);
-    Array* opts = dynamic_cast<Array*>(arg3);
+    ClassObject* c = convertArg_ClassObject(arg1, "Compiler");
+    Array* sources = convertArg_Array(arg2, STRING);
+    Array* opts = convertArg_Array(arg3, STRING);
     
     if(c == NULL || sources == NULL || opts == NULL)
         return NULL;
@@ -210,14 +211,14 @@ Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
 
 
 // Returns VOID (NULL)
-// Params: ClassObject linker, string outfile, array objects, array options, array libraries
+// Params: ClassObject linker, string outfile, array objects, array libraries, array options
 Variable* fn_link(Variable* arg1, Variable* arg2, Variable* arg3, Variable* arg4, Variable* arg5)
 {
-    ClassObject* c = dynamic_cast<ClassObject*>(arg1);
-    String* outname = dynamic_cast<String*>(arg2);
-    Array* objs = dynamic_cast<Array*>(arg3);
-    Array* opts = dynamic_cast<Array*>(arg4);
-    Array* libs = dynamic_cast<Array*>(arg5);
+    ClassObject* c = convertArg_ClassObject(arg1, "Linker");
+    String* outname = convertArg_String(arg2);
+    Array* objs = convertArg_Array(arg3, STRING);
+    Array* libs = convertArg_Array(arg4, STRING);
+    Array* opts = convertArg_Array(arg5, STRING);
     
     if(c == NULL || outname == NULL || objs == NULL || opts == NULL)
         return NULL;

@@ -6,6 +6,7 @@ using namespace std;
 
 Bool* boolCast(Variable* v);
 
+TypeEnum getTypeFromString(const string& str);
 
 bool Interpreter::defineFunction(Variable* functionvar, std::istream* stream)
 {
@@ -469,7 +470,7 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                                        && inside.type == Token::VARIABLE && inside.var != NULL)
                                     {
                                         e = g;
-                                        t->subType = inside.var->getType();
+                                        t->subType = getTypeFromString(inside.text);
                                     }
                                 }
                             }
@@ -666,7 +667,9 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     {
                         Array* a = new Array(name, NOT_A_TYPE);
                         if(newTypeName != NULL && newTypeName->subType != NOT_A_TYPE)
+                        {
                             a->setValueType(newTypeName->subType);
+                        }
                         v = a;
                     }
                     else if (newType == LIST)
