@@ -2,7 +2,7 @@
 string type(any)
  Arg 1: Any variable
  Side Effect: None
- Return: string containing the type of the variable
+ Return: typename of the variable.  This can be used for declarations.
 
 string string(any)
  Arg 1: Any variable

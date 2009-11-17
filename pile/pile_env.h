@@ -44,6 +44,8 @@ class Environment
     {
         // Add builtin variables
         Scope& s = *(inter.env.begin());
+        s.env["PERMIT"] = new String("none");
+        s.env["PERMIT"]->reference = true;
         s.env["OUTPUT"] = new String("a.out");
         s.env["OUTPUT"]->reference = true;
         s.env["SOURCES"] = new Array("SOURCES", STRING);

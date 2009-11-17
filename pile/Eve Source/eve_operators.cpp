@@ -8,10 +8,16 @@ using namespace std;
 extern Interpreter interpreter;
 
 
-Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
+Bool* comparison(Variable* A, Variable* B, OperatorEnum oper)
 {
+    if(A == NULL || B == NULL)
+    {
+        interpreter.error("Error: Void variable in assignment.\n");
+        return NULL;
+    }
     TypeEnum a = A->getType();
     TypeEnum b = B->getType();
+    
     
     bool mismatch = false;
     if(a == STRING)
@@ -40,7 +46,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                     return new Bool(C->getValue() != D->getValue());
                 default:
                     UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                    return A;
+                    return NULL;
             }
         }
     }
@@ -76,7 +82,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                        return A;
+                        return NULL;
                 }
             }
             else if(b == INT)
@@ -104,7 +110,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                        return A;
+                        return NULL;
                 }
             }
             else
@@ -132,7 +138,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                        return A;
+                        return NULL;
                 }
             }
         }
@@ -169,7 +175,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                        return A;
+                        return NULL;
                 }
             }
             else if(b == INT)
@@ -197,7 +203,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                        return A;
+                        return NULL;
                 }
             }
             else
@@ -225,7 +231,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                        return A;
+                        return NULL;
                 }
             }
         }
@@ -262,7 +268,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                        return A;
+                        return NULL;
                 }
             }
             else if(b == INT)
@@ -290,7 +296,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                        return A;
+                        return NULL;
                 }
             }
             else
@@ -318,7 +324,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                         return new Bool(C->getValue() != D->getValue());
                     default:
                         UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                        return A;
+                        return NULL;
                 }
             }
         }
@@ -349,7 +355,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                     return new Bool(C->getValue() != D->getValue());
                 default:
                     UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                    return A;
+                    return NULL;
             }
         }
     }
@@ -366,7 +372,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
             if(a != b)
             {
                 interpreter.error("Error: Types do not match in assignment: Array<%s> vs Array<%s>\n", C->getValueTypeString().c_str(), D->getValueTypeString().c_str());
-                return A;
+                return NULL;
             }
             
             switch(oper)
@@ -387,7 +393,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                     return new Bool(C->getValue() != D->getValue());
                 default:
                     UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                    return A;
+                    return NULL;
             }
         }
     }
@@ -417,7 +423,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                     return new Bool(C->getValue() != D->getValue());
                 default:
                     UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                    return A;
+                    return NULL;
             }
         }
     }
@@ -447,7 +453,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                     return new Bool(C->getValue() != D->getValue());
                 default:
                     UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                    return A;
+                    return NULL;
             }
         }
     }
@@ -477,7 +483,7 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
                     return new Bool(C->getValue() != D->getValue());
                 default:
                     UI_debug_pile("Pile Error: Bad operator passed to comparison().\n");
-                    return A;
+                    return NULL;
             }
         }
     }
@@ -485,9 +491,9 @@ Variable* comparison(Variable* A, Variable* B, OperatorEnum oper)
     //if(mismatch)
     {
         interpreter.error("Error: Types do not match in assignment: %s vs %s\n", A->getTypeString().c_str(), B->getTypeString().c_str());
-        return A;
+        return NULL;
     }
-    return A;
+    return NULL;
 }
 
 
@@ -1345,6 +1351,65 @@ Variable* array_access(Variable* A, Variable* B)
     if(result == NULL)
         interpreter.error("Error: Array index out of bounds.\n");
     return result;
+}
+
+Bool* has_element(Variable* A, Variable* B)
+{
+    if(A == NULL || B == NULL)
+    {
+        interpreter.error("Error: Void variable in has_element operation.\n");
+        return NULL;
+    }
+    TypeEnum a = A->getType();
+    TypeEnum b = B->getType();
+    if(a != ARRAY && b != ARRAY)
+    {
+        interpreter.error("Error: Has_element not defined for types '%s' and '%s'\n", getTypeString(a).c_str(), getTypeString(b).c_str());
+        return NULL;
+    }
+    
+    Array* C;
+    Variable* other;
+    TypeEnum otherType;
+    if(a == ARRAY)
+    {
+        C = static_cast<Array*>(A);
+        other = B;
+        otherType = b;
+    }
+    else
+    {
+        C = static_cast<Array*>(B);
+        other = A;
+        otherType = a;
+    }
+        
+    if(otherType != C->getValueType())
+    {
+        interpreter.error("Error: Has_element not defined for types '%s' and '%s'\n", getTypeString(ARRAY).c_str(), getTypeString(otherType).c_str());
+        return NULL;
+    }
+    
+    vector<Variable*>& v = C->getValue();
+    for(vector<Variable*>::iterator e = v.begin(); e != v.end(); e++)
+    {
+        Bool* test = comparison(other, *e, EQUALS);
+        if(test->getValue() == true)
+            return test;
+        delete test;
+    }
+    
+    return new Bool(false);
+}
+
+
+Bool* not_has_element(Variable* A, Variable* B)
+{
+    Bool* b = has_element(A, B);
+    if(b == NULL)
+        return NULL;
+    b->setValue(!b->getValue());
+    return b;
 }
 
 

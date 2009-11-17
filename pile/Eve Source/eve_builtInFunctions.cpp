@@ -260,7 +260,7 @@ Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args)
         case FN_TYPE:
             if(args.size() != 1)
                 return NULL;
-            result = new String("<temp>", args[0]->getTypeString());
+            result = new TypeName("<temp>", args[0]);
             break;
         case FN_STRING:
             if(args.size() != 1)

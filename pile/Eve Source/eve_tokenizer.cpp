@@ -29,6 +29,8 @@ TypeEnum getTypeFromString(const string& str)
         return PROCEDURE;
     if(str == "class")
         return CLASS;
+    if(str == "class_object")
+        return CLASS_OBJECT;
     
     return NOT_A_TYPE;
 }
@@ -187,9 +189,9 @@ bool isDigraphOperator(const char& c, const char& d)
         case '/':
             return (d == '=');
         case '<':
-            return (d == '=' || d == '<');
+            return (d == '=' || d == '<' || d == '>');
         case '>':
-            return (d == '=' || d == '>');
+            return (d == '=' || d == '>' || d == '<');
         case '!':
             return (d == '=' || d == '>' || d == '<');
         case '^':
