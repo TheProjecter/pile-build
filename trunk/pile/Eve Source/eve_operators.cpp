@@ -611,7 +611,7 @@ Variable* assign(Variable* A, Variable* B)
             Array* C = static_cast<Array*>(A);
             Array* D = static_cast<Array*>(B);
             a = C->getValueType();
-            b = C->getValueType();
+            b = D->getValueType();
             if(a != b)
             {
                 interpreter.error("Error: Types do not match in assignment: Array<%s> vs Array<%s>\n", C->getValueTypeString().c_str(), D->getValueTypeString().c_str());

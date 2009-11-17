@@ -34,14 +34,20 @@ Array* convertArg_Array(Variable* arg, TypeEnum valueType)
     return a;
 }
 
-ClassObject* convertArg_ClassObject(Variable* arg)
+ClassObject* convertArg_ClassObject(Variable* arg, const std::string& className)
 {
     if(arg == NULL || arg->getType() != CLASS_OBJECT)
     {
-        interpreter.error("Error: Wrong type passed to function.  Expected class object.\n");
+        interpreter.error("Error: Wrong type passed to function.  Expected object of class %s.\n", className.c_str());
         return NULL;
     }
-    return static_cast<ClassObject*>(arg);
+    ClassObject* c = static_cast<ClassObject*>(arg);
+    if(c->name != className)
+    {
+        interpreter.error("Error: Wrong type passed to function.  Expected object of class %s.\n", className.c_str());
+        return NULL;
+    }
+    return c;
 }
 
 
