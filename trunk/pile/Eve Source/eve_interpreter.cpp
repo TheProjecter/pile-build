@@ -59,6 +59,7 @@ bool Interpreter::readFile(string filename)
         if(!continuation || fin.eof())  // Skip the eval if we're continuing, but not if the file ends!
         {
             Token result = evalTokens(tokens, true, wasTrueIf, wasFalseIf);
+            
             wasTrueIf = wasFalseIf = false;
             if(result.type == Token::KEYWORD)
             {
