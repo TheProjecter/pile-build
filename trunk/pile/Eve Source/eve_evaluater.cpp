@@ -579,6 +579,7 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                                     {
                                         gotType = dynamic_cast<TypeName*>(e->var);
                                         UI_debug_pile("Got type\n");
+                                        
                                         // Check if it's a reference
                                         list<Token>::iterator g = e;
                                         g++;
