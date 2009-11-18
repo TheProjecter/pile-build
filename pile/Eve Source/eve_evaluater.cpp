@@ -960,10 +960,6 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     
                     UI_debug_pile("Just finished function call.\n");
                     
-                    if(firstVar.type == Token::NOT_A_TOKEN)
-                    {
-                        return firstVar;
-                    }
                 }
                 else if(e->sep == CLOSE_PARENTHESIS)
                 {
