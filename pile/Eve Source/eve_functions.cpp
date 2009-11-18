@@ -279,6 +279,7 @@ FunctionEnum Function::getBuiltIn()
     return builtIn;
 }
 
+// FIXME: Factor out similarities into a new function that both readFile() and Function::call() use.
 // See readFile() since they're similar
 Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
 {

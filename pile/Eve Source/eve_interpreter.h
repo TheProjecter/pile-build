@@ -132,7 +132,11 @@ public:
             : Variable(TYPENAME, ::getTypeString(typeName.value))
             , value(typeName.value)
             , subType(typeName.subType)
-    {}
+    {
+            literal = typeName.literal;
+            temp = typeName.temp;
+            reference = typeName.reference;
+    }
     TypeName(TypeEnum type)
             : Variable(TYPENAME, ::getTypeString(type))
             , value(type)
