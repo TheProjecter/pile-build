@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <string>
+#include "../External Code/goodio.h"
 using namespace std;
 
 extern Interpreter interpreter;
@@ -225,6 +226,79 @@ Void* include(Variable* v)
     return NULL;
 }
 
+bool matchWildcard(const string& exp, const string& str)
+{
+    unsigned int i = 0;
+    
+    list<string> parts = ioExplode(exp, '*');
+    
+    bool first = (*(parts.begin()) != "");
+    for(list<string>::iterator e = parts.begin(); e != parts.end(); e++)
+    {
+        unsigned int j = str.find(*e);
+        
+        // This makes sure that the beginning is not a wildcard
+        if(first && j != 0)
+            return false;
+        else
+            first = false;
+        
+        // This makes sure that the end is not a wildcard
+        list<string>::iterator f = e;
+        f++;
+        if(f == parts.end())
+        {
+            if(*e != "" && j != str.size() - e->size())
+                return false;
+        }
+        
+        if(j == string::npos || i > j)
+            return false;
+        i = j;
+    }
+    
+    
+    return true;
+}
+
+Array* fn_ls(Variable* v)
+{
+    if(v->getType() != STRING)
+    {
+        return NULL;
+    }
+    String* s = static_cast<String*>(v);
+    string text = s->getValue();
+    
+    // FIXME: Assumes a single directory (no wildcard in directory)
+    string dir = ioStripToDir(text);
+    if(dir == "")
+        dir = ".";
+    
+    string files = ioStripToFile(text);
+    
+    
+    Array* result = new Array("<temp>", STRING);
+    
+    list<string> l = ioList(dir, false, true);
+    
+    if(dir != "")
+    {
+        if(dir == ".")
+            dir = "";
+        else
+            dir += "/";
+    }
+    
+    for(list<string>::iterator e = l.begin(); e != l.end(); e++)
+    {
+        if(matchWildcard(files, *e))
+            result->push_back(new String("<temp>", dir + *e));
+    }
+    
+    return result;
+}
+
 
 Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args)
 {
@@ -286,6 +360,11 @@ Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args)
             if(args.size() != 1)
                 return NULL;
             result = include(args[0]);
+            break;
+        case FN_LS:
+            if(args.size() != 1)
+                return NULL;
+            result = fn_ls(args[0]);
             break;
         case FN_EXTERNAL:
             break;

@@ -58,7 +58,7 @@ enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 
 enum KeywordEnum{KW_NONE, KW_IF, KW_ELSE, KW_RETURN};
 
-enum FunctionEnum{FN_NONE, FN_EXTERNAL, FN_PRINT, FN_PRINTLN, FN_WARNING, FN_ERROR, FN_DEBUG, FN_TYPE, FN_STRING, FN_BOOL, FN_INT, FN_FLOAT, FN_INCLUDE};
+enum FunctionEnum{FN_NONE, FN_EXTERNAL, FN_PRINT, FN_PRINTLN, FN_WARNING, FN_ERROR, FN_DEBUG, FN_TYPE, FN_STRING, FN_BOOL, FN_INT, FN_FLOAT, FN_INCLUDE, FN_LS};
 
 KeywordEnum getKeyword(const std::string& str);
 
@@ -1191,6 +1191,7 @@ public:
         s.env["float"] = new Function("float", FN_FLOAT);
         s.env["string"] = new Function("string", FN_STRING);
         s.env["include"] = new Function("include", FN_INCLUDE);
+        s.env["ls"] = new Function("ls", FN_LS);
         
         array_size = new Function("size", &Array::size_fn);
         array_size->isMethod = true;
