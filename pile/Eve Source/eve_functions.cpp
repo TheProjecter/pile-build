@@ -198,6 +198,9 @@ Function::Function(const std::string& text, FunctionEnum builtIn)
         case FN_INCLUDE:
             argt.push_back(TypeName(VOID));
             break;
+        case FN_LS:
+            argt.push_back(TypeName(VOID));
+            break;
         case FN_EXTERNAL:
             break;
         case FN_NONE:
