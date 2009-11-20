@@ -1,0 +1,26 @@
+
+
+if(VARIANTS <> "debug")
+{
+    SOURCES += ["main2.cpp"]
+}
+else
+{
+    SOURCES += ["main.cpp"]
+}
+
+cpp_compiler.scan(SOURCES)
+
+array<string> objs = cpp_compiler.compile(SOURCES, CFLAGS)
+
+cpp_linker.link("myprog", objs, LIBRARIES, LFLAGS)
+
+
+
+
+
+
+
+
+
+

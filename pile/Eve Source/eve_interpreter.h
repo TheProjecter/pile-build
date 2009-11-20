@@ -1,7 +1,15 @@
 /*
+eve_interpreter.h
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
 Eve, an interpreted programming language.
-by Jonathan Dearborn
+This file contains the class definitions for the interpreter.
 */
+
 
 
 #ifndef _EVE_INTERPRETER_H__

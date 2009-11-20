@@ -1,3 +1,15 @@
+/*
+eve_builtInFunctions.cpp
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains the implementations for the functions that are built into
+the Eve interpreter.
+*/
+
 #include "eve_interpreter.h"
 
 #include <cassert>
@@ -52,7 +64,9 @@ string replaceEscapes(string s)
     return s;
 }
 
-
+/*
+Built-in print().
+*/
 void fn_print(Variable* arg)
 {
     assert(arg->getType() == STRING);
@@ -60,6 +74,10 @@ void fn_print(Variable* arg)
     UI_print("%s", replaceEscapes(static_cast<String*>(arg)->getValue()).c_str());
 }
 
+
+/*
+Built-in println().
+*/
 void fn_println(Variable* arg)
 {
     if(arg->getType() == STRING)
@@ -80,6 +98,9 @@ void fn_println(Variable* arg)
     }
 }
 
+/*
+Built-in warning().
+*/
 void fn_warning(Variable* arg)
 {
     if(arg->getType() == STRING)
@@ -100,6 +121,9 @@ void fn_warning(Variable* arg)
     }
 }
 
+/*
+Built-in error().
+*/
 void fn_error(Variable* arg)
 {
     if(arg->getType() == STRING)
@@ -120,6 +144,10 @@ void fn_error(Variable* arg)
     }
 }
 
+
+/*
+Built-in debug().
+*/
 void fn_debug(Variable* arg)
 {
     if(arg->getType() == STRING)
@@ -141,6 +169,9 @@ void fn_debug(Variable* arg)
 }
 
 
+/*
+Built-in cast to bool.
+*/
 Bool* boolCast(Variable* v)
 {
     if(v->getType() == BOOL)
@@ -161,6 +192,9 @@ Bool* boolCast(Variable* v)
     return NULL;
 }
 
+/*
+Built-in cast to int.
+*/
 Int* intCast(Variable* v)
 {
     if(v->getType() == BOOL)
@@ -181,6 +215,10 @@ Int* intCast(Variable* v)
     return NULL;
 }
 
+
+/*
+Built-in cast to float.
+*/
 Float* floatCast(Variable* v)
 {
     if(v->getType() == BOOL)
@@ -201,6 +239,10 @@ Float* floatCast(Variable* v)
     return NULL;
 }
 
+
+/*
+Built-in external file include().
+*/
 Void* include(Variable* v)
 {
     if(v->getType() != STRING)
@@ -226,6 +268,9 @@ Void* include(Variable* v)
     return NULL;
 }
 
+/*
+Returns true if 'str' matches 'exp', which can contain wildcards '*'.
+*/
 bool matchWildcard(const string& exp, const string& str)
 {
     unsigned int i = 0;
@@ -261,6 +306,9 @@ bool matchWildcard(const string& exp, const string& str)
     return true;
 }
 
+/*
+Built-in ls().
+*/
 Array* fn_ls(Variable* v)
 {
     if(v->getType() != STRING)
@@ -300,6 +348,9 @@ Array* fn_ls(Variable* v)
 }
 
 
+/*
+Groups together the calling of built-in functions.  Used in callFn().
+*/
 Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args)
 {
     Variable* result = NULL;

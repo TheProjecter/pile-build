@@ -1,0 +1,38 @@
+ 
+
+
+int p(int j)
+{
+    print("Hey\n")
+    print("What is the big deal?\n")
+    if(false)
+        print("Bob\n")
+    else
+        print("Larry\n")
+    print(string(j))
+    return 0
+}
+
+
+
+
+p(5)
+p(2)
+
+
+void b(int j, int q)
+{
+    print(string(j) + " + " + string(q) + " = " + string(j + q) + "\n")
+}
+
+
+b(4 + 1, 6 + 1)
+
+
+void c(int j, int q, int d)
+{
+    print(string(j) + " + " + string(q) + " = " + string(j + q) + "\n")
+}
+
+
+c(1, 5, 9)

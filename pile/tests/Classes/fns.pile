@@ -1,0 +1,33 @@
+
+
+class poopoo
+{
+    int j
+    
+    void p()
+    {
+        print("Gimme a P!\n")
+    }
+    
+}
+
+
+
+poopoo test1
+print("test1.j == " + string(test1.j) + "\n")
+
+test1.p()
+
+print("P!\n")
+
+class Cow
+{
+    float moo(float a)
+    {
+        return a/2
+    }
+
+}
+
+Cow bessy
+println(string(bessy.moo(5.0)));

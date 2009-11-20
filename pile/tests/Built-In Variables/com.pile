@@ -1,0 +1,8 @@
+
+
+
+println("Host Platform: " + HOST_PLATFORM)
+
+println("Variants: " + string(VARIANTS))
+
+println("Options: " + string(OPTIONS))

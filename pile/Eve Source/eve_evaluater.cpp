@@ -1,3 +1,15 @@
+/*
+eve_evaluater.cpp
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains the interpreter's workhorse token evaluater and the functions
+that are called to evaluate the definitions of user-defined functions and classes.
+*/
+
 #include "eve_interpreter.h"
 #include <cassert>
 
@@ -8,6 +20,9 @@ Bool* boolCast(Variable* v);
 
 TypeEnum getTypeFromString(const string& str);
 
+/*
+Reads a function definition from the input stream.
+*/
 bool Interpreter::defineFunction(Variable* functionvar, std::istream* stream)
 {
     // FIXME: Assumes there are no prototypes for now...
@@ -84,6 +99,9 @@ bool Interpreter::defineFunction(Variable* functionvar, std::istream* stream)
 }
 
 
+/*
+Reads a class definition from the input stream.
+*/
 bool Interpreter::defineClass(Variable* classvar, istream* stream)
 {
     Class* theClass = dynamic_cast<Class*>(classvar);
@@ -328,8 +346,9 @@ bool Interpreter::defineClass(Variable* classvar, istream* stream)
 
 
 
-
-// Evaluates the tokens for a single line.
+/*
+Evaluates the tokens for a single line.
+*/
 Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueIf, bool wasFalseIf, bool subExpression)
 {
     enum StateEnum{BEGIN, READY, VAR_DECL, VAR, VAR_OP, VAR_OP_VAR};

@@ -1,0 +1,13 @@
+ 
+float b = 5.0
+
+b /= 3
+
+println("Type of b: " + string(type(b)))
+
+
+type(b) a = 5
+
+a /= 3
+
+println("a, b: " + string(a) + ", " + string(b))

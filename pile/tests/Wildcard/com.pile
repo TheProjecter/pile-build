@@ -1,0 +1,12 @@
+
+array<string> a = ls("main*.cpp")
+a += ls("subdir/good*")
+
+println("Array: " + string(a))
+
+
+
+
+
+
+

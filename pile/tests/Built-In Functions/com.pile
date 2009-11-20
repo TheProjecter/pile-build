@@ -1,0 +1,14 @@
+
+int a = 3
+a += 4
+print("This...\n should be 7: " + string(a) + "\n")
+
+print("Here's '1, false': " + string(int(true)) + ", " + string(false) + "\n")
+
+float b = a
+b += 3.0/8
+print("b: " + string(b) + ", float(a): " + string(float(a)) + "\n")
+
+bool c = bool(a)
+if(c)
+    println("c is true")

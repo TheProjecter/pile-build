@@ -1,0 +1,7 @@
+
+print("File included!\n")
+
+void go()
+{
+    print("Go!\n");
+}

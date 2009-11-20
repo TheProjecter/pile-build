@@ -1,3 +1,14 @@
+/*
+eve_operators.cpp
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains the implementation for the operators and related functions.
+*/
+
 #include "eve_interpreter.h"
 
 

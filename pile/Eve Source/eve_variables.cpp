@@ -1,3 +1,15 @@
+/*
+eve_variables.cpp
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains the implementation of the Variable classes and related
+functions.
+*/
+
 #include "eve_interpreter.h"
 
 #include <string>

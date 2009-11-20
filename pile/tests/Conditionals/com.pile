@@ -1,0 +1,112 @@
+
+bool a = 0
+
+if(a)
+    print("Single-line 'if' is not working.\n")
+
+
+bool b = 1
+
+
+if(b)
+    print("Single-line 'if' is working.\n")
+
+bool c = 1
+
+
+bool d = 0
+
+
+if(a == d)
+    print("equals is working\n")
+
+if(b == d)
+    print("equals is not working\n")
+
+if(true)
+{
+    print("Block 'if' is working.\n")
+    print("Block 'if' is working.\n")
+    print("Block 'if' is working.\n")
+}
+
+if(false)
+{
+    print("Block 'if' is not working.\n")
+    print("Block 'if' is not working.\n")
+    print("Block 'if' is not working.\n")
+}
+
+if(true)
+{
+    bool e = 0
+    e = 1
+}
+
+print("This variable was declared in a subscope:\n")
+e = 1
+print("That should have been an error.\n")
+
+if(true)
+{
+    if(true)
+    {
+        print("Nested 'if' block is working.\n")
+    }
+    if(false)
+    {
+        print("Nested 'if' block is not working.\n")
+    }
+}
+
+c = 1
+
+if(c)
+    
+else
+    print("else is not working.\n")
+
+d = 0
+
+if(d)
+    
+else
+    print("else is working.\n")
+
+if(d)
+{
+    print("Block 'if' is not working.\n")
+}
+else
+{
+    print("Block 'else' is working.\n")
+    print("Block 'else' is working.\n")
+}
+
+int q = 4
+int j = 9
+
+if(q == j)
+{
+    print("q == j : " + string(q == j) + "\n")
+}
+else
+    print("q != j : " + string(q != j) + "\n")
+
+if(q != j)
+    print("q != j\n")
+else
+    print("q == j? Huh?\n")
+
+if(q !> j)
+    print("q <= j\n")
+else
+    print("q > j? Huh?\n")
+
+if(j !< j)
+    print("j >= j\n")
+else
+    print("j < j? Huh?\n")
+
+if(4)
+    print("4 is true\n")

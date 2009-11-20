@@ -1,3 +1,15 @@
+/*
+eve_interpreter.cpp
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains the implementation for the tokenizer, the part of the parsing
+system that converts characters into meaningful tokens for use by the evaluater.
+*/
+
 #include "eve_interpreter.h"
 
 #include <string>
