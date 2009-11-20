@@ -1,0 +1,26 @@
+
+int j = 0
+
+println("j = " + string(j))
+
+void no_change(int r)
+{
+    r = 3
+}
+
+no_change(j)
+
+println("After no_change: " + string(j))
+
+void change(int& r)
+{
+    r = 3
+}
+
+change(j)
+
+println("After change: " + string(j))
+
+change(j=2)
+
+println("After j=2: " + string(j))

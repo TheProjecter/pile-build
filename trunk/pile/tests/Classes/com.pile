@@ -1,0 +1,28 @@
+
+
+class poopoo
+{
+    int j
+    
+    //poopoo()
+    //{
+    //    j = 1
+    //}
+    
+    void p()
+    {
+        println("Value of j: " + string(this.j))
+        print("Gimme a P!\n")
+    }
+    
+}
+
+int j = 19
+
+
+poopoo test1
+print("test1.j == " + string(test1.j) + "\n")
+
+test1.p()
+test1.j = 4
+test1.p()

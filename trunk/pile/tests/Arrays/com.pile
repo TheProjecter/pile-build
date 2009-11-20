@@ -1,0 +1,32 @@
+
+
+
+array<string> j = ["bob"]
+
+print("This should be 'bob':\n")
+println(j[0])
+
+j[0] = "todd"
+
+print("This should be 'todd':\n")
+println(j[0])
+
+println("Size of j: " + string(j.size()))
+
+
+array<string> t
+t += ["time"]
+
+println("t: " + string(t))
+
+j += t[0]
+println(string(j))
+
+
+
+if(j <> "todd")
+    println("j has 'todd' in it.")
+
+
+if(j >< "splat")
+    println("j does not have 'splat' in it.")

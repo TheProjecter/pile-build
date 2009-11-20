@@ -1,0 +1,41 @@
+ 
+
+
+float a = 4.3
+
+int b = 2.1
+
+print(string(a) + " + " + string(b) + " = " + string(a+b) + "\n")
+
+bool c = true
+
+bool d = false
+
+print(string(c) + " && " + string(d) + " = " + string(c&&d) + "\n")
+
+print(string(c) + " || " + string(d) + " = " + string(c||d) + "\n")
+
+println("sqrt(a) = " + string(a**(1/2.0)))
+
+a **= 2
+
+println(string(a))
+
+a += 2
+println("a += 2: " + string(a))
+
+a -= 2
+println("a -= 2: " + string(a))
+
+a *= 2
+println("a *= 2: " + string(a))
+
+a /= 2
+println("a /= 2: " + string(a))
+
+println("b = " + string(b))
+
+b %= 2
+println("b %= 2: " + string(b))
+
+println("17 % 5: " + string(17 % 5))

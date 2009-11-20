@@ -1,3 +1,15 @@
+/*
+eve_interpreter.cpp
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains the implementation for the some of the Interpreter methods,
+including readFile(), which coordinates parsing of Eve files.
+*/
+
 // FIXME: Remove Pile dependence
 #include "eve_interpreter.h"
 #include <fstream>

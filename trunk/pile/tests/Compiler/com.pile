@@ -1,0 +1,32 @@
+
+println("C++ compiler name: " + cpp_compiler.name)
+println("path: " + cpp_compiler.path)
+
+
+array<string> source_files = ["main.cpp"]
+
+
+// Needs compiler option translation
+//array<string> cflags = ["-I/usr/include/SDL"]
+
+// Needs search directories argument to compile()
+//array<string> cdirs = ["/usr/include/SDL"]
+
+// Needs library translation (prefix/suffix)
+//array<string> libs = ["SDLmain", "SDL"]
+
+cpp_compiler.scan(source_files)
+
+array<string> objs = cpp_compiler.compile(source_files, CFLAGS)
+
+cpp_linker.link("myprog", objs, LIBRARIES, LFLAGS)
+
+
+
+
+
+
+
+
+
+

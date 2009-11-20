@@ -1,0 +1,24 @@
+ 
+
+
+void p()
+{
+    print("Hey\n")
+    int q(bool g)
+    {
+        if(g)
+        {
+            print("Booyah.\n")
+        }
+
+        return 0
+    }
+    
+    q(true)
+    q(false)
+    q(true)
+}
+
+
+p()
+p()

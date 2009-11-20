@@ -1,3 +1,14 @@
+/*
+eve_functions.cpp
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains the implementation of the Function class.
+*/
+
 #include "eve_interpreter.h"
 
 #include <cassert>

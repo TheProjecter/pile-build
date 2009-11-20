@@ -1,0 +1,15 @@
+
+
+class poopoo
+{
+    int j
+    
+    bool q
+    
+    float t
+}
+
+poopoo mine
+mine.j = 4
+print("mine.j = " + string(mine.j) + "\n")
+print("mine.t = " + string(mine.t) + "\n")
