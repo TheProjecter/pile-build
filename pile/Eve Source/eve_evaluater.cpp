@@ -11,7 +11,10 @@ that are called to evaluate the definitions of user-defined functions and classe
 */
 
 #include "eve_interpreter.h"
+// FIXME: Replace Pile output with an error message system
+#include "../pile_ui.h"
 #include <cassert>
+#include <sstream>
 
 #include <list>
 using namespace std;

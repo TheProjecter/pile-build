@@ -1,3 +1,17 @@
+/*
+Pile, a truly cross-platform automatic build tool.
+--------------------------------------------------
+
+pile_global.h
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+Common header for all Pile source files.
+*/
+
 #ifndef _PILE_GLOBAL_H__
 #define _PILE_GLOBAL_H__
 

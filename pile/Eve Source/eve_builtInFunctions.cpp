@@ -11,7 +11,8 @@ the Eve interpreter.
 */
 
 #include "eve_interpreter.h"
-
+// FIXME: Replace Pile output with an error message system
+#include "../pile_ui.h"
 #include <cassert>
 #include <string>
 #include "../External Code/goodio.h"
@@ -347,6 +348,18 @@ Array* fn_ls(Variable* v)
     return result;
 }
 
+/*
+Built-in defined().
+*/
+Bool* fn_defined(Variable* v)
+{
+    Bool* result = new Bool(false);
+    
+    result->setValue((v != NULL && interpreter.getVar(v->text)));
+    
+    return result;
+}
+
 
 /*
 Groups together the calling of built-in functions.  Used in callFn().
@@ -416,6 +429,11 @@ Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args)
             if(args.size() != 1)
                 return NULL;
             result = fn_ls(args[0]);
+            break;
+        case FN_DEFINED:
+            if(args.size() != 1)
+                return NULL;
+            result = fn_defined(args[0]);
             break;
         case FN_EXTERNAL:
             break;

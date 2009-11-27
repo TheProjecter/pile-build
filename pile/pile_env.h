@@ -1,7 +1,23 @@
+/*
+Pile, a truly cross-platform automatic build tool.
+--------------------------------------------------
+
+pile_env.h
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains the Environment class definition.
+*/
+
 #ifndef _PILE_ENV_H__
 #define _PILE_ENV_H__
 
 #include <string>
+
+#include "pile_ui.h"
 #include "pile_depend.h"
 #include "pile_config.h"
 #include "Eve Source/eve_interpreter.h"
@@ -9,6 +25,12 @@
 Variable* fn_scan(Variable* arg1, Variable* arg2);
 Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3);
 Variable* fn_link(Variable* arg1, Variable* arg2, Variable* arg3, Variable* arg4, Variable* arg5);
+
+Variable* createNewVariableFromCommandLine(const std::string& name, const std::string& value);
+void changeVariableFromCommandLine(Variable* var, const std::string& name, const std::string& value);
+
+class Environment;
+extern Environment env;
 
 class Environment
 {
@@ -23,6 +45,8 @@ class Environment
     std::list<std::string> lflags;
     std::list<std::string> variants;
     
+    std::map<std::string, std::string> variables;
+    
     bool dryRun;
     bool noCompile;
     bool noLink;
@@ -30,7 +54,8 @@ class Environment
     std::string pilefile;
     
     Environment()
-        : dryRun(false)
+        : outfile("a.out")
+        , dryRun(false)
         , noCompile(false)
         , noLink(false)
     {}
@@ -44,14 +69,18 @@ class Environment
     {
         // Add builtin variables
         Scope& s = *(inter.env.begin());
-        s.env["PERMIT"] = new String("none");
+        
+        // VARIABLES
+        s.env["PERMIT"] = new String("PERMIT", "none");
         s.env["PERMIT"]->reference = true;
-        s.env["OUTPUT"] = new String("a.out");
+        s.env["OUTPUT"] = new String("OUTPUT", outfile);
         s.env["OUTPUT"]->reference = true;
+        
         s.env["SOURCES"] = new Array("SOURCES", STRING);
         s.env["SOURCES"]->reference = true;
         s.env["CFLAGS"] = new Array("CFLAGS", STRING);
         s.env["CFLAGS"]->reference = true;
+        
         s.env["LFLAGS"] = new Array("LFLAGS", STRING);
         s.env["LFLAGS"]->reference = true;
         s.env["OBJECTS"] = new Array("OBJECTS", STRING);
@@ -60,7 +89,17 @@ class Environment
         s.env["LIBRARIES"]->reference = true;
         s.env["HOST_PLATFORM"] = new String("HOST_PLATFORM", getSystemName());
         s.env["TARGET_PLATFORM"] = new String("TARGET_PLATFORM", config.languages["TARGET_PLATFORM"]);
-        //s.env["CPP_COMPILER"] = new Compiler(config.languages["CPP_COMPILER"]);
+        
+        
+        Array* vars = new Array("VARIANTS", STRING);
+        s.env["VARIANTS"] = vars;
+        
+        Array* opts = new Array("OPTIONS", STRING);
+        s.env["OPTIONS"] = opts;
+        // includeDirs
+        // libDirs
+        
+        // CLASSES
         
         // Compiler
         Class* compiler = new Class("Compiler");
@@ -100,25 +139,93 @@ class Environment
         }
         s.env["cpp_linker"] = cpp_linker;
         
-        Array* vars = new Array("VARIANTS", STRING);
-        if(variants.size() == 0)
+        
+        // Init command line variables
+        map<string, string>::iterator fl;
+        
+        // Need to check the other built-in variables!
+        for(fl = env.variables.begin(); fl != env.variables.end(); fl++)
+        {
+            map<string, Variable*>::iterator v = s.env.find(fl->first);
+            if(v != s.env.end())
+            {
+                changeVariableFromCommandLine(v->second, fl->first, fl->second);
+            }
+            else
+            {
+                // Add new variable
+                Variable* v1 = createNewVariableFromCommandLine(fl->first, fl->second);
+                if(v1 != NULL)
+                {
+                    s.env[fl->first] = v1;
+                    s.env[fl->first]->reference = true;
+                }
+            }
+        }
+        
+        /*fl = env.variables.find("VARIANTS");
+        if(fl != env.variables.end())
+        {
+            list<string> l = ioExplode(fl->second, ',');
+            for(list<string>::iterator e = l.begin(); e != l.end(); e++)
+            {
+                if(*e != "")
+                    variants.push_back(*e);
+            }
+            env.variables.erase(fl);
+        }*/
+        
+        if(variants.size() == 0 && vars->size() == 0)
             vars->push_back(new String("<temp>", "default"));
         for(std::list<std::string>::iterator e = variants.begin(); e != variants.end(); e++)
         {
             vars->push_back(new String("<temp>", *e));
         }
-        s.env["VARIANTS"] = vars;
         
-        Array* opts = new Array("OPTIONS", STRING);
+        
         if(dryRun)
             opts->push_back(new String("<temp>", "dry_run"));
         if(noCompile)
             opts->push_back(new String("<temp>", "no_compile"));
         if(noLink)
             opts->push_back(new String("<temp>", "no_link"));
-        s.env["OPTIONS"] = opts;
-        // includeDirs
-        // libDirs
+        
+        /*fl = env.variables.find("CFLAGS");
+        if(fl != env.variables.end())
+        {
+            list<string> l = ioExplode(fl->second, ',');
+            for(list<string>::iterator e = l.begin(); e != l.end(); e++)
+            {
+                if(*e != "")
+                    static_cast<Array*>(s.env["CFLAGS"])->push_back(new String("<temp>", *e));
+            }
+            env.variables.erase(fl);
+        }*/
+        
+        for(list<string>::iterator e = cflags.begin(); e != cflags.end(); e++)
+        {
+            static_cast<Array*>(s.env["CFLAGS"])->push_back(new String("<temp>", *e));
+        }
+        
+        /*fl = env.variables.find("LFLAGS");
+        if(fl != env.variables.end())
+        {
+            list<string> l = ioExplode(fl->second, ',');
+            for(list<string>::iterator e = l.begin(); e != l.end(); e++)
+            {
+                if(*e != "")
+                    static_cast<Array*>(s.env["LFLAGS"])->push_back(new String("<temp>", *e));
+            }
+            env.variables.erase(fl);
+        }*/
+        
+        for(list<string>::iterator e = lflags.begin(); e != lflags.end(); e++)
+        {
+            static_cast<Array*>(s.env["LFLAGS"])->push_back(new String("<temp>", *e));
+        }
+        
+        
+        
     }
     
     void finalizeInterpreter(Interpreter& inter)

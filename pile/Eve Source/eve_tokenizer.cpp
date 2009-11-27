@@ -11,11 +11,339 @@ system that converts characters into meaningful tokens for use by the evaluater.
 */
 
 #include "eve_interpreter.h"
+// FIXME: Replace Pile output with an error message system
+#include "../pile_ui.h"
 
 #include <string>
 using namespace std;
 
 extern Interpreter interpreter;
+
+
+// Null token
+Token::Token()
+        : type(NOT_A_TOKEN)
+        , var(NULL)
+        , oper(NOT_AN_OPERATOR), precedence(0), associativeLeftToRight(true)
+        , sep(NOT_A_SEPARATOR)
+        , keyword(KW_NONE)
+{}
+// Variable token
+Token::Token(Variable* var, std::string text)
+        : type(VARIABLE)
+        , text(text), var(var)
+        , oper(NOT_AN_OPERATOR), precedence(0), associativeLeftToRight(true)
+        , sep(NOT_A_SEPARATOR)
+        , keyword(KW_NONE)
+{
+    if (var == NULL) // Error?
+        type = NOT_A_TOKEN;
+}
+// Operator, Separator, or Keyword
+Token::Token(TokenEnum type, std::string text)
+        : type(type)
+        , text(text)
+        , var(NULL), oper(NOT_AN_OPERATOR), precedence(0), associativeLeftToRight(true)
+{
+    if(type == OPERATOR)
+        setOperator(text);
+    else if(type == SEPARATOR)
+        setSeparator(text);
+    else if(type == KEYWORD)
+        setKeyword(text);
+}
+
+void Token::setKeyword(std::string Keyword)
+{
+    keyword = getKeyword(Keyword);
+}
+
+void Token::setOperator(std::string Oper)
+{
+    //strip(Oper, ' ');
+    if (Oper == "+")
+    {
+        oper = ADD;
+        precedence = 6;
+    }
+    if (Oper == "-")
+    {
+        oper = SUBTRACT;
+        precedence = 6;
+    }
+    else if (Oper == "-X") // The weird one...
+    {
+        oper = NEGATE;
+        associativeLeftToRight = false;
+        precedence = 3;
+    }
+    else if (Oper == "=")
+    {
+        oper = ASSIGN;
+        associativeLeftToRight = false;
+        precedence = 16;
+    }
+    else if (Oper == "+=")
+    {
+        oper = ADD_ASSIGN;
+        associativeLeftToRight = false;
+        precedence = 16;
+    }
+    else if (Oper == "-=")
+    {
+        oper = SUBTRACT_ASSIGN;
+        associativeLeftToRight = false;
+        precedence = 16;
+    }
+    else if (Oper == "*=")
+    {
+        oper = MULTIPLY_ASSIGN;
+        associativeLeftToRight = false;
+        precedence = 16;
+    }
+    else if (Oper == "/=")
+    {
+        oper = DIVIDE_ASSIGN;
+        associativeLeftToRight = false;
+        precedence = 16;
+    }
+    else if (Oper == "%=")
+    {
+        oper = MODULUS_ASSIGN;
+        associativeLeftToRight = false;
+        precedence = 16;
+    }
+    else if (Oper == "**=")
+    {
+        oper = EXPONENTIATE_ASSIGN;
+        associativeLeftToRight = false;
+        precedence = 16;
+    }
+    else if (Oper == "*")
+    {
+        oper = MULTIPLY;
+        precedence = 5;
+    }
+    else if (Oper == "/")
+    {
+        oper = DIVIDE;
+        precedence = 5;
+    }
+    else if (Oper == "%")
+    {
+        oper = MODULUS;
+        precedence = 5;
+    }
+    else if (Oper == "**")
+    {
+        oper = EXPONENTIATE;
+        precedence = 2;
+    }
+    else if (Oper == "==")
+    {
+        oper = EQUALS;
+        precedence = 9;
+    }
+    else if (Oper == "!=")
+    {
+        oper = NOT_EQUALS;
+        precedence = 9;
+    }
+    else if (Oper == "<")
+    {
+        oper = LESS;
+        precedence = 8;
+    }
+    else if (Oper == ">")
+    {
+        oper = GREATER;
+        precedence = 8;
+    }
+    else if (Oper == "!<")
+    {
+        oper = NOT_LESS;
+        precedence = 8;
+    }
+    else if (Oper == "!>")
+    {
+        oper = NOT_GREATER;
+        precedence = 8;
+    }
+    else if (Oper == "<=")
+    {
+        oper = LESS_EQUAL;
+        precedence = 8;
+    }
+    else if (Oper == ">=")
+    {
+        oper = GREATER_EQUAL;
+        precedence = 8;
+    }
+    else if (Oper == "!")
+    {
+        oper = NOT;
+        precedence = 3;
+    }
+    else if (Oper == "&&")
+    {
+        oper = AND;
+        precedence = 13;
+    }
+    else if (Oper == "||")
+    {
+        oper = OR;
+        precedence = 14;
+    }
+    /*else if (Oper == ",")
+    {
+        oper = COMMA;
+        precedence = 18;
+    }
+    */
+    else if (Oper == "...")
+    {
+        oper = CONTINUATION;
+    }
+    else if (Oper == ":")
+    {
+        oper = COLON;
+        precedence = 1;
+    }
+    /*else if (Oper == ";")
+    {
+        oper = SEMICOLON;
+    }*/
+    else if (Oper == "&")
+    {
+        oper = BITWISE_AND;
+        precedence = 10;
+    }
+    else if (Oper == "^")
+    {
+        oper = BITWISE_XOR;
+        precedence = 11;
+    }
+    else if (Oper == "|")
+    {
+        oper = BITWISE_OR;
+        precedence = 12;
+    }
+    else if (Oper == ".")
+    {
+        oper = DOT;
+        precedence = 2;
+    }
+    else if (Oper == "[]")
+    {
+        oper = ARRAY_ACCESS;
+        precedence = 2;
+    }
+    else if (Oper == "<>")
+    {
+        oper = HAS_ELEMENT;
+        precedence = 8;
+    }
+    else if (Oper == "><")
+    {
+        oper = NOT_HAS_ELEMENT;
+        precedence = 8;
+    }
+}
+
+void Token::setSeparator(std::string s)
+{
+    //strip(s, ' ');
+    if (s == ",")
+    {
+        sep = COMMA;
+    }
+    else if (s == "(")
+    {
+        sep = OPEN_PARENTHESIS;
+    }
+    else if (s == ")")
+    {
+        sep = CLOSE_PARENTHESIS;
+    }
+    else if (s == "[")
+    {
+        sep = OPEN_SQUARE_BRACKET;
+    }
+    else if (s == "]")
+    {
+        sep = CLOSE_SQUARE_BRACKET;
+    }
+    else if (s == "{")
+    {
+        sep = OPEN_CURLY_BRACKET;
+    }
+    else if (s == "}")
+    {
+        sep = CLOSE_CURLY_BRACKET;
+    }
+    else if (s == ";")
+    {
+        sep = SEMICOLON;
+    }
+}
+
+
+std::string Token::getTypeString()
+{
+    switch (type)
+    {
+    case NOT_A_TOKEN:
+        return "Not_A_Token";
+    case VARIABLE:
+        if (var->literal)
+            return "Literal";
+        if (var->getType() == TYPENAME)
+            return "TypeName";
+        return "Variable";
+    case OPERATOR:
+        return "Operator";
+    case SEPARATOR:
+        return "Separator";
+    case KEYWORD:
+        return "Keyword";
+    default:
+        return "Unknown Token type";
+    }
+}
+std::string Token::getName()
+{
+    switch (type)
+    {
+    case NOT_A_TOKEN:
+        return "";
+    case VARIABLE:
+        if (var->getType() == TYPENAME)
+            return static_cast<TypeName*>(var)->getValueString();
+        if (var->getType() == STRING)
+            return static_cast<String*>(var)->getValueString();
+        if (var->getType() == BOOL)
+            return static_cast<Bool*>(var)->getValueString();
+        if (var->getType() == INT)
+            return static_cast<Int*>(var)->getValueString();
+        if (var->getType() == FLOAT)
+            return static_cast<Float*>(var)->getValueString();
+        if (var->getType() == VOID)
+            return static_cast<Void*>(var)->getValueString();
+        return "Variable";
+    case OPERATOR:
+        return "Operator";
+    case SEPARATOR:
+        return "Separator";
+    case KEYWORD:
+        return "Keyword";
+    default:
+        return "Unknown Token type";
+    }
+}
+
+
+
+
 
 TypeEnum getTypeFromString(const string& str)
 {

@@ -1,3 +1,18 @@
+/*
+Pile, a truly cross-platform automatic build tool.
+--------------------------------------------------
+
+main.cpp
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains main(), which directs the command-line argument handling,
+config loading, GUI loading, and interpreter calls.
+*/
+
 #include "pile_global.h"
 #include "pile_env.h"
 #include "pile_config.h"
@@ -60,120 +75,10 @@ string findPileFile()
     return file;
 }
 
-/*
-Creates a name for an executable by changing the file extension.
-
-Takes: string (file names to be converted)
-Returns: string (converted name)
-*/
-string getExeName(string file)
-{
-    unsigned int dotpos = file.find_last_of(".");
-    if(dotpos != string::npos)
-    {
-        return (file.substr(0, dotpos) + EXE_EXT);
-    }
-    else
-    {
-        return (file + EXE_EXT);
-    }
-}
 
 
-
-void removePath(string& file)
-{
-    unsigned int lastSlash = file.find_last_of('/');
-    if(lastSlash != string::npos)
-    {
-        file = file.substr(lastSlash+1, string::npos);
-    }
-}
-
-/*
-Combines two lists to make a full list of object file names.
-
-Takes: list<string> (source file names to convert into object file names)
-       list<string> (object file names)
-Returns: string (All object file names separated by spaces)
-*/
-string getObjectString(const list<string>& sources, const list<string>& objects)
-{
-    string objectstr;
-    
-    for(list<string>::const_iterator e = sources.begin(); e != sources.end(); e++)
-    {
-        string obj = *e;
-        unsigned int dotpos = e->find_last_of(".");
-        if(dotpos != string::npos)  // Perhaps unneccessary
-        {
-            obj = obj.substr(0, dotpos) + ".o";
-            removePath(obj);
-            objectstr += (obj + " ");
-        }
-    }
-    
-    for(list<string>::const_iterator e = objects.begin(); e != objects.end(); e++)
-    {
-        objectstr += (*e + " ");
-    }
-    
-    return objectstr;
-}
-
-
-bool isCExt(const string& ext)
-{
-    return (ext == ".c" || ext == ".c86");
-}
-
-bool isCPPExt(const string& ext)
-{
-    return (ext == ".cpp" || ext == ".cxx" || ext == ".cc" || ext == ".c++");
-}
-
-bool isFORTRANExt(const string& ext)
-{
-    return (ext == ".f" || ext == ".f77" || ext == ".f90" || ext == ".for");
-}
-
-/*
-Tells whether the given file name is a source file or not.
-
-Takes: string (file name)
-Returns: true if file is a source file
-         false if file is not a source file
-*/
-bool isSourceFile(const string& file)
-{
-    unsigned int dotpos = file.find_last_of(".");
-    if(dotpos != string::npos)
-    {
-        string ext = file.substr(dotpos, string::npos);
-        toLower(ext);
-        if(ext == ".c" || ext == ".c86" || ext == ".cpp" || ext == ".cxx" || ext == ".cc")
-            return true;
-    }
-    return false;
-}
-
-void checkSourceExistence(list<string>& sources)
-{
-    for(list<string>::iterator e = sources.begin(); e != sources.end();)
-    {
-        if(!ioExists(*e))
-        {
-            UI_warning("%s not found!  pile will ignore it.\n", e->c_str());
-            sources.erase(e);
-            e = sources.begin();
-        }
-        else
-            e++;
-    }
-}
-
-
-void generatePilefile(string name)
+// Types: 0=Empty, 1=Compile
+void generatePilefile(string name, int type)
 {
     string base = ioStripToFile(name);
     if(ioStripToExt(name) != "pile")
@@ -198,7 +103,16 @@ void generatePilefile(string name)
     }
     
     ioNew(name);
-    ioAppend("output = \"" + base + "\"\nsources += [\"main.cpp\"]\n//lflags += [\"-lSDLmain\", \"-lSDL\"]\n//cflags += [\"`sdl-config --cflags`\"]", name);
+    
+    switch(type)
+    {
+        case 0:
+            break;
+        case 1:
+        default:
+            ioAppend("OUTPUT = \"" + base + "\"\n\nSOURCES += ls(\"*.cpp\")\n\nLFLAGS += [\"-lSDLmain\", \"-lSDL\"]\n\nCFLAGS += [\"`sdl-config --cflags`\"]\n\ncpp_compiler.scan(SOURCES)\n\nOBJECTS += cpp_compiler.compile(SOURCES, CFLAGS)\n\ncpp_linker.link(OUTPUT, OBJECTS, LIBRARIES, LFLAGS)", name);
+        break;
+    }
 }
 
 
@@ -240,11 +154,8 @@ int main(int argc, char* argv[])
     
     
     int cleaning = 0;  // Interpret without actions or messages
-    //bool dryRun = false;  // Interpret without actions, but with messages
-    //bool noLink = false;
-    //bool noCompile = false;
-    bool changedOutfile = false;
     bool graphical = false;
+    bool promptForNoPilefile = true;
     // Check for graphical flag
     for(int i = 1; i < argc; i++)
     {
@@ -258,17 +169,30 @@ int main(int argc, char* argv[])
             }
             UI_print("Pile GUI started.\n\n");
         }
+        else if(string("-n") == argv[i])
+        {
+            promptForNoPilefile = false;
+        }
         else if(string("new") == argv[i])
         {
             // Generate a new pilefile
+            // FIXME: Allow 'pile new c++', not just 'pile new my.pile c++'
             string name = "com.pile";
             i++;
             if(i < argc)
             {
                 name = argv[i];
             }
+            int type = 0;
+            i++;
+            if(i < argc)
+            {
+                string s = argv[i];
+                if(s == "compile" || s == "build" || s == "cpp" || s == "c++")
+                    type = 1;
+            }
             
-            generatePilefile(name);
+            generatePilefile(name, type);
             return 0;
         }
         else if(string("edit") == argv[i])
@@ -325,16 +249,6 @@ int main(int argc, char* argv[])
         {
             env.noLink = true;
         }
-        // FIXME: Change this to check for substring 'out=', grab the file name, then strip the (optional) quotes.
-        else if(string("out:") == argv[i] || string("output:") == argv[i])
-        {
-            i++;
-            if(i < argc)
-            {
-                env.outfile = argv[i];
-                changedOutfile = true;
-            }
-        }
         // Check for .pile file extension ('pile myfile.pile')
         else if(string("pile") == ioStripToExt(argv[i]))
         {
@@ -361,7 +275,17 @@ int main(int argc, char* argv[])
         else
         {
             //p
-            UI_warning("pile Warning: Command \"%s\" not found, so it will be ignored.\n", argv[i]);
+            string arg = argv[i];
+            // FIXME: Replace this find() with a smarter one that takes quotes into account
+            unsigned int eq = arg.find("=");
+            if(eq != string::npos && eq > 0)
+            {
+                env.variables.insert(make_pair(arg.substr(0, eq), arg.substr(eq+1)));
+            }
+            else
+            {
+                UI_warning("pile Warning: Command \"%s\" not found, so it will be ignored.\n", argv[i]);
+            }
         }
     }
     
@@ -434,11 +358,14 @@ int main(int argc, char* argv[])
     else  // No Pilefile found
     {
         // Prompt user in order to proceed to build all local source files.
-        if(UI_prompt(" No Pilefile found here.  Should I try to build all local source files?\n"))
+        if(!promptForNoPilefile || UI_prompt(" No Pilefile found here.  Should I try to build all local source files?\n"))
         {
             env.sources = getLocalSourceFiles();
-            config.cflags += UI_promptString(" Compiler flags?\n");
-            config.lflags += UI_promptString(" Linker flags?\n");
+            if(env.variables.find("CFLAGS") == env.variables.end())
+                config.cflags += UI_promptString(" Compiler flags?\n");
+            
+            if(env.variables.find("LFLAGS") == env.variables.end())
+                config.lflags += UI_promptString(" Linker flags?\n");
             
             // Scan for dependencies
             if(config.useAutoDepend)
@@ -503,40 +430,4 @@ int main(int argc, char* argv[])
     UI_quit();
     
     return 0;
-    
-    //env.print();
-    //FIXME: Should I use this? -> checkSourceExistence(env.sources);
-    
-    // Parse other command-line args
-    /*for(int i = 1; i < argc; i++)
-    {
-        if(string("scan") == argv[i])
-        {
-            bool checkedOne = false;
-            i++;
-            for(; i < argc; i++)
-            {
-                if(isSourceFile(argv[i]))
-                {
-                    checkedOne = true;
-                    //printDepends(argv[i]);
-                    recurseIncludes(env.depends, env.fileDataHash, config.includePaths, argv[i], "");
-                    //UI_debug_pile("Recursed, got %d depends.\n", depends.size());
-                }
-                else
-                {
-                    i--;
-                    break;
-                }
-            }
-            if(!checkedOne)
-            {
-                for(list<string>::iterator e = env.sources.begin(); e != env.sources.end(); e++)
-                {
-                    recurseIncludes(env.depends, env.fileDataHash, config.includePaths, *e, "");
-                }
-                //UI_debug_pile("Recursed, got %d depends.\n", depends.size());
-            }
-        }
-    }*/
 }

@@ -1,3 +1,18 @@
+/*
+Pile, a truly cross-platform automatic build tool.
+--------------------------------------------------
+
+pile_build.cpp
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains the functions which compile and link source files.  They are
+added to the global scope of the interpreter.
+*/
+
 #include "pile_global.h"
 #include "pile_config.h"
 #include "pile_depend.h"
@@ -13,6 +28,135 @@ string getBaseName(string file);
 extern Environment env;
 extern Configuration config;
 extern Interpreter interpreter;
+
+
+
+void changeVariableFromCommandLine(Variable* var, const std::string& name, const std::string& value)
+{
+    if(var == NULL)
+        return;
+    
+    list<string> l = ioExplode(value, ',');
+    if(l.size() > 1)
+    {
+        if(var->getType() == ARRAY)
+        {
+            Array* arr = static_cast<Array*>(var);
+            for(list<string>::iterator e = l.begin(); e != l.end(); e++)
+            {
+                if(arr->getValueType() == STRING)
+                    arr->push_back(new String("<temp>", *e));
+                else
+                {
+                    UI_warning("Warning: Command-line value does not have the appropriate type for variable '%s'.\n", name.c_str());
+                    return;
+                }
+            }
+        }
+        else if(var->getType() == LIST)
+        {
+            //List* arr = static_cast<List*>(var);
+            for(list<string>::iterator e = l.begin(); e != l.end(); e++)
+            {
+                // FIXME: Implement List loading!
+                /*if(arr->getValueType() == STRING)
+                    arr->push_back(new String("<temp>", *e));
+                else*/
+                {
+                    UI_warning("Warning: Command-line value does not have the appropriate type for variable '%s'.\n", name.c_str());
+                    return;
+                }
+            }
+        }
+        else
+        {
+            UI_warning("Warning: Command-line value does not have the appropriate type for variable '%s'.\n", name.c_str());
+            return;
+        }
+    }
+    else if(l.size() == 1)
+    {
+        string newValue = *(l.begin());
+        // FIXME: ONLY ACCEPTS STRINGS!
+        if(var->getType() == STRING)
+        {
+            String* str = static_cast<String*>(var);
+            str->setValue(newValue);
+        }
+        else if(var->getType() == ARRAY)
+        {
+            Array* arr = static_cast<Array*>(var);
+            
+            if(arr->getValueType() == STRING)
+                arr->push_back(new String("<temp>", newValue));
+            else
+            {
+                UI_warning("Warning: Command-line value does not have the appropriate type for variable '%s'.\n", name.c_str());
+                return;
+            }
+        }
+        else if(var->getType() == LIST)
+        {
+            //List* arr = static_cast<List*>(var);
+            
+            /*if(arr->getValueType() == STRING)
+                arr->push_back(new String("<temp>", newValue));
+            else*/
+            {
+                UI_warning("Warning: Command-line value does not have the appropriate type for variable '%s'.\n", name.c_str());
+                return;
+            }
+        }
+        else
+        {
+            UI_warning("Warning: Command-line value does not have the appropriate type for variable '%s'.\n", name.c_str());
+            return;
+        }
+    }
+    else
+    {
+        UI_warning("Warning: Invalid command-line value for variable '%s'.\n", name.c_str());
+        return;
+    }
+}
+
+
+Variable* createNewVariableFromCommandLine(const std::string& name, const std::string& value)
+{
+    // Command line value can look like: 46 or value or value1,value2,value3
+    
+    list<string> l = ioExplode(value, ',');
+    if(l.size() > 1)
+    {
+        Array* arr = new Array(name, STRING);
+        for(list<string>::iterator e = l.begin(); e != l.end(); e++)
+        {
+            arr->push_back(new String("<temp>", *e));
+        }
+        return arr;
+    }
+    
+    // FIXME: ONLY ACCEPTS STRINGS!
+    String* str = new String(name, value);
+    return str;
+}
+
+
+void checkSourceExistence(list<string>& sources)
+{
+    for(list<string>::iterator e = sources.begin(); e != sources.end();)
+    {
+        if(!ioExists(*e))
+        {
+            UI_warning("%s not found!  pile will ignore it.\n", e->c_str());
+            sources.erase(e);
+            e = sources.begin();
+        }
+        else
+            e++;
+    }
+}
+
 
 /*
 Gets the file extension of a given file.
@@ -76,7 +220,7 @@ Variable* fn_scan(Variable* arg1, Variable* arg2)
         String* s = static_cast<String*>(*e);
         sourceFile = s->getValue();
         
-        recurseIncludes(env.depends, env.fileDataHash, config.includePaths, sourceFile, "");
+        recurseIncludes(env.depends, env.fileDataHash, config.includePaths, removeQuotes(sourceFile), "");
     }
     
     return NULL;
@@ -146,7 +290,7 @@ Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
         
         
         // FIXME: mustRebuild() is crashing... Is it fixed yet?
-        if(mustRebuild(objName, env.depends, fd))
+        if(mustRebuild(removeQuotes(objName), env.depends, fd))
         {
             sprintf(buffer, "%s %s -c %s -o %s", path.c_str(), options.c_str(), sourceFileQuoted.c_str(), objName.c_str());
             
@@ -301,6 +445,17 @@ bool build(Environment& env, Configuration& config)
     list<string> failedFiles;
     ioDelete(tempname.c_str());
     
+    map<string, string>::iterator fl = env.variables.find("CFLAGS");
+    if(fl != env.variables.end())
+    {
+        list<string> l = ioExplode(fl->second, ',');
+        for(list<string>::iterator e = l.begin(); e != l.end(); e++)
+        {
+            if(*e != "")
+                config.cflags += " " + *e;
+        }
+    }
+    
     for(list<string>::iterator e = env.cflags.begin(); e != env.cflags.end(); e++)
     {
         config.cflags += " " + *e;
@@ -417,6 +572,20 @@ bool link(const string& linker, Environment& env, Configuration& config)
     {
         objectstr += quoteWhitespace(*e) + " ";
     }
+    
+    map<string, string>::iterator fl = env.variables.find("LFLAGS");
+    if(fl != env.variables.end())
+    {
+        list<string> l = ioExplode(fl->second, ',');
+        for(list<string>::iterator e = l.begin(); e != l.end(); e++)
+        {
+            if(*e != "")
+                config.lflags += " " + *e;
+        }
+    }
+    //UI_print("LFLAGS: %s\n", config.lflags.c_str());
+    //for(map<string, string>::iterator e = env.variables.begin(); e != env.variables.end(); e++)
+    //    UI_print("%s: %s\n", e->first.c_str(), e->second.c_str());
     
     
     for(list<string>::iterator e = env.lflags.begin(); e != env.lflags.end(); e++)

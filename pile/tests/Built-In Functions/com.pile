@@ -12,3 +12,5 @@ print("b: " + string(b) + ", float(a): " + string(float(a)) + "\n")
 bool c = bool(a)
 if(c)
     println("c is true")
+
+println("defined(c), defined(cbcb): " + string(defined(c)) + ", " + string(defined(cbcb)))

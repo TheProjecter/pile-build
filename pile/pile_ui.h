@@ -1,3 +1,17 @@
+/*
+Pile, a truly cross-platform automatic build tool.
+--------------------------------------------------
+
+pile_ui.h
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+Header for pile_ui.cpp
+*/
+
 #ifndef _PILE_UI_H__
 #define _PILE_UI_H__
 
