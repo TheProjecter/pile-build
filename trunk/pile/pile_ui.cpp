@@ -1,3 +1,19 @@
+/*
+Pile, a truly cross-platform automatic build tool.
+--------------------------------------------------
+
+pile_ui.cpp
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains the functions which implement the user interface.
+The UI functions can be enabled/disabled and display according to the UI chosen
+(graphical or console).
+*/
+
 #include "pile_ui.h"
 #include "stdarg.h"
 #include <iostream>

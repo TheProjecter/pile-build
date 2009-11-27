@@ -1,3 +1,17 @@
+/*
+Pile, a truly cross-platform automatic build tool.
+--------------------------------------------------
+
+pile_config.cpp
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains the functions which parse the configuration file.
+*/
+
 #include "pile_global.h"
 #include "External Code/goodio.h"
 #include "pile_config.h"

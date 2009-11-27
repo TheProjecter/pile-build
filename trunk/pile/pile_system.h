@@ -1,3 +1,17 @@
+/*
+Pile, a truly cross-platform automatic build tool.
+--------------------------------------------------
+
+pile_system.h
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+Header for pile_system.cpp
+*/
+
 #ifndef _PILE_SYSTEM_H__
 #define _PILE_SYSTEM_H__
 

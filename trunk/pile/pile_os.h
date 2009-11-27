@@ -1,7 +1,18 @@
 /*
-Standardize the symbols for various operating systems.
+Pile, a truly cross-platform automatic build tool.
+--------------------------------------------------
+
+pile_os.h
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+Standardize the symbols for various platforms/operating systems.
 Taken from SDL's SDL_platform.h
 */
+
 /*
     SDL - Simple DirectMedia Layer
     Copyright (C) 1997-2009 Sam Lantinga

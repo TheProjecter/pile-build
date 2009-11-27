@@ -11,6 +11,8 @@ This file contains the implementation for the operators and related functions.
 
 #include "eve_interpreter.h"
 
+// FIXME: Replace Pile output with an error message system
+#include "../pile_ui.h"
 
 #include <cmath>
 #include <string>

@@ -1,3 +1,17 @@
+/*
+Pile, a truly cross-platform automatic build tool.
+--------------------------------------------------
+
+pile_commands.cpp
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains the functions which implement several command-line options.
+*/
+
 #include "pile_global.h"
 #include "pile_config.h"
 #include "pile_ui.h"
@@ -5,6 +19,7 @@
 
 
 string getObjectName(string source, string objPath, bool useSourceDir);
+
 
 string getVersion()
 {

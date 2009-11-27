@@ -1,1 +1,7 @@
+Pile is a truly cross-platform automatic build tool.  It is used to produce files or effects from the inputs it is given in a Pilefile (for example, creating a program executable from source files).  Real programming language features are used to describe a build.  Common functionality is built in for convenience.
+
+As an alternative to Make (most commonly GNU Make), Pile has several features which make it much easier to use and make the description files portable to various operating systems.
+
 Pile was created on June 3rd, 2009.
+
+Pile is copyrighted by Jonathan Dearborn, but is released as free and open source under the GNU Public License (see COPYING.txt).

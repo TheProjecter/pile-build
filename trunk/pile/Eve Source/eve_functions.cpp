@@ -10,7 +10,9 @@ This file contains the implementation of the Function class.
 */
 
 #include "eve_interpreter.h"
-
+// FIXME: Replace Pile output with an error message system
+#include "../pile_ui.h"
+#include <sstream>
 #include <cassert>
 #include <string>
 using namespace std;
@@ -210,6 +212,9 @@ Function::Function(const std::string& text, FunctionEnum builtIn)
             argt.push_back(TypeName(VOID));
             break;
         case FN_LS:
+            argt.push_back(TypeName(VOID));
+            break;
+        case FN_DEFINED:
             argt.push_back(TypeName(VOID));
             break;
         case FN_EXTERNAL:

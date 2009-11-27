@@ -1,5 +1,15 @@
 /*
-System-specific functions
+Pile, a truly cross-platform automatic build tool.
+--------------------------------------------------
+
+pile_system.cpp
+
+Copyright Jonathan Dearborn 2009
+
+Licensed under the GNU Public License (GPL)
+See COPYING.txt
+
+This file contains all system-specific functions used in Pile.
 */
 
 #include "pile_global.h"
