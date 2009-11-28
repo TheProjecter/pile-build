@@ -217,6 +217,33 @@ Function::Function(const std::string& text, FunctionEnum builtIn)
         case FN_DEFINED:
             argt.push_back(TypeName(VOID));
             break;
+        case FN_COPY:
+            argt.push_back(TypeName(STRING));
+            argt.push_back(TypeName(STRING));
+            break;
+        case FN_MOVE:
+            argt.push_back(TypeName(STRING));
+            argt.push_back(TypeName(STRING));
+            break;
+        case FN_DELETE:
+            argt.push_back(TypeName(STRING));
+            break;
+        case FN_MKDIR:
+            argt.push_back(TypeName(STRING));
+            break;
+        case FN_MKPATH:
+            argt.push_back(TypeName(STRING));
+            break;
+        case FN_MKFILE:
+            argt.push_back(TypeName(STRING));
+            break;
+        case FN_CHMOD:
+            argt.push_back(TypeName(STRING));
+            argt.push_back(TypeName(STRING));
+            break;
+        case FN_MOD_TIME:
+            argt.push_back(TypeName(STRING));
+            break;
         case FN_EXTERNAL:
             break;
         case FN_NONE:

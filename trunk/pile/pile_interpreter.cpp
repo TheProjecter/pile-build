@@ -21,6 +21,19 @@ Interpreter interpreter;
 
 
 
+bool interpretNoPile(string filename, Environment& env, Configuration& config)
+{
+    if(!interpreter.readFile(filename))
+        return false;
+    interpreter.printEnv();
+    
+    interpreter.popAll();
+    
+    // Get the Pile variables back
+    env.finalizeInterpreter(interpreter);
+    return true;
+}
+
 bool interpret(string filename, Environment& env, Configuration& config)
 {
     // Put Pile variables into the interpreter.

@@ -62,7 +62,7 @@ enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 
 enum KeywordEnum{KW_NONE, KW_IF, KW_ELSE, KW_RETURN};
 
-enum FunctionEnum{FN_NONE, FN_EXTERNAL, FN_PRINT, FN_PRINTLN, FN_WARNING, FN_ERROR, FN_DEBUG, FN_TYPE, FN_STRING, FN_BOOL, FN_INT, FN_FLOAT, FN_INCLUDE, FN_LS, FN_DEFINED};
+enum FunctionEnum{FN_NONE, FN_EXTERNAL, FN_PRINT, FN_PRINTLN, FN_WARNING, FN_ERROR, FN_DEBUG, FN_TYPE, FN_STRING, FN_BOOL, FN_INT, FN_FLOAT, FN_INCLUDE, FN_LS, FN_DEFINED, FN_COPY, FN_MOVE, FN_DELETE, FN_MKDIR, FN_MKPATH, FN_MKFILE, FN_CHMOD, FN_MOD_TIME};
 
 KeywordEnum getKeyword(const std::string& str);
 
@@ -482,6 +482,7 @@ private:
 
 public:
     std::list<Scope> env;
+    // FIXME: Move this to Scope!!!
     std::list<Class*> classDefs;
     std::string currentFile;
     unsigned int lineNumber;
@@ -489,6 +490,7 @@ public:
     Outputter outputter;
     
     Function* array_size;
+    bool allowDeclarations;
     
     Interpreter();
     
@@ -534,6 +536,8 @@ public:
     void popEnv();
 
     void popAll();
+    
+    void reset();
 };
 
 

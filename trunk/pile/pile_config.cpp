@@ -13,11 +13,18 @@ This file contains the functions which parse the configuration file.
 */
 
 #include "pile_global.h"
+#include "Eve Source/eve_interpreter.h"
 #include "External Code/goodio.h"
+#include "pile_env.h"
 #include "pile_config.h"
 #include "pile_ui.h"
 #include "string_functions.h"
 #include <fstream>
+
+extern Interpreter interpreter;
+extern Environment env;
+bool interpret(string filename, Environment& env, Configuration& config);
+bool interpretNoPile(string filename, Environment& env, Configuration& config);
 
 string getVersion();
 
@@ -51,197 +58,60 @@ bool createConfig(string path, Configuration& config)
     }
     
     UI_log("Writing config\n");
-    fout << "pile Version " << getVersion() << endl;
+    fout << "CONFIG_FORMAT_VERSION_MAJOR = " << VERSION_MAJOR << endl;
+    fout << "CONFIG_FORMAT_VERSION_MINOR = " << VERSION_MINOR << endl;
+    fout << "CONFIG_FORMAT_VERSION_BUGFIX = " << VERSION_BUGFIX << endl;
     UI_log("Wrote version\n");
     
     UI_log("Writing editor\n");
     if(config.editor == "vi")
     {
-        fout << "# Notice: The default editor is 'vi'." << endl
-             << "#  If you don't have experience with vi, it is recommended that" << endl
-             << "#  you change the default editor." << endl
-             << "#  vi controls:" << endl
-             << "#    Press 'esc' to make sure that you're in Command mode" << endl
-             << "#    Quitting: Type :q to quit or type :x to save and quit." << endl
-             << "#    Deleting: Press 'x' or 'X' to delete characters." << endl
-             << "#    Deleting: Press 'dd' to delete a line." << endl
-             << "#    Editing: Press 'i' to enter Insert mode." << endl;
+        fout << "// Notice: The default editor is 'vi'." << endl
+             << "//  If you don't have experience with vi, it is recommended that" << endl
+             << "//  you change the default editor." << endl
+             << "//  vi controls:" << endl
+             << "//    Press 'esc' to make sure that you're in Command mode" << endl
+             << "//    Quitting: Type :q to quit or type :x to save and quit." << endl
+             << "//    Deleting: Press 'x' or 'X' to delete characters." << endl
+             << "//    Deleting: Press 'dd' to delete a line." << endl
+             << "//    Editing: Press 'i' to enter Insert mode." << endl;
     }
     UI_log("Wrote vi warning\n");
     
-    fout << "editor: " << config.editor << endl;
+    fout << "EDITOR_PATH = \"" << config.editor << "\"" << endl;
     UI_log("Wrote editor\n");
     
-    fout << "installPath: " << quoteWhitespace(config.installPath) << endl;
+    fout << "PILE_PATH = \"" << config.installPath << "\"" << endl;
     
-    fout << "lang C: " << config.languages.find("C_COMPILER")->second << ", "
+    /*fout << "lang C: " << config.languages.find("C_COMPILER")->second << ", "
                   << config.languages.find("C_LINKER_D")->second << ", "
                   << config.languages.find("C_LINKER_S")->second << ", "
-                  << config.languages.find("C_SYNTAX")->second << endl;
-    fout << "lang C++: " << config.languages.find("CPP_COMPILER")->second << ", "
-                  << config.languages.find("CPP_LINKER_D")->second << ", "
-                  << config.languages.find("CPP_LINKER_S")->second << ", "
-                  << config.languages.find("CPP_SYNTAX")->second << endl;
-    fout << "lang FORTRAN: " << config.languages.find("FORTRAN_COMPILER")->second << ", "
+                  << config.languages.find("C_SYNTAX")->second << endl;*/
+    fout << "cpp_compiler.name = \"" << config.languages.find("CPP_COMPILER")->second << "\"" << endl;
+    fout << "cpp_compiler.path = \"" << config.languages.find("CPP_COMPILER")->second << "\"" << endl;
+    fout << "cpp_linker.name = \"" << config.languages.find("CPP_LINKER_D")->second << "\"" << endl;
+    fout << "cpp_linker.path = \"" << config.languages.find("CPP_LINKER_D")->second << "\"" << endl;
+    /*fout << "lang FORTRAN: " << config.languages.find("FORTRAN_COMPILER")->second << ", "
                   << config.languages.find("FORTRAN_LINKER_D")->second << ", "
                   << config.languages.find("FORTRAN_LINKER_S")->second << ", "
-                  << config.languages.find("FORTRAN_SYNTAX")->second << endl;
+                  << config.languages.find("FORTRAN_SYNTAX")->second << endl;*/
+    fout << "BIN_INSTALL_DIR = \"" << config.binInstallPath << "\"" << endl;
+    fout << "PROGRAM_INSTALL_DIR = \"" << config.programInstallPath << "\"" << endl;
+    fout << "LIBRARY_INSTALL_DIR = \"" << config.libInstallPath << "\"" << endl;
+    fout << "HEADER_INSTALL_DIR = \"" << config.headerInstallPath << "\"" << endl;
     
-    fout << "includeDirs:";
+    /*fout << "includeDirs:";
     for(list<string>::iterator e = config.includePaths.begin(); e != config.includePaths.end(); e++)
     {
         fout << " " << *e;
     }
-    fout << endl;
+    fout << endl;*/
     
     UI_log("Done writing config\n");
     fout.close();
     return true;
 }
 
-
-
-/*
-Changes the config settings according to the settings found in a line of text.
-
-Takes: 
-Returns: true on success
-         false on failure
-*/
-bool parseConfigLine(string& line, Configuration& config)
-{
-    list<string> tokens = tokenize(line);
-    
-    for(list<string>::iterator e = tokens.begin(); e != tokens.end();)
-    {
-        if(*e == "Editor:" || *e == "editor:")
-        {
-            e++;
-            if(e != tokens.end())
-            {
-                config.editor = *e;
-            }
-            else
-                break;
-        }
-        else if(*e == "includeDirs:" || *e == "incDir:")
-        {
-            e++;
-            while(e != tokens.end())
-            {
-                if(*e != "")
-                    config.includePaths.push_back(*e);
-                e++;
-            }
-            continue;
-        }
-        else if(*e == "libraryDirs:" || *e == "libDir:")
-        {
-            e++;
-            while(e != tokens.end())
-            {
-                if(*e != "")
-                    config.libPaths.push_back(*e);
-                e++;
-            }
-            continue;
-        }
-        else if(*e == "objectDir:" || *e == "objDir:")
-        {
-            e++;
-            if(e != tokens.end())
-            {
-                config.objPath =*e;
-            }
-            else
-                break;
-        }
-        else if(*e == "useSourceObjectDir" || *e == "useSourceObjectPath")
-        {
-            e++;
-            if(e == tokens.end() || *e != "=")
-                break;
-            e++;
-            if(e != tokens.end())
-            {
-                if(*e == "true" || *e == "TRUE" || *e == "1")
-                {
-                    config.useSourceObjPath = true;
-                }
-                else if(*e == "false" || *e == "FALSE" || *e == "0")
-                    config.useSourceObjPath = false;
-            }
-            else
-                break;
-        }
-        else if(*e == "useAutoDepend")
-        {
-            e++;
-            if(e == tokens.end() || *e != "=")
-                break;
-            e++;
-            if(e != tokens.end())
-            {
-                if(*e == "true" || *e == "TRUE" || *e == "1")
-                {
-                    config.useAutoDepend = true;
-                }
-                else if(*e == "false" || *e == "FALSE" || *e == "0")
-                    config.useAutoDepend = true;
-            }
-            else
-                break;
-        }
-        else if(*e == "installPath:" || *e == "installDir:")
-        {
-            e++;
-            if(e != tokens.end())
-            {
-                config.installPath = *e;
-            }
-            else
-                break;
-        }
-        
-        e++;
-    }
-    
-    return true;
-}
-
-/*
-Loads the config settings from pile.conf.
-
-Takes: 
-Returns: true on success
-         false on failure
-*/
-bool parseConfig(const string& filename, Configuration& config)
-{
-    ifstream fin;
-    fin.open(filename.c_str());
-    
-    if(fin.fail())
-    {
-        fin.close();
-        return false;
-    }
-    
-    
-    string c;
-    int i = 0;
-    while(!fin.eof())
-    {
-        getline(fin, c);
-        if(!parseConfigLine(c, config))
-        {
-            UI_error("pile Error: Bad syntax on line %d of %s\n", i, filename.c_str());
-        }
-    }
-    
-    fin.close();
-    return true;
-}
 
 /*
 Fills in the lists of language, compiler, and linkers from the config file.
@@ -254,21 +124,117 @@ Returns: true on success
 */
 bool loadConfig(string path, Configuration& config)
 {
-    if(!ioExists((path + "pile.conf")))
+    string file = path + "pile.conf";
+    if(!ioExists(file))
     {
         UI_warning("pile config file not found.\n");
         if(!createConfig(path, config))
+        {
             UI_error("pile error: Failed to create config file.\n");
+            return false;
+        }
         else
             UI_warning("Created config file successfully.\n");
     }
+    
+    Scope& s = *(interpreter.env.begin());
+    
+    Int* version_major = new Int("<temp>", VERSION_MAJOR);
+    version_major->reference = true;
+    Int* version_minor = new Int("<temp>", VERSION_MINOR);
+    version_minor->reference = true;
+    Int* version_bugfix = new Int("<temp>", VERSION_BUGFIX);
+    version_bugfix->reference = true;
+    
+    String* editor_path = new String("EDITOR_PATH", "vi");
+    editor_path->reference = true;
+    String* pile_path = new String("PILE_PATH", config.installPath);
+    pile_path->reference = true;
+    String* bin_install_path = new String("BIN_INSTALL_DIR", config.binInstallPath);
+    bin_install_path->reference = true;
+    String* program_install_path = new String("PROGRAM_INSTALL_DIR", config.programInstallPath);
+    program_install_path->reference = true;
+    String* lib_install_path = new String("LIBRARY_INSTALL_DIR", config.libInstallPath);
+    lib_install_path->reference = true;
+    String* header_install_path = new String("HEADER_INSTALL_DIR", config.headerInstallPath);
+    header_install_path->reference = true;
+    
+    s.env["CONFIG_FORMAT_VERSION_MAJOR"] = version_major;
+    s.env["CONFIG_FORMAT_VERSION_MINOR"] = version_minor;
+    s.env["CONFIG_FORMAT_VERSION_BUGFIX"] = version_bugfix;
+    
+    s.env["EDITOR_PATH"] = editor_path;
+    s.env["PILE_PATH"] = pile_path;
+    
+    
+    s.env["BIN_INSTALL_DIR"] = bin_install_path;
+    s.env["PROGRAM_INSTALL_DIR"] = program_install_path;
+    s.env["LIBRARY_INSTALL_DIR"] = lib_install_path;
+    s.env["HEADER_INSTALL_DIR"] = header_install_path;
+    
+    
+    // Add Compiler
+    Class* compiler = new Class("Compiler");
+    compiler->addVariable("string", "name");
+    compiler->addVariable("string", "path");
+    interpreter.addClass(compiler);
+    
+    ClassObject* cpp_compiler = new ClassObject("cpp_compiler", "Compiler");
+    cpp_compiler->reference = true;
+    Variable* cpp_name = cpp_compiler->getVariable("name");
+    Variable* cpp_path = cpp_compiler->getVariable("path");
+    if(cpp_name != NULL && cpp_path != NULL && cpp_name->getType() == STRING && cpp_path->getType() == STRING)
+    {
+        static_cast<String*>(cpp_name)->setValue(config.languages["CPP_COMPILER"]);
+        static_cast<String*>(cpp_path)->setValue(config.languages["CPP_COMPILER"]);
+    }
+    s.env["cpp_compiler"] = cpp_compiler;
+    
+    // Add Linker
+    Class* linker = new Class("Linker");
+    linker->addVariable("string", "name");
+    linker->addVariable("string", "path");
+    interpreter.addClass(linker);
+    
+    ClassObject* cpp_linker = new ClassObject("cpp_linker", "Linker");
+    cpp_linker->reference = true;
+    Variable* cpp_linkname = cpp_linker->getVariable("name");
+    Variable* cpp_linkpath = cpp_linker->getVariable("path");
+    if(cpp_linkname != NULL && cpp_linkpath != NULL && cpp_linkname->getType() == STRING && cpp_linkpath->getType() == STRING)
+    {
+        static_cast<String*>(cpp_linkname)->setValue(config.languages["CPP_LINKER_D"]);
+        static_cast<String*>(cpp_linkpath)->setValue(config.languages["CPP_LINKER_D"]);
+    }
+    s.env["cpp_linker"] = cpp_linker;
+    
+    
+    
+    interpreter.allowDeclarations = false;
+    // Do the interpretation
+    if(!interpretNoPile(file, env, config))
+    {
+        UI_error("An error occurred while reading config file.\n");
+        interpreter.allowDeclarations = true;
+        interpreter.reset();
+        return false;
+    }
     else
     {
-        // Load it
-        if(!parseConfig(path + "pile.conf", config))
-        {
-            UI_error("pile Warning: Failed to load config file.\n");
-        }
+        interpreter.allowDeclarations = true;
+        
+        // Retrieve the variables
+        config.editor = editor_path->getValue();
+        config.installPath = pile_path->getValue();
+        
+        config.languages["CPP_COMPILER"] = static_cast<String*>(cpp_path)->getValue();
+        config.languages["CPP_LINKER_D"] = static_cast<String*>(cpp_linkpath)->getValue();
+        
+        config.binInstallPath = bin_install_path->getValue();
+        config.programInstallPath = program_install_path->getValue();
+        config.libInstallPath = lib_install_path->getValue();
+        config.headerInstallPath = header_install_path->getValue();
+        
+        interpreter.reset();
     }
-    return false;
+    return true;
 }

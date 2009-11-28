@@ -40,6 +40,10 @@ Header for pile_system.cpp
     #define DEFAULT_FORTRAN_LINKER_D ""
     #define DEFAULT_FORTRAN_LINKER_S ""
     #define DEFAULT_FORTRAN_SYNTAX "COMP -c FLAGS SRC"
+    #define BIN_INSTALL_DIR ""
+    #define PROGRAM_INSTALL_DIR ""
+    #define LIB_INSTALL_DIR ""
+    #define HEADER_INSTALL_DIR ""
 #endif
 
 #ifdef PILE_LINUX
@@ -57,6 +61,10 @@ Header for pile_system.cpp
     #define DEFAULT_FORTRAN_LINKER_D "gfortran"
     #define DEFAULT_FORTRAN_LINKER_S "ar rsc"
     #define DEFAULT_FORTRAN_SYNTAX "COMP -c FLAGS SRC"
+    #define BIN_INSTALL_DIR "/usr/local/bin"
+    #define PROGRAM_INSTALL_DIR "/home/jonny/jon/Programs"  // FIXME:  It'd be nice to have '~' work.
+    #define LIB_INSTALL_DIR "/usr/local/lib"
+    #define HEADER_INSTALL_DIR "/usr/local/include"
 #endif
 
 

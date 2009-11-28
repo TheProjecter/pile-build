@@ -146,7 +146,10 @@ int main(int argc, char* argv[])
     if(!ioExists(configDir))
         ioNewDir(configDir);
     
+    
+    UI_debug("Loading config.\n");
     loadConfig(configDir, config);
+    UI_debug("Done loading config.\n");
     
     env.loadConfig(config);
     
@@ -161,6 +164,7 @@ int main(int argc, char* argv[])
     {
         if(string("-g") == argv[i])
         {
+            UI_debug("Initializing UI.\n");
             graphical = true;
             if(!UI_init(true, config))
             {
