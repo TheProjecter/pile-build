@@ -63,17 +63,18 @@ pile_env.h:
     void initInterpreter(Interpreter& inter):
         Add a new function to the env if it's a Pile fn.
 
-eve_builtInFunctions.cpp:
-    Variable* callBuiltIn(FunctionEnum fn, vector<Variable*>& args):
-        Add case for the fn.
-
 eve_interpreter.h:
     enum FunctionEnum:
         Add the function name.
 
-    Interpreter::Interpreter():
+eve_interpreter.cpp:
+    Interpreter::reset():
         Add a new function to the env if it's an Eve fn.
 
-eve_functions.h:
+eve_builtInFunctions.cpp:
+    Variable* callBuiltIn(FunctionEnum fn, vector<Variable*>& args):
+        Add case for the fn.
+
+eve_functions.cpp:
     Function::Function(FunctionEnum builtIn):
         Add a case for the function.  A VOID argument will accept any type (i.e. a type error would be given elsewhere).

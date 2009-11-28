@@ -360,6 +360,116 @@ Bool* fn_defined(Variable* v)
     return result;
 }
 
+/*
+Built-in copy().
+*/
+Variable* fn_copy(Variable* f, Variable* d)
+{
+    String* file = dynamic_cast<String*>(f);
+    String* dest = dynamic_cast<String*>(d);
+    if(file != NULL && dest != NULL)
+        ioCopy(file->getValue(), dest->getValue());
+    
+    return NULL;
+}
+
+/*
+Built-in move().
+*/
+Variable* fn_move(Variable* f, Variable* d)
+{
+    String* file = dynamic_cast<String*>(f);
+    String* dest = dynamic_cast<String*>(d);
+    if(file != NULL && dest != NULL)
+        ioMove(file->getValue(), dest->getValue());
+    
+    return NULL;
+}
+
+/*
+Built-in delete().
+*/
+Variable* fn_delete(Variable* f)
+{
+    String* file = dynamic_cast<String*>(f);
+    if(file != NULL)
+        ioDelete(file->getValue());
+    
+    return NULL;
+}
+
+/*
+Built-in mkdir().
+*/
+Variable* fn_mkdir(Variable* f)
+{
+    String* file = dynamic_cast<String*>(f);
+    if(file != NULL)
+        ioNewDir(file->getValue());
+    
+    return NULL;
+}
+
+/*
+Built-in mkpath().
+*/
+Variable* fn_mkpath(Variable* f)
+{
+    String* file = dynamic_cast<String*>(f);
+    if(file == NULL)
+        return NULL;
+        
+    list<string> l = ioExplode(file->getValue(), '/');
+    string dir;
+    for(list<string>::iterator e = l.begin(); e != l.end(); e++)
+    {
+        dir += *e + "/";
+        ioNewDir(dir);
+    }
+    
+    return NULL;
+}
+
+/*
+Built-in mkfile().
+*/
+Variable* fn_mkfile(Variable* f)
+{
+    String* file = dynamic_cast<String*>(f);
+    
+    if(file != NULL)
+        ioNew(file->getValue());
+    
+    return NULL;
+}
+
+/*
+Built-in chmod().
+*/
+Variable* fn_chmod(Variable* f, Variable* p)
+{
+    String* file = dynamic_cast<String*>(f);
+    String* perms = dynamic_cast<String*>(p);
+    
+    // FIXME: Implement!
+    if(file != NULL && perms != NULL)
+        ;
+    
+    return NULL;
+}
+
+/*
+Built-in mod_time().
+*/
+Variable* fn_mod_time(Variable* f)
+{
+    String* file = dynamic_cast<String*>(f);
+    
+    if(file != NULL)
+        return new Int("<temp>", ioTimeModified(file->getValue()));
+    return new Int("<temp>", -1);
+}
+
 
 /*
 Groups together the calling of built-in functions.  Used in callFn().
@@ -434,6 +544,46 @@ Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args)
             if(args.size() != 1)
                 return NULL;
             result = fn_defined(args[0]);
+            break;
+        case FN_COPY:
+            if(args.size() != 2)
+                return NULL;
+            result = fn_copy(args[0], args[1]);
+            break;
+        case FN_MOVE:
+            if(args.size() != 2)
+                return NULL;
+            result = fn_move(args[0], args[1]);
+            break;
+        case FN_DELETE:
+            if(args.size() != 1)
+                return NULL;
+            result = fn_delete(args[0]);
+            break;
+        case FN_MKDIR:
+            if(args.size() != 1)
+                return NULL;
+            result = fn_mkdir(args[0]);
+            break;
+        case FN_MKPATH:
+            if(args.size() != 1)
+                return NULL;
+            result = fn_mkpath(args[0]);
+            break;
+        case FN_MKFILE:
+            if(args.size() != 1)
+                return NULL;
+            result = fn_mkfile(args[0]);
+            break;
+        case FN_CHMOD:
+            if(args.size() != 2)
+                return NULL;
+            result = fn_chmod(args[0], args[1]);
+            break;
+        case FN_MOD_TIME:
+            if(args.size() != 1)
+                return NULL;
+            result = fn_mod_time(args[0]);
             break;
         case FN_EXTERNAL:
             break;

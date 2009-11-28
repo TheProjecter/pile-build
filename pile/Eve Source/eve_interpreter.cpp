@@ -75,11 +75,26 @@ Interpreter::Interpreter()
     , errorFlag(false)
     //, outputter("%s: @%d:%s")
     , outputter("%s:%d:%s")
+    , allowDeclarations(true)
 {
     pushEnv(true);  // Push global scope
     
+    reset();
+    
+    array_size = new Function("size", &Array::size_fn);
+    array_size->isMethod = true;
+}
+
+void Interpreter::reset()
+{
+    popAll();
+    
+    
     // Add built-in functions
     Scope& s = *(env.begin());
+    s.env.clear();
+    interpreter.classDefs.clear();
+    
     s.env["print"] = new Function("print", FN_PRINT);
     s.env["println"] = new Function("println", FN_PRINTLN);
     s.env["warning"] = new Function("warning", FN_PRINT);
@@ -93,9 +108,14 @@ Interpreter::Interpreter()
     s.env["include"] = new Function("include", FN_INCLUDE);
     s.env["ls"] = new Function("ls", FN_LS);
     s.env["defined"] = new Function("defined", FN_DEFINED);
-    
-    array_size = new Function("size", &Array::size_fn);
-    array_size->isMethod = true;
+    s.env["copy"] = new Function("copy", FN_COPY);
+    s.env["move"] = new Function("move", FN_MOVE);
+    s.env["delete"] = new Function("delete", FN_DELETE);
+    s.env["mkdir"] = new Function("mkdir", FN_MKDIR);
+    s.env["mkpath"] = new Function("mkpath", FN_MKPATH);
+    s.env["mkfile"] = new Function("mkfile", FN_MKFILE);
+    s.env["chmod"] = new Function("chmod", FN_CHMOD);
+    s.env["mod_time"] = new Function("mod_time", FN_MOD_TIME);
 }
 
 void Interpreter::addClass(Class* c)

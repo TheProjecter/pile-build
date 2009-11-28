@@ -42,6 +42,11 @@ class Configuration
     
     std::string installPath;
     
+    std::string binInstallPath;
+    std::string programInstallPath;
+    std::string headerInstallPath;
+    std::string libInstallPath;
+    
     bool useAutoDepend;
     
     Configuration()
@@ -70,12 +75,17 @@ class Configuration
         languages["TARGET_PLATFORM"] = getSystemName();
         
         
+        binInstallPath = BIN_INSTALL_DIR;
+        programInstallPath = PROGRAM_INSTALL_DIR;
+        libInstallPath = LIB_INSTALL_DIR;
+        headerInstallPath = HEADER_INSTALL_DIR;
+        
         #ifdef PILE_LINUX
         includePaths.push_back("/usr/include");
         includePaths.push_back("/usr/local/include");
         #endif
         
-        installPath = "/home/jonny/jon/Pile/Pile source";
+        installPath = "/home/jonny/jon/Pile/src";
     }
     
 };

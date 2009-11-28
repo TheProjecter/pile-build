@@ -462,6 +462,11 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                 //  (new type) (VOID)
                 if (e->var->getType() == TYPENAME)
                 {
+                    if(!allowDeclarations)
+                    {
+                        error("Variable declarations are disabled in this file.\n");
+                        return Token();
+                    }
                     TypeName* t = static_cast<TypeName*>(e->var);
                     t->text = e->text;
                     newTypeName = t;
