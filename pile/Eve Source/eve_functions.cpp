@@ -215,7 +215,7 @@ Function::Function(const std::string& text, FunctionEnum builtIn)
             argt.push_back(TypeName(VOID));
             break;
         case FN_DEFINED:
-            argt.push_back(TypeName(VOID));
+            argt.push_back(TypeName(STRING));
             break;
         case FN_COPY:
             argt.push_back(TypeName(STRING));
