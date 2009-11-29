@@ -353,11 +353,9 @@ Built-in defined().
 */
 Bool* fn_defined(Variable* v)
 {
-    Bool* result = new Bool(false);
+    String* var = dynamic_cast<String*>(v);
     
-    result->setValue((v != NULL && interpreter.getVar(v->text)));
-    
-    return result;
+    return new Bool(var != NULL && interpreter.getVar(var->getValue()) != NULL);
 }
 
 /*
