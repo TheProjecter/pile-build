@@ -30,4 +30,4 @@ class Cow
 }
 
 Cow bessy
-println(string(bessy.moo(5.0)));
+println(string(bessy.moo(5.0)))

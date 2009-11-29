@@ -327,24 +327,24 @@ FunctionEnum Function::getBuiltIn()
 
 // FIXME: Factor out similarities into a new function that both readFile() and Function::call() use.
 // See readFile() since they're similar
-Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
+EvalState Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
 {
     if(builtIn == FN_EXTERNAL)
     {
         if(external_fn0 != NULL && args.size() == 0)
-            return external_fn0();
+            return EvalState(Token(external_fn0(), "<temp>"));
         if(external_fn1 != NULL && args.size() == 1)
-            return external_fn1(args[0]);
+            return EvalState(Token(external_fn1(args[0]), "<temp>"));
         if(external_fn2 != NULL && args.size() == 2)
-            return external_fn2(args[0], args[1]);
+            return EvalState(Token(external_fn2(args[0], args[1]), "<temp>"));
         if(external_fn3 != NULL && args.size() == 3)
-            return external_fn3(args[0], args[1], args[2]);
+            return EvalState(Token(external_fn3(args[0], args[1], args[2]), "<temp>"));
         if(external_fn4 != NULL && args.size() == 4)
-            return external_fn4(args[0], args[1], args[2], args[3]);
+            return EvalState(Token(external_fn4(args[0], args[1], args[2], args[3]), "<temp>"));
         if(external_fn5 != NULL && args.size() == 5)
-            return external_fn5(args[0], args[1], args[2], args[3], args[4]);
+            return EvalState(Token(external_fn5(args[0], args[1], args[2], args[3], args[4]), "<temp>"));
         interpreter.error("Error calling external function.\n");
-        return NULL;
+        return EvalState(EvalState::ERROR);
     }
     if(builtIn != FN_NONE)
         return callBuiltIn(builtIn, args);
@@ -378,13 +378,12 @@ Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
     unsigned int& lineNum = interpreter.lineNumber;
     lineNum = 1 + lineNumber;
     
-    Token returnValue;
+    EvalState returnValue;
     
     // Interpret the function...
     std::stringstream str(getValue());
     bool continuation = false;
-    bool wasTrueIf = false;
-    bool wasFalseIf = false;
+    EvalState e_state;
     list<Token> tokens;
     string line;
     while(!str.eof())
@@ -400,38 +399,41 @@ Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
         
         if(!continuation || str.eof())  // Skip the eval if we're continuing, but not if the file ends!
         {
-            returnValue = interpreter.evalTokens(tokens, true, wasTrueIf, wasFalseIf);
-            wasTrueIf = wasFalseIf = false;
-            if(returnValue.type == Token::KEYWORD)
+            returnValue = interpreter.evalTokens(tokens, EvalState(EvalState::BEGINNING | (e_state.state & EvalState::WAS_TRUE_IF) | (e_state.state & EvalState::WAS_FALSE_IF)));
+            if(returnValue.state & EvalState::ERROR)
+                return returnValue;
+            
+            e_state.removeFlag(EvalState::WAS_TRUE_IF | EvalState::WAS_FALSE_IF);
+            if(returnValue.token.type == Token::KEYWORD)
             {
-                if(returnValue.text == "true if")
+                if(returnValue.token.text == "true if")
                 {
-                    wasTrueIf = true;
-                    wasFalseIf = false;
+                    e_state.addFlag(EvalState::WAS_TRUE_IF);
+                    e_state.removeFlag(EvalState::WAS_FALSE_IF);
                 }
-                else if(returnValue.text == "false if")
+                else if(returnValue.token.text == "false if")
                 {
-                    wasTrueIf = false;
-                    wasFalseIf = true;
+                    e_state.removeFlag(EvalState::WAS_TRUE_IF);
+                    e_state.addFlag(EvalState::WAS_FALSE_IF);
                 }
-                else if(returnValue.text == "return")
+                else if(returnValue.token.text == "return")
                 {
                     break;
                 }
             }
-            if(returnValue.type == Token::VARIABLE && returnValue.var != NULL)
+            if(returnValue.token.type == Token::VARIABLE && returnValue.token.var != NULL)
             {
-                if(returnValue.var->getType() == CLASS)
+                if(returnValue.token.var->getType() == CLASS)
                 {
-                    Class* aClass = dynamic_cast<Class*>(returnValue.var);
+                    Class* aClass = dynamic_cast<Class*>(returnValue.token.var);
                     if(aClass != NULL)
                     {
                         interpreter.defineClass(aClass, &str);
                     }
                 }
-                else if(returnValue.var->getType() == FUNCTION)
+                else if(returnValue.token.var->getType() == FUNCTION)
                 {
-                    Function* aFn = dynamic_cast<Function*>(returnValue.var);
+                    Function* aFn = dynamic_cast<Function*>(returnValue.token.var);
                     if(aFn != NULL)
                     {
                         interpreter.defineFunction(aFn, &str);
@@ -443,36 +445,36 @@ Variable* Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
         else if(continuation)
             lineNum++;  // Skip an extra line if the last one was continued...  This probably isn't right for multiple-line continues...
         
-        returnValue.var = NULL;
+        returnValue.token.var = NULL;
     }
     
     interpreter.popEnv();
     
-    if(returnValue.text != "return" && returnType.getValue() != VOID)
+    if(returnValue.token.text != "return" && returnType.getValue() != VOID)
     {
         interpreter.error("Error: No return statement at end of non-void function.\n");
     }
     else
     {
         // Explicitly returning a value
-        if(returnValue.var == NULL)
+        if(returnValue.token.var == NULL)
         {
             if(returnType.getValue() != VOID)
                 interpreter.error("Error: Returning 'void' from a function which expects '%s'.\n", returnType.text.c_str());
         }
         else
         {
-            if(returnValue.var->getTypeString() != returnType.text)
+            if(returnValue.token.var->getTypeString() != returnType.text)
             {
-                interpreter.error("Error: Returning type '%s' from a function which expects '%s'.\n", returnValue.var->getTypeString().c_str(), returnType.text.c_str());
+                interpreter.error("Error: Returning type '%s' from a function which expects '%s'.\n", returnValue.token.var->getTypeString().c_str(), returnType.text.c_str());
             }
-            UI_debug_pile("Returning type: %s\n", returnValue.var->getTypeString().c_str());
+            UI_debug_pile("Returning type: %s\n", returnValue.token.var->getTypeString().c_str());
         }
     }
     
     interpreter.lineNumber = holdInterpreterLineNum;
     
-    return returnValue.var;
+    return returnValue;
 }
 
 Variable* Function::copy()
