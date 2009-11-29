@@ -147,7 +147,7 @@ void Interpreter::printEnv()
     }
 }
 
-Variable* Interpreter::callFn(Function* fn, std::list<Token>& arguments)
+EvalState Interpreter::callFn(Function* fn, std::list<Token>& arguments)
 {
     UI_debug_pile("  Calling a function.\n");
     // Sort out the arguments...
@@ -158,7 +158,7 @@ Variable* Interpreter::callFn(Function* fn, std::list<Token>& arguments)
     // Parse the function.
     
     if(fn == NULL)
-        return NULL;
+        return EvalState(EvalState::ERROR);
     
     std::vector<Variable*> args;
     std::list<Token> tokens;
@@ -181,16 +181,18 @@ Variable* Interpreter::callFn(Function* fn, std::list<Token>& arguments)
                 tokens.clear();
                 tokens.splice(tokens.begin(), arguments, f, e);
                 
-                Token eval = evalTokens(tokens, false, false, false, true);
+                EvalState eval = evalTokens(tokens, EvalState(EvalState::SUBEXPRESSION));
+                if(eval.state & EvalState::ERROR)
+                    return eval;
                 
-                if(eval.var != NULL)
+                if(eval.token.var != NULL)
                 {
-                    args.push_back(eval.var);
+                    args.push_back(eval.token.var);
                 }
                 else
                 {
                     error("Error: Argument %d of function call is invalid.\n", argNum);
-                    return NULL;
+                    return EvalState(EvalState::ERROR);
                 }
                 argNum++;
                 
@@ -206,16 +208,18 @@ Variable* Interpreter::callFn(Function* fn, std::list<Token>& arguments)
             
             tokens.splice(tokens.begin(), arguments, f, e);
             
-            Token eval = evalTokens(tokens, false, false, false, true);
+            EvalState eval = evalTokens(tokens, EvalState(EvalState::SUBEXPRESSION));
+            if(eval.state & EvalState::ERROR)
+                return eval;
             
-            if(eval.var != NULL)
+            if(eval.token.var != NULL)
             {
-                args.push_back(eval.var);
+                args.push_back(eval.token.var);
             }
             else
             {
                 error("Error: Argument %d of function call is invalid.\n", argNum);
-                return NULL;
+                return EvalState(EvalState::ERROR);
             }
             argNum++;
             
@@ -235,12 +239,12 @@ Variable* Interpreter::callFn(Function* fn, std::list<Token>& arguments)
     if(args.size() > fn->getArgTypes().size())
     {
         error("Error: Too many arguments in function call.\n");
-        return NULL;
+        return EvalState(EvalState::ERROR);
     }
     if(args.size() < fn->getArgTypes().size())
     {
         error("Error: Too few arguments in function call.\n");
-        return NULL;
+        return EvalState(EvalState::ERROR);
     }
     
     for(unsigned int i = 0; i < args.size(); i++)
@@ -249,7 +253,7 @@ Variable* Interpreter::callFn(Function* fn, std::list<Token>& arguments)
         if(fn->getArgTypes()[i].getValue() != VOID && !isConvertable(args[i]->getType(), fn->getArgTypes()[i].getValue()))
         {
             error("Error: Argument %d has the wrong type in function call.\n", i+1);
-            return NULL;
+            return EvalState(EvalState::ERROR);
         }
         // If it must be a reference, make sure that it is.
         if(fn->getArgTypes()[i].reference)
@@ -257,7 +261,7 @@ Variable* Interpreter::callFn(Function* fn, std::list<Token>& arguments)
             if(!args[i]->reference)
             {
                 error("Error: Argument %d must be a reference in function call.\n", i+1);
-                return NULL;
+                return EvalState(EvalState::ERROR);
             }
         }
         else  // If it is not a reference, pass it by value.
@@ -475,8 +479,7 @@ bool Interpreter::readFile(string filename)
     }
     
     bool continuation = false;
-    bool wasTrueIf = false;
-    bool wasFalseIf = false;
+    EvalState e_state;
     list<Token> tokens;
     string line;
     while(!fin.eof())
@@ -492,39 +495,39 @@ bool Interpreter::readFile(string filename)
         
         if(!continuation || fin.eof())  // Skip the eval if we're continuing, but not if the file ends!
         {
-            Token result = evalTokens(tokens, true, wasTrueIf, wasFalseIf);
+            EvalState result = evalTokens(tokens, EvalState(EvalState::BEGINNING | (e_state.state & EvalState::WAS_TRUE_IF) | (e_state.state & EvalState::WAS_FALSE_IF)));
             
-            wasTrueIf = wasFalseIf = false;
-            if(result.type == Token::KEYWORD)
+            e_state.removeFlag(EvalState::WAS_TRUE_IF | EvalState::WAS_FALSE_IF);
+            if(result.token.type == Token::KEYWORD)
             {
-                if(result.text == "true if")
+                if(result.token.text == "true if")
                 {
-                    wasTrueIf = true;
-                    wasFalseIf = false;
+                    e_state.addFlag(EvalState::WAS_TRUE_IF);
+                    e_state.removeFlag(EvalState::WAS_FALSE_IF);
                 }
-                else if(result.text == "false if")
+                else if(result.token.text == "false if")
                 {
-                    wasTrueIf = false;
-                    wasFalseIf = true;
+                    e_state.removeFlag(EvalState::WAS_TRUE_IF);
+                    e_state.addFlag(EvalState::WAS_FALSE_IF);
                 }
             }
-            if(result.type == Token::VARIABLE && result.var != NULL)
+            if(result.token.type == Token::VARIABLE && result.token.var != NULL)
             {
                 UI_debug_pile("Returned a variable.\n");
-                if(result.var->getType() == CLASS)
+                if(result.token.var->getType() == CLASS)
                 {
-                    Class* aClass = dynamic_cast<Class*>(result.var);
+                    Class* aClass = dynamic_cast<Class*>(result.token.var);
                     if(aClass != NULL)
                     {
                         defineClass(aClass, &fin);
                         addClass(aClass);
                     }
                 }
-                else if(result.var->getType() == FUNCTION)
+                else if(result.token.var->getType() == FUNCTION)
                 {
                     // FIXME: This happens whenever a function is the result??
                     // I might want to add Token::SPECIAL so I can define classes/functions
-                    Function* aFn = dynamic_cast<Function*>(result.var);
+                    Function* aFn = dynamic_cast<Function*>(result.token.var);
                     if(aFn != NULL)
                     {
                         UI_debug_pile("Defining function.\n");
@@ -554,7 +557,7 @@ bool Interpreter::readFile(string filename)
 
 
 
-Variable* Interpreter::getArrayLiteral(list<Token>& tokens, list<Token>::iterator& e)
+EvalState Interpreter::getArrayLiteral(list<Token>& tokens, list<Token>::iterator& e)
 {
     Array* arr = NULL;
     
@@ -581,25 +584,28 @@ Variable* Interpreter::getArrayLiteral(list<Token>& tokens, list<Token>::iterato
             e++;
         }
         
-        Token t = evalTokens(tok2, false, false, false, true);
-        if(t.type == Token::OPERATOR)
+        EvalState t = evalTokens(tok2, EvalState(EvalState::SUBEXPRESSION));
+        if(t.state & EvalState::ERROR)
+            return t;
+        
+        if(t.token.type == Token::OPERATOR)
         {
             interpreter.error("Error: Unexpected operator when reading an array literal.\n");
             continue;
         }
-        if(t.type == Token::SEPARATOR)
+        if(t.token.type == Token::SEPARATOR)
         {
             interpreter.error("Error: Unexpected separator when reading an array literal.\n");
             continue;
         }
-        if(t.var == NULL)
+        if(t.token.var == NULL)
         {
             interpreter.error("Error: NULL var in token...\n");
             continue;
         }
         if(type == NOT_A_TYPE)
         {
-            type = t.var->getType();
+            type = t.token.var->getType();
             if(type == NOT_A_TYPE || type == VOID)
             {
                 type = NOT_A_TYPE;
@@ -608,13 +614,13 @@ Variable* Interpreter::getArrayLiteral(list<Token>& tokens, list<Token>::iterato
             }
             arr = new Array("<temp>", type);
         }
-        if(t.var->getType() != type)
+        if(t.token.var->getType() != type)
         {
             interpreter.error("Error: Inconsistent type in array literal.\n");
             continue;
         }
         
-        arr->push_back(t.var);
+        arr->push_back(t.token.var);
         
         if(e->type == Token::SEPARATOR && e->sep == CLOSE_SQUARE_BRACKET)
             break;
@@ -633,7 +639,7 @@ Variable* Interpreter::getArrayLiteral(list<Token>& tokens, list<Token>::iterato
         }
     }
     
-    return arr;
+    return EvalState(Token(arr, "<temp>"));
 }
 
 

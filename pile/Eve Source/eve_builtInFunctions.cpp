@@ -472,125 +472,190 @@ Variable* fn_mod_time(Variable* f)
 /*
 Groups together the calling of built-in functions.  Used in callFn().
 */
-Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args)
+EvalState callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args)
 {
-    Variable* result = NULL;
-    
+    Variable* v = NULL;
     switch(fn)
     {
         case FN_PRINT:
             if(args.size() != 1)
-                return NULL;
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
             fn_print(args[0]);
             break;
         case FN_PRINTLN:
             if(args.size() != 1)
-                return NULL;
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
             fn_println(args[0]);
             break;
         case FN_WARNING:
             if(args.size() != 1)
-                return NULL;
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
             fn_warning(args[0]);
             break;
         case FN_ERROR:
             if(args.size() != 1)
-                return NULL;
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
             fn_error(args[0]);
             break;
         case FN_DEBUG:
             if(args.size() != 1)
-                return NULL;
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
             fn_debug(args[0]);
             break;
         case FN_TYPE:
             if(args.size() != 1)
-                return NULL;
-            result = new TypeName("<temp>", args[0]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            v = new TypeName("<temp>", args[0]);
             break;
         case FN_STRING:
             if(args.size() != 1)
-                return NULL;
-            result = new String("<temp>", args[0]->getValueString());
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            v = new String("<temp>", args[0]->getValueString());
             break;
         case FN_BOOL:
             if(args.size() != 1)
-                return NULL;
-            result = boolCast(args[0]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            v = boolCast(args[0]);
             break;
         case FN_INT:
             if(args.size() != 1)
-                return NULL;
-            result = intCast(args[0]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            v = intCast(args[0]);
             break;
         case FN_FLOAT:
             if(args.size() != 1)
-                return NULL;
-            result = floatCast(args[0]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            v = floatCast(args[0]);
             break;
         case FN_INCLUDE:
             if(args.size() != 1)
-                return NULL;
-            result = include(args[0]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            include(args[0]);
             break;
         case FN_LS:
             if(args.size() != 1)
-                return NULL;
-            result = fn_ls(args[0]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            v = fn_ls(args[0]);
             break;
         case FN_DEFINED:
             if(args.size() != 1)
-                return NULL;
-            result = fn_defined(args[0]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            v = fn_defined(args[0]);
             break;
         case FN_COPY:
             if(args.size() != 2)
-                return NULL;
-            result = fn_copy(args[0], args[1]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            fn_copy(args[0], args[1]);
             break;
         case FN_MOVE:
             if(args.size() != 2)
-                return NULL;
-            result = fn_move(args[0], args[1]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            fn_move(args[0], args[1]);
             break;
         case FN_DELETE:
             if(args.size() != 1)
-                return NULL;
-            result = fn_delete(args[0]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            fn_delete(args[0]);
             break;
         case FN_MKDIR:
             if(args.size() != 1)
-                return NULL;
-            result = fn_mkdir(args[0]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            fn_mkdir(args[0]);
             break;
         case FN_MKPATH:
             if(args.size() != 1)
-                return NULL;
-            result = fn_mkpath(args[0]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            fn_mkpath(args[0]);
             break;
         case FN_MKFILE:
             if(args.size() != 1)
-                return NULL;
-            result = fn_mkfile(args[0]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            fn_mkfile(args[0]);
             break;
         case FN_CHMOD:
             if(args.size() != 2)
-                return NULL;
-            result = fn_chmod(args[0], args[1]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            fn_chmod(args[0], args[1]);
             break;
         case FN_MOD_TIME:
             if(args.size() != 1)
-                return NULL;
-            result = fn_mod_time(args[0]);
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            v = fn_mod_time(args[0]);
             break;
         case FN_EXTERNAL:
-            break;
+            //break;
         default:
+            UI_error("Invalid built-in function call.\n");
+            interpreter.errorFlag = true;
             break;
     }
-    if(result != NULL)
-    {
-        UI_debug_pile("Built-in fn result: '%s' (%s)\n", result->getTypeString().c_str(), result->getValueString().c_str());
-    }
-    return result;
+    
+    if(interpreter.errorFlag)
+        return EvalState(EvalState::ERROR);
+    if(v != NULL)
+        return EvalState(Token(v, "<temp>"));
+    return EvalState();
 }

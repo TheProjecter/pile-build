@@ -347,16 +347,82 @@ bool Interpreter::defineClass(Variable* classvar, istream* stream)
 }
 
 
+/*
+Token evalIf(list<Token>::iterator& e, list<Token>& tokens, bool beginning, bool wasTrueIf, bool wasFalseIf, bool subExpression)
+{
+    e++;
+    if(e == tokens.end())
+    {
+        error("Syntax Error: Unexpected end of line after 'if'.\n");
+        return Token();
+    }
+    if(e->type != Token::SEPARATOR || e->sep != OPEN_PARENTHESIS)
+    {
+        error("Syntax Error: Unexpected token after 'if'.\n");
+        return Token();
+    }
+    
+    list<Token> inside;
+    e++;
+    int paren = 1;
+    while(e != tokens.end() && paren > 0)
+    {
+        if(e->type == Token::SEPARATOR)
+        {
+            if(e->sep == OPEN_PARENTHESIS)
+                paren++;
+            else if(e->sep == CLOSE_PARENTHESIS)
+                paren--;
+        }
+        
+        if(paren > 0)
+            inside.push_back(*e);
+        e++;
+    }
+    
+    Token in = evalTokens(inside, false, false, false, true);
+    
+    if(in.type == Token::VARIABLE && in.var != NULL)
+    {
+        // FIXME: Accept other types too!
+        if(in.var->getType() != BOOL)
+        {
+            in.var = boolCast(in.var);
+            if(in.var == NULL)
+            {
+                error("Syntax Error: Could not cast expression to 'bool' in your 'if' statement.\n");
+                return Token();
+            }
+        }
+        
+        if(static_cast<Bool*>(in.var)->getValue())
+        {
+            // Push a single-line scope that evals the 'if' block
+            pushEnv(Scope(false, Scope::IF_BLOCK, true));
+            return Token(Token::KEYWORD, "true if");
+        }
+        else
+        {
+            // Push a single-line scope that skips the 'if' block
+            pushEnv(Scope(false, Scope::SKIP_IF, true));
+            return Token(Token::KEYWORD, "false if");
+        }
+    }
+    
+    error("Syntax Error: Something's wrong with your 'if' statement.\n");
+    return Token();
+}*/
+
 
 
 /*
 Evaluates the tokens for a single line.
 */
-Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueIf, bool wasFalseIf, bool subExpression)
+EvalState Interpreter::evalTokens(list<Token>& tokens, EvalState e_state)
 {
     enum StateEnum{BEGIN, READY, VAR_DECL, VAR, VAR_OP, VAR_OP_VAR};
     StateEnum state;
-    if(beginning)
+    if(e_state.hasFlag(EvalState::BEGINNING))
         state = BEGIN;
     else
         state = READY;
@@ -848,7 +914,10 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                             e++;
                     }
                     tok2.splice(tok2.begin(), tokens, f, e);
-                    firstVar = evalTokens(tok2, false, false, false, true);
+                    EvalState es = evalTokens(tok2, EvalState(EvalState::SUBEXPRESSION));
+                    if(es.state & EvalState::ERROR)
+                        return es;
+                    firstVar = es.token;
                     if(firstVar.type == Token::NOT_A_TOKEN)
                     {
                         return firstVar;
@@ -881,7 +950,10 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                 }
                 else if(e->sep == OPEN_SQUARE_BRACKET)
                 {
-                    firstVar = Token(getArrayLiteral(tokens, e), "");
+                    EvalState es = getArrayLiteral(tokens, e);
+                    if(es.state & EvalState::ERROR)
+                        return es;
+                    firstVar = es.token;
                     if(firstVar.var != NULL)
                     {
                         state = VAR;
@@ -915,7 +987,10 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                             e++;
                     }
                     tok2.splice(tok2.begin(), tokens, f, e);
-                    firstVar = evalTokens(tok2, false, false, false, true);
+                    EvalState es = evalTokens(tok2, EvalState(EvalState::SUBEXPRESSION));
+                    if(es.state & EvalState::ERROR)
+                        return es;
+                    firstVar = es.token;
                     if(firstVar.type == Token::NOT_A_TOKEN)
                     {
                         return firstVar;
@@ -928,7 +1003,11 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                 }
                 else if(e->sep == OPEN_SQUARE_BRACKET)
                 {
-                    firstVar = Token(getArrayLiteral(tokens, e), "");
+                    EvalState es = getArrayLiteral(tokens, e);
+                    if(es.state & EvalState::ERROR)
+                        return es;
+                    
+                    firstVar = es.token;
                     if(firstVar.var != NULL)
                     {
                         state = VAR;
@@ -978,7 +1057,10 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     // Call the function
                     if(firstVar.var->getType() == FUNCTION)
                     {
-                        firstVar = Token(callFn(static_cast<Function*>(firstVar.var), tok2), "function result");
+                        EvalState es = callFn(static_cast<Function*>(firstVar.var), tok2);
+                        if(es.state & EvalState::ERROR)
+                            return es;
+                        firstVar = es.token;
                     }
                     
                     // Pop the outer stack
@@ -1013,7 +1095,10 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                             e++;
                     }
                     tok2.splice(tok2.begin(), tokens, f, e);
-                    Token r = evalTokens(tok2, false, false, false, true);
+                    EvalState es = evalTokens(tok2, EvalState(EvalState::SUBEXPRESSION));
+                    if(es.state & EvalState::ERROR)
+                        return es;
+                    Token r = es.token;
                     if(r.type == Token::NOT_A_TOKEN)
                     {
                         return r;
@@ -1050,7 +1135,10 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                             e++;
                     }
                     tok2.splice(tok2.begin(), tokens, f, e);
-                    secondVar = evalTokens(tok2, false, false, false, true);
+                    EvalState es = evalTokens(tok2, EvalState(EvalState::SUBEXPRESSION));
+                    if(es.state & EvalState::ERROR)
+                        return es;
+                    secondVar = es.token;
                     if(secondVar.type == Token::NOT_A_TOKEN)
                     {
                         return secondVar;
@@ -1064,7 +1152,11 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                 }
                 else if(e->sep == OPEN_SQUARE_BRACKET)
                 {
-                    secondVar = Token(getArrayLiteral(tokens, e), "");
+                    EvalState es = getArrayLiteral(tokens, e);
+                    if(es.state & EvalState::ERROR)
+                        return es;
+                    
+                    secondVar = es.token;
                     if(secondVar.var != NULL)
                     {
                         state = VAR_OP_VAR;
@@ -1119,7 +1211,12 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     
                     // Call the function
                     if(secondVar.var->getType() == FUNCTION)
-                        secondVar.var = callFn(static_cast<Function*>(secondVar.var), tok2);
+                    {
+                        EvalState es = callFn(static_cast<Function*>(secondVar.var), tok2);
+                        if(es.state & EvalState::ERROR)
+                            return es;
+                        secondVar.var = es.token.var;
+                    }
                     
                     // Pop the outer stack
                     vector<list<Token> >::iterator g = stack.end();
@@ -1174,7 +1271,10 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                             e++;
                     }
                     tok2.splice(tok2.begin(), tokens, f, e);
-                    Token r = evalTokens(tok2, false, false, false, true);
+                    EvalState es = evalTokens(tok2, EvalState(EvalState::SUBEXPRESSION));
+                    if(es.state & EvalState::ERROR)
+                        return es;
+                    Token r = es.token;
                     if(r.type == Token::NOT_A_TOKEN)
                     {
                         return r;
@@ -1223,7 +1323,10 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                         e++;
                     }
                     
-                    Token in = evalTokens(inside, false, false, false, true);
+                    EvalState es = evalTokens(inside, EvalState(EvalState::SUBEXPRESSION));
+                    if(es.state & EvalState::ERROR)
+                        return es;
+                    Token in = es.token;
                     
                     if(in.type == Token::VARIABLE && in.var != NULL)
                     {
@@ -1262,9 +1365,9 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
                     {
                         error("Syntax Error: Unexpected token after 'else' statement.\n");
                     }
-                    if(wasFalseIf)
+                    if(e_state.hasFlag(EvalState::WAS_FALSE_IF))
                         pushEnv(Scope(false, Scope::IF_BLOCK, true));
-                    else if(wasTrueIf)
+                    else if(e_state.hasFlag(EvalState::WAS_TRUE_IF))
                         pushEnv(Scope(false, Scope::SKIP_IF, true));
                     else
                         error("Syntax Error: Unexpected 'else' statement.\n");
@@ -1586,12 +1689,12 @@ Token Interpreter::evalTokens(list<Token>& tokens, bool beginning, bool wasTrueI
         
     }
     
-    if(!subExpression && currentScope().singleLine)
+    if(!e_state.hasFlag(EvalState::SUBEXPRESSION) && currentScope().singleLine)
     {
         popEnv();
-        if(wasTrueIf)
+        if(e_state.hasFlag(EvalState::WAS_TRUE_IF))
             return Token(Token::KEYWORD, "true if");
-        else if(wasFalseIf)
+        else if(e_state.hasFlag(EvalState::WAS_FALSE_IF))
             return Token(Token::KEYWORD, "false if");
         else
             return Token();

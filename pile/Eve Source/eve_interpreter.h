@@ -80,7 +80,9 @@ class String;
 class Array;
 class Function;
 class ClassObject;
-Variable* callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args);
+
+class EvalState;
+EvalState callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args);
 Bool* boolCast(Variable* v);
 
 
@@ -291,7 +293,7 @@ public:
     virtual std::string getValueString();
     bool isBuiltIn();
     FunctionEnum getBuiltIn();
-    Variable* call(Interpreter& interpreter, std::vector<Variable*>& args);
+    EvalState call(Interpreter& interpreter, std::vector<Variable*>& args);
     
     virtual Variable* copy();
 };
@@ -454,6 +456,59 @@ public:
 };
 
 
+
+class EvalState
+{
+    public:
+    static const unsigned long NONE = 0;
+    static const unsigned long BEGINNING = 1;
+    static const unsigned long WAS_TRUE_IF = 2;
+    static const unsigned long WAS_FALSE_IF = 4;
+    static const unsigned long SUBEXPRESSION = 8;
+    static const unsigned long MACRO_IF = 16;
+    static const unsigned long ERROR = 32;
+    unsigned int state;
+    Token token;
+    
+    EvalState()
+        : state(NONE)
+    {}
+    
+    EvalState(unsigned int state)
+        : state(state)
+    {}
+    
+    EvalState(const Token& token, unsigned int state)
+        : state(state)
+        , token(token)
+    {}
+    
+    EvalState(const Token& token)
+        : state(NONE)
+        , token(token)
+    {}
+    
+    bool hasFlag(unsigned int flag)
+    {
+        return (state & flag);
+    }
+    
+    void addFlag(unsigned int flag)
+    {
+        state |= flag;
+    }
+    
+    void removeFlag(unsigned int flag)
+    {
+        // Make sure the flag is there so that xor works.
+        state |= flag;
+        state ^= flag;
+    }
+};
+
+
+
+
 class Outputter
 {
     public:
@@ -500,7 +555,7 @@ public:
     
     void error(const char* formatted_text, ...);
 
-    Variable* callFn(Function* fn, std::list<Token>& arguments);
+    EvalState callFn(Function* fn, std::list<Token>& arguments);
     
     Variable* evaluateExpression(Variable* A, OperatorEnum operation);
 
@@ -508,11 +563,11 @@ public:
     
     bool readFile(std::string filename);
     
-    Variable* getArrayLiteral(std::list<Token>& tokens, std::list<Token>::iterator& e);
+    EvalState getArrayLiteral(std::list<Token>& tokens, std::list<Token>::iterator& e);
 
     bool defineClass(Variable* classvar, std::istream* stream);
     bool defineFunction(Variable* functionvar, std::istream* stream);
-    Token evalTokens(std::list<Token>& tokens, bool beginning, bool wasTrueIf = false, bool wasFalseIf = false, bool subExpression = false);
+    EvalState evalTokens(std::list<Token>& tokens, EvalState e_state);
     
     //bool interpret(std::string line);
 
