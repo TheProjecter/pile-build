@@ -24,7 +24,45 @@ This file contains all system-specific functions used in Pile.
 
 #endif
 
+#ifdef PILE_LINUX
+/*#include <Xm/Xm.h>
+#include <Xm/PushB.h>*/
+#endif
 
+
+
+// Motif stuff from http://stackoverflow.com/questions/1384125/c-messagebox-for-linux-like-in-ms-windows
+/*void pushed_fn(Widget w, XtPointer client_data, 
+               XmPushButtonCallbackStruct *cbs) 
+  {   
+     printf("Don't Push Me!!\n");
+  }*/
+
+void SYS_alert(const char* text)
+{
+    #ifdef PILE_WIN32
+    ;
+    #endif
+    #ifdef PILE_LINUX
+    /*Widget top_wid, button;
+    XtAppContext  app;
+
+    top_wid = XtVaAppInitialize(&app, "Push", NULL, 0,
+        &argc, argv, NULL, NULL);
+
+    button = XmCreatePushButton(top_wid, "Push_me", NULL, 0);
+
+    // tell Xt to manage button
+                        XtManageChild(button);
+
+                        // attach fn to widget
+    XtAddCallback(button, XmNactivateCallback, pushed_fn, NULL);
+
+    XtRealizeWidget(top_wid); // display widget hierarchy
+    XtAppMainLoop(app); // enter processing loop
+    */
+    #endif
+}
 
 string getSystemName()
 {

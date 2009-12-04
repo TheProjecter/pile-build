@@ -85,7 +85,7 @@ class Configuration
         includePaths.push_back("/usr/local/include");
         #endif
         
-        installPath = "/home/jonny/jon/Pile/src";
+        installPath = "";
     }
     
 };

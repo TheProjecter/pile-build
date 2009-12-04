@@ -1,0 +1,10 @@
+#! /bin/bash
+
+mkdir -p /usr/local/share/pile
+cp -r Documentation /usr/local/share/pile
+cp -r fonts /usr/local/share/pile
+cp pile /usr/local/share/pile
+cp template_pile_linux.conf /usr/local/share/pile/template_pile.conf
+
+rm /usr/bin/pile
+ln /usr/local/share/pile/pile /usr/bin/pile
