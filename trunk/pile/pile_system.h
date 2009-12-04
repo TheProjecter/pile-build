@@ -61,10 +61,10 @@ Header for pile_system.cpp
     #define DEFAULT_FORTRAN_LINKER_D "gfortran"
     #define DEFAULT_FORTRAN_LINKER_S "ar rsc"
     #define DEFAULT_FORTRAN_SYNTAX "COMP -c FLAGS SRC"
-    #define BIN_INSTALL_DIR "/usr/local/bin"
-    #define PROGRAM_INSTALL_DIR "/home/jonny/jon/Programs"  // FIXME:  It'd be nice to have '~' work.
-    #define LIB_INSTALL_DIR "/usr/local/lib"
-    #define HEADER_INSTALL_DIR "/usr/local/include"
+    #define BIN_INSTALL_DIR "/usr/local/bin/"
+    #define PROGRAM_INSTALL_DIR "/usr/local/share/"
+    #define LIB_INSTALL_DIR "/usr/local/lib/"
+    #define HEADER_INSTALL_DIR "/usr/local/include/"
 #endif
 
 
@@ -72,7 +72,7 @@ Header for pile_system.cpp
 std::string getHomeDir();
 inline std::string getConfigDir()
 {
-    return getHomeDir() + "/.pile";
+    return getHomeDir() + "/.pile/";
 }
 
 void convertSlashes(std::string& str);
@@ -82,5 +82,7 @@ void systemCall(std::string command);
 void delay(unsigned int milliseconds);
 
 std::string getSystemName();
+
+void SYS_alert(const char* text);
 
 #endif

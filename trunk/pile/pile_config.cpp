@@ -49,7 +49,7 @@ Returns: true on success
 bool createConfig(string path, Configuration& config)
 {
     UI_log("Creating config\n");
-    ofstream fout((path + "pile.conf").c_str(), ios::trunc);
+    ofstream fout((path + "template_pile.conf").c_str(), ios::trunc);
     if(fout.fail())
     {
     UI_log("Failed.\n");
@@ -74,9 +74,9 @@ bool createConfig(string path, Configuration& config)
              << "//    Quitting: Type :q to quit or type :x to save and quit." << endl
              << "//    Deleting: Press 'x' or 'X' to delete characters." << endl
              << "//    Deleting: Press 'dd' to delete a line." << endl
-             << "//    Editing: Press 'i' to enter Insert mode." << endl;
+             << "//    Editing: Press 'i' to enter Insert mode." << endl << endl;
+        UI_log("Wrote vi warning\n");
     }
-    UI_log("Wrote vi warning\n");
     
     fout << "EDITOR_PATH = \"" << config.editor << "\"" << endl;
     UI_log("Wrote editor\n");
@@ -124,17 +124,46 @@ Returns: true on success
 */
 bool loadConfig(string path, Configuration& config)
 {
+    /*
+    Pile has three files that it deals with for configuration.
+    pile.conf is the config file, in the ~/.pile directory.
+    template_pile.conf is the template for the config file, in the ~/.pile directory. 
+    template_pile.conf is the template for the config file, in Pile's installation directory.
+    
+    If pile.conf does not exist, Pile will copy the local template (the one in
+    ~/.pile.  This allows you to make changes to the template, which will be the 
+    default if pile.conf is deleted.  If that template does not exist, then Pile
+    copies the one in its installation directory.  If that doesn't work, Pile
+    tries to create a new template file in ~/.pile, assuming that the user does
+    not have write access to Pile's installation directory.
+    */
     string file = path + "pile.conf";
-    if(!ioExists(file))
+    if(!ioExists(path + "template_pile.conf"))
     {
-        UI_warning("pile config file not found.\n");
-        if(!createConfig(path, config))
+        UI_warning("pile config file template not found.\n");
+        if(ioCopy("template_pile.conf", file))
         {
-            UI_error("pile error: Failed to create config file.\n");
+            UI_warning("Failed to copy Pile's config file template.\n");
+        }
+        else if(createConfig(path, config))
+            UI_warning("Created template config file successfully.\n");
+        else
+        {
+            UI_error("pile error: Failed to create template config file.\n");
             return false;
         }
+    }
+    
+    if(!ioExists(file))
+    {
+        UI_warning("Config file does not exist.  Copying template...\n");
+        if(ioCopy(path + "template_pile.conf", file) || ioCopy("template_pile.conf", file))
+            UI_warning("Copied config file successfully.\n");
         else
-            UI_warning("Created config file successfully.\n");
+        {
+            UI_error("pile error: Failed to copy config file.\n");
+            return false;
+        }
     }
     
     Scope& s = *(interpreter.env.begin());
@@ -226,6 +255,7 @@ bool loadConfig(string path, Configuration& config)
         config.editor = editor_path->getValue();
         config.installPath = pile_path->getValue();
         
+        // FIXME: This needs to be much better and flexible
         config.languages["CPP_COMPILER"] = static_cast<String*>(cpp_path)->getValue();
         config.languages["CPP_LINKER_D"] = static_cast<String*>(cpp_linkpath)->getValue();
         
