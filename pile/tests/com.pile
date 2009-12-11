@@ -1,0 +1,12 @@
+
+
+// This doesn't work yet :(
+// FIXME: ls() does not work with * in the directory name 
+if("clean" <> VARIANTS)
+{
+    array<string> delStuff
+    delStuff += ls("*/obj")
+    delStuff += ls("*/.*")
+    
+    rm(delStuff)
+}

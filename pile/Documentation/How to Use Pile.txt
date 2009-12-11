@@ -1,0 +1,116 @@
+ 
+Currently, the only release is of version 0.0.0 (though it says 0.0.1 in some places).
+This is an alpha testing release that only works on Linux and Windows.
+
+
+WINDOWS
+-------
+
+Installation
+------------
+
+Until an installer for Pile is made, you must install it by hand.  The 'pile.exe' executable, 'fonts' directory, and 'template_pile.conf' go into the directory where you want to install Pile (e.g. "C:\Program Files\Pile").  Create another directory, "C:\Documents and Settings\<USER_NAME>\My Documents\.pile" (replace <USER_NAME> with your user name).  You should copy the 'template_pile_win.conf' file twice, as .pile/template_pile.conf and .pile/pile.conf (both in your new .pile directory).  Make sure that the files in .pile/ reflect the location in which you installed Pile (set the PILE_PATH variable).
+
+Now we have to get the environment all set up.  The system's "Path" environment variable needs to be edited if you've never used the command line to compile things (that's how Pile is going to do it).  In Windows XP, go to the Control Panel and choose System.  Go to the Advanced tab, then click on the Environment Variables button.  In the System Variables group, scroll down to the Path variable.  This variable is a list of locations to check when issuing a command on the command line.  They are directories separated by semicolons.  We need to add the paths to the compiler bin directory (where the compiler executable is) and the Pile installation directory.  Mine looks like this:
+%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem;c:\Program Files\Codeblocks\MinGW\bin;c:\Program Files\Pile\Pile\src
+
+Pile should now work from the command line.
+
+
+
+Double-Clicking
+---------------
+
+Pile uses a file extension for the Pilefiles: e.g. mypilefile.pile
+To enable double-click running of Pilefiles, you need to add a file association setting.  Go to Folder Options in the COntrol Panel.  Choose the File Types tab and click on the New button.  Name the type 'pile' (no quotes).  Choose the new type and in the details group below, click the Change button.  Locate the Pile executable where you installed it.  Now click the Advanced button.  Edit the 'open' action and add '-g' to the "Application used to perform action" (-g is the graphical flag to Pile).  Mine looks like this:
+"C:\Program Files\Pile\pile.exe" -g "%1"
+
+
+
+Usage
+-----
+
+Once it's installed, you can use it!  Type 'pile' in any directory to build the source without a Pilefile.  Type 'pile new' to create a new pilefile.  'pile' in a directory which has a Pilefile will use it (looks for com.pile first, then the first *.pile it finds).  'pile -v debug,release' will add "debug" and "release" to the VARIANTS Pilefile variable (an array of strings).
+
+See the 'tests' directory for examples on how to write various things in a Pilefile.
+
+A sample Pilefile is below:
+// -----------------------------
+OUTPUT = "my_program"
+
+SOURCES += ls("*.cpp")
+SOURCES += "subdir/otherfile.c"
+
+CFLAGS += ["-I/usr/include/SDL"]
+LFLAGS += ["-lSDLmain", "-lSDL", "-lSDL_ttf"]
+
+cpp_compiler.scan(SOURCES)
+
+array<string> objs = cpp_compiler.compile(SOURCES, CFLAGS)
+
+cpp_linker.link(OUTPUT, objs, LIBRARIES, LFLAGS)
+// -----------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+LINUX
+-----
+
+Installation
+------------
+
+To install Pile, you can use the Makefile included with the source:
+make
+sudo make install
+
+If you just have the binary, you could use the Makefile:
+sudo make install
+
+or you can use the 'installPile' script:
+sudo ./installPile
+
+or you can install it by hand.  The 'pile' executable, 'fonts' directory, and 'template_pile.conf' go into a new directory '/usr/local/share/pile'.  Create another directory, ~/.pile (a hidden subdirectory of your home directory).  You should copy the 'template_pile_linux.conf' file as ~/.pile/template_pile.conf and ~/.pile/pile.conf.  If you install Pile to a different directory than /usr/local/share/pile, make sure that the files in ~/.pile/ reflect this (PILE_PATH).  Lastly, make a hard link in a bin directory, like this:
+ln /usr/local/share/pile/pile /usr/local/bin/pile
+
+Double-Clicking
+---------------
+
+Pile uses a file extension for the Pilefiles: e.g. mypilefile.pile
+To enable double-click running of Pilefiles, you need to add a file association setting to your window manager.  In KDE 3.5, you go to the Control Center, KDE Components, File Associations, then add a new one (probably with type 'application').  The command should be:
+pile -g %f
+(-g is the graphical flag to Pile)
+
+
+Usage
+-----
+
+Once it's installed, you can use it!  Type 'pile' in any directory to build the source without a Pilefile.  Type 'pile new' to create a new pilefile.  'pile' in a directory which has a Pilefile will use it (looks for com.pile first, then the first *.pile it finds).  'pile -v debug,release' will add "debug" and "release" to the VARIANTS Pilefile variable (an array of strings).
+
+See the 'tests' directory for examples on how to write various things in a Pilefile.
+
+A sample Pilefile is below:
+// -----------------------------
+OUTPUT = "my_program"
+
+SOURCES += ls("*.cpp")
+SOURCES += "subdir/otherfile.c"
+
+CFLAGS += ["-I/usr/include/SDL"]
+LFLAGS += ["-lSDLmain", "-lSDL", "-lSDL_ttf"]
+
+cpp_compiler.scan(SOURCES)
+
+array<string> objs = cpp_compiler.compile(SOURCES, CFLAGS)
+
+cpp_linker.link(OUTPUT, objs, LIBRARIES, LFLAGS)
+// -----------------------------

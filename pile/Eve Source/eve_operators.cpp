@@ -30,8 +30,8 @@ Bool* comparison(Variable* A, Variable* B, OperatorEnum oper)
     }
     TypeEnum a = A->getType();
     TypeEnum b = B->getType();
-    
-    
+
+
     bool mismatch = false;
     if(a == STRING)
     {
@@ -387,7 +387,7 @@ Bool* comparison(Variable* A, Variable* B, OperatorEnum oper)
                 interpreter.error("Error: Types do not match in assignment: Array<%s> vs Array<%s>\n", C->getValueTypeString().c_str(), D->getValueTypeString().c_str());
                 return NULL;
             }
-            
+
             switch(oper)
             {
                 case EQUALS:
@@ -500,7 +500,7 @@ Bool* comparison(Variable* A, Variable* B, OperatorEnum oper)
             }
         }
     }
-    
+
     //if(mismatch)
     {
         interpreter.error("Error: Types do not match in assignment: %s vs %s\n", A->getTypeString().c_str(), B->getTypeString().c_str());
@@ -522,10 +522,10 @@ Variable* assign(Variable* A, Variable* B)
         interpreter.error("Error: Assigning value to a non-reference variable.\n");
         return NULL;
     }
-    
+
     TypeEnum a = A->getType();
     TypeEnum b = B->getType();
-    
+
     bool mismatch = false;
     if(a == STRING)
     {
@@ -672,7 +672,7 @@ Variable* assign(Variable* A, Variable* B)
             C->setValue(D->getValue());
         }
     }
-    
+
     if(mismatch)
     {
         interpreter.error("Error: Types do not match in assignment: %s vs %s\n", A->getTypeString().c_str(), B->getTypeString().c_str());
@@ -694,10 +694,10 @@ Variable* add_assign(Variable* A, Variable* B)
         interpreter.error("Error: Assigning value to a non-reference variable.\n");
         return NULL;
     }
-    
+
     TypeEnum a = A->getType();
     TypeEnum b = B->getType();
-    
+
     bool mismatch = false;
     if(a == STRING)
     {
@@ -829,7 +829,7 @@ Variable* add_assign(Variable* A, Variable* B)
         interpreter.error("Error: Addition operation not defined for type 'procedure'.\n");
         return NULL;
     }
-    
+
     if(mismatch)
     {
         interpreter.error("Error: Types do not match in assignment: %s vs %s\n", A->getTypeString().c_str(), B->getTypeString().c_str());
@@ -917,7 +917,7 @@ Variable* add(Variable* A, Variable* B)
     {
         Float* C = static_cast<Float*>(A);
         Float* R = new Float;
-        
+
         if(b == INT)
         {
             Int* D = static_cast<Int*>(B);
@@ -954,17 +954,17 @@ Variable* add(Variable* A, Variable* B)
             interpreter.error("Error: Types do not match in addition: Array<%s> vs Array<%s>\n", C->getValueTypeString().c_str(), D->getValueTypeString().c_str());
             return NULL;
         }
-        
+
         vector<Variable*> va = C->getValue();
         vector<Variable*>& vb = D->getValue();
-        
+
         for(vector<Variable*>::iterator e = vb.begin(); e != vb.end(); e++)
         {
             va.push_back(*e);
         }
-        
+
         Array* arr = new Array("<temp>", va, a);
-        
+
         return arr;
     }
     else if(a == LIST)
@@ -973,14 +973,14 @@ Variable* add(Variable* A, Variable* B)
         List* D = static_cast<List*>(B);
         list<Variable*> va = C->getValue();
         list<Variable*>& vb = D->getValue();
-        
+
         for(list<Variable*>::iterator e = vb.begin(); e != vb.end(); e++)
         {
             va.push_back(*e);
         }
-        
+
         List* lst = new List("<temp>", va);
-        
+
         return lst;
     }
     else if(a == FUNCTION)
@@ -1043,7 +1043,7 @@ Variable* subtract(Variable* A, Variable* B)
     {
         Float* C = static_cast<Float*>(A);
         Float* R = new Float;
-        
+
         if(b == INT)
         {
             Int* D = static_cast<Int*>(B);
@@ -1266,7 +1266,7 @@ Variable* exponentiate(Variable* A, Variable* B)
         {
             Int* D = static_cast<Int*>(B);
             Int* R = new Int;
-            R->setValue(pow(C->getValue(), D->getValue()));
+            R->setValue(pow(float(C->getValue()), D->getValue()));
             return R;
         }
         else if(b == FLOAT)
@@ -1333,7 +1333,7 @@ Variable* dot(Variable* A, Variable* B)
             interpreter.error("Error: %s is not a member of %s.\n", B->text.c_str(), C->text.c_str());
         return result;
     }
-    
+
     interpreter.error("Error: 'Dot' not defined for types '%s' and '%s'\n", getTypeString(a).c_str(), getTypeString(b).c_str());
     return NULL;
 }
@@ -1357,10 +1357,10 @@ Variable* array_access(Variable* A, Variable* B)
     vector<Variable*>& v = C->getValue();
     Variable* result = NULL;
     int index = D->getValue();
-    
+
     if(index >= 0 && (unsigned int)index < v.size())
         result = v[index];
-        
+
     if(result == NULL)
         interpreter.error("Error: Array index out of bounds.\n");
     return result;
@@ -1380,7 +1380,7 @@ Bool* has_element(Variable* A, Variable* B)
         interpreter.error("Error: Has_element not defined for types '%s' and '%s'\n", getTypeString(a).c_str(), getTypeString(b).c_str());
         return NULL;
     }
-    
+
     Array* C;
     Variable* other;
     TypeEnum otherType;
@@ -1396,13 +1396,13 @@ Bool* has_element(Variable* A, Variable* B)
         other = A;
         otherType = a;
     }
-        
+
     if(otherType != C->getValueType())
     {
         interpreter.error("Error: Has_element not defined for types '%s' and '%s'\n", getTypeString(ARRAY).c_str(), getTypeString(otherType).c_str());
         return NULL;
     }
-    
+
     vector<Variable*>& v = C->getValue();
     for(vector<Variable*>::iterator e = v.begin(); e != v.end(); e++)
     {
@@ -1411,7 +1411,7 @@ Bool* has_element(Variable* A, Variable* B)
             return test;
         delete test;
     }
-    
+
     return new Bool(false);
 }
 

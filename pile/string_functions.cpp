@@ -58,9 +58,9 @@ string getObjectName(string source, string objPath, bool useSourceDir)
 {
     string objName = ioStripToFile(source);
     objName = getBaseName(objName) + ".o";
-    
+
     string dir = ioStripToDir(source);
-    
+
     if(useSourceDir)
     {
         return (addDirSlash(dir) + addDirSlash(objPath) + objName);
@@ -78,11 +78,26 @@ string quoteWhitespace(string str)
         str.erase(str.begin());
     while(str.size() > 0 && isWhitespace(*(str.end()-1)))
         str.erase(str.end()-1);
-    
+
     if(str.size() > 0 && str[0] != '\"' && str[str.size()-1] != '\"'
        && str.find_first_of(' ') != string::npos)
         str = '\"' + str + '\"';
-    
+
+    return str;
+}
+
+// Quotes an empty string too.
+string quoteThis(string str)
+{
+    while(str.size() > 0 && isWhitespace(*(str.begin())))
+        str.erase(str.begin());
+    while(str.size() > 0 && isWhitespace(*(str.end()-1)))
+        str.erase(str.end()-1);
+    if(str.size() == 0)
+        return "\"\"";
+    if(str[0] != '\"' && str[str.size()-1] != '\"')
+        str = '\"' + str + '\"';
+
     return str;
 }
 
@@ -93,7 +108,7 @@ string removeQuotes(string str)
         str.erase(str.begin());
     while(str.size() > 0 && *(str.end()-1) == '\"')
         str.erase(str.end()-1);
-    
+
     return str;
 }
 
@@ -139,7 +154,7 @@ Returns: string (All object file names separated by spaces)
 string getObjectString(const list<string>& sources, const list<string>& objects)
 {
     string objectstr;
-    
+
     for(list<string>::const_iterator e = sources.begin(); e != sources.end(); e++)
     {
         string obj = *e;
@@ -151,12 +166,12 @@ string getObjectString(const list<string>& sources, const list<string>& objects)
             objectstr += (obj + " ");
         }
     }
-    
+
     for(list<string>::const_iterator e = objects.begin(); e != objects.end(); e++)
     {
         objectstr += (*e + " ");
     }
-    
+
     return objectstr;
 }
 

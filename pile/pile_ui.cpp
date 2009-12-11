@@ -48,7 +48,6 @@ bool ui_log_debug = true;
 
 
 #include "SDL.h"
-#include "SDL_image.h"
 #include "External Code/NFont.h"
 
 
@@ -74,7 +73,7 @@ class Message
     public:
     NFont* font;
     string text;
-    
+
     Message(const string& text, NFont* font)
         : font(font)
         , text(text)
@@ -141,9 +140,9 @@ string UI_wrap(string text, NFont* font, unsigned int width)
         return text;
     unsigned int iw = 0;
     unsigned int w = 0;
-    
+
     unsigned int lastLine = 0;
-    
+
     for(unsigned int i = 0; i < text.size(); i++)
     {
         if(text[i] == '\n')
@@ -152,7 +151,7 @@ string UI_wrap(string text, NFont* font, unsigned int width)
             w = 0;
             continue;
         }
-        
+
         iw = font->getWidth("%c", text[i]);
         w += iw;
         if(w > width)
@@ -162,7 +161,7 @@ string UI_wrap(string text, NFont* font, unsigned int width)
             w = iw;
         }
     }
-    
+
     return text;
 }
 
@@ -185,7 +184,7 @@ bool UI_init(bool graphical, Configuration& config)
     {
         int w = 500;
         int h = 300;
-        
+
         SDL_putenv(const_cast<char*>("SDL_VIDEO_CENTERED=center"));
         if(SDL_Init(SDL_INIT_VIDEO) < 0)
         {
@@ -199,68 +198,68 @@ bool UI_init(bool graphical, Configuration& config)
             UI_log("Error: Couldn't set video mode %dx%d: %s\n", w, h, SDL_GetError());
             return false;
         }
-        
-        
+
+
         SDL_WM_SetCaption("Pile GUI", NULL);
         //SDL_WM_SetIcon(images.load("pics/icon.png"), NULL);
-        
-        
+
+
         if(TTF_Init() == -1)
         {
             UI_log("Error: Unable to initialize SDL_ttf: %s \n", TTF_GetError());
             return false;
         }
-        
+
         SDL_Color black = {0, 0, 0, 255};
         //SDL_Color blue = {0, 0, 200, 255};
         //SDL_Color gray = {127, 127, 127, 255};
         SDL_Color white = {255, 255, 255, 255};
-        
+
         int size = 20;
-        
+
         UI_log("Install path = %s\n", config.installPath.c_str());
         UI_log("Install path2 = %s\n", addDirSlash(config.installPath).c_str());
-        
+
         TTF_Font* ttf = TTF_OpenFont((addDirSlash(config.installPath) + "fonts/FreeSans.ttf").c_str(), size);
-        
+
         if(ttf == NULL)
         {
             UI_log("Unable to load font: %s \n", TTF_GetError());
             return false;
         }
-        
+
         blackfont = new NFont;
         blackfont->setDest(screen);
         blackfont->loadTTF(ttf, black, white);
-        
+
         printfont = new NFont;
         printfont->setDest(screen);
         printfont->loadTTF(ttf, print_color, white);
-        
+
         outputfont = new NFont;
         outputfont->setDest(screen);
         outputfont->loadTTF(ttf, output_color, white);
-        
+
         warningfont = new NFont;
         warningfont->setDest(screen);
         warningfont->loadTTF(ttf, warning_color, white);
-        
+
         errorfont = new NFont;
         errorfont->setDest(screen);
         errorfont->loadTTF(ttf, error_color, white);
-        
+
         debugfont = new NFont;
         debugfont->setDest(screen);
         debugfont->loadTTF(ttf, debug_color, white);
-        
+
         TTF_CloseFont(ttf);
-        
+
         return true;
     }
-    
+
     lasttime = SDL_GetTicks();
     #endif
-    
+
     return true;
 }
 
@@ -286,12 +285,12 @@ void UI_print(const char* formatted_text, ...)
 {
     if(formatted_text == NULL)
         return;
-    
+
     va_list lst;
     va_start(lst, formatted_text);
     vsprintf(ui_buffer, formatted_text, lst);
     va_end(lst);
-    
+
     #ifndef PILE_NO_GUI
     if(ui_gui)
     {
@@ -304,7 +303,7 @@ void UI_print(const char* formatted_text, ...)
     #endif
     if(ui_print)
         printf(ui_buffer);
-    
+
     if(ui_log_print)
         UI_log(ui_buffer);
 }
@@ -313,12 +312,12 @@ void UI_output(const char* formatted_text, ...)
 {
     if(formatted_text == NULL)
         return;
-    
+
     va_list lst;
     va_start(lst, formatted_text);
     vsprintf(ui_buffer, formatted_text, lst);
     va_end(lst);
-    
+
     #ifndef PILE_NO_GUI
     if(ui_gui)
     {
@@ -331,7 +330,7 @@ void UI_output(const char* formatted_text, ...)
     #endif
     if(ui_print || ui_error)
         printf(ui_buffer);
-    
+
     if(ui_log_print || ui_log_error)
         UI_log(ui_buffer);
 }
@@ -340,12 +339,12 @@ void UI_warning(const char* formatted_text, ...)
 {
     if(formatted_text == NULL)
         return;
-    
+
     va_list lst;
     va_start(lst, formatted_text);
     vsprintf(ui_buffer, formatted_text, lst);
     va_end(lst);
-    
+
     #ifndef PILE_NO_GUI
     if(ui_gui)
     {
@@ -356,10 +355,10 @@ void UI_warning(const char* formatted_text, ...)
         return;
     }
     #endif
-    
+
     if(ui_warning)
         printf(ui_buffer);
-    
+
     if(ui_log_warning)
         UI_log(ui_buffer);
 }
@@ -368,12 +367,12 @@ void UI_error(const char* formatted_text, ...)
 {
     if(formatted_text == NULL)
         return;
-    
+
     va_list lst;
     va_start(lst, formatted_text);
     vsprintf(ui_buffer, formatted_text, lst);
     va_end(lst);
-    
+
     #ifndef PILE_NO_GUI
     if(ui_gui)
     {
@@ -384,10 +383,10 @@ void UI_error(const char* formatted_text, ...)
         return;
     }
     #endif
-    
+
     if(ui_error)
         printf(ui_buffer);
-    
+
     if(ui_log_error)
         UI_log(ui_buffer);
 }
@@ -396,12 +395,12 @@ void UI_debug(const char* formatted_text, ...)
 {
     if(formatted_text == NULL)
         return;
-    
+
     va_list lst;
     va_start(lst, formatted_text);
     vsprintf(ui_buffer, formatted_text, lst);
     va_end(lst);
-    
+
     #ifndef PILE_NO_GUI
     if(ui_gui)
     {
@@ -412,10 +411,10 @@ void UI_debug(const char* formatted_text, ...)
         return;
     }
     #endif
-    
+
     if(ui_debug)
         printf(ui_buffer);
-    
+
     if(ui_log_debug)
         UI_log(ui_buffer);
 }
@@ -424,12 +423,12 @@ void UI_debug_pile(const char* formatted_text, ...)
 {
     if(formatted_text == NULL)
         return;
-    
+
     va_list lst;
     va_start(lst, formatted_text);
     vsprintf(ui_buffer, formatted_text, lst);
     va_end(lst);
-    
+
     #ifndef PILE_NO_GUI
     if(ui_gui)
     {
@@ -442,11 +441,11 @@ void UI_debug_pile(const char* formatted_text, ...)
         return;
     }
     #endif
-    
+
     #ifdef PILE_DEBUG_PILE
     if(ui_debug_pile)
         printf(ui_buffer);
-    
+
     if(ui_log_debug_pile)
         UI_log(ui_buffer);
     #endif
@@ -456,12 +455,12 @@ void UI_log(const char* formatted_text, ...)
 {
     if(formatted_text == NULL)
         return;
-    
+
     va_list lst;
     va_start(lst, formatted_text);
     vsprintf(ui_buffer, formatted_text, lst);
     va_end(lst);
-    
+
     if(ui_log)
         ioAppend(ui_buffer, log_file.c_str());
 }
@@ -471,11 +470,11 @@ int UI_choice(int numChoices, string* choices)
     #ifndef PILE_NO_GUI
     if(ui_gui)
     {
-        
+
         return 0;
     }
     #endif
-    
+
     return 0;
 }
 
@@ -484,11 +483,11 @@ string UI_input()
     #ifndef PILE_NO_GUI
     if(ui_gui)
     {
-        
+
         return "";
     }
     #endif
-    
+
     return "";
 }
 
@@ -508,7 +507,7 @@ bool UI_prompt(string message)
     #ifndef PILE_NO_GUI
     if(ui_gui)
     {
-        
+
         return false;
     }
     #endif
@@ -534,7 +533,7 @@ string UI_promptString(string message)
     #ifndef PILE_NO_GUI
     if(ui_gui)
     {
-        
+
         return "";
     }
     #endif
@@ -547,7 +546,7 @@ string UI_promptString(string message)
         delay(20);
     }
     while(strcmp(buff, "") == 0);
-    
+
     return buff;
 }
 
@@ -558,10 +557,10 @@ void UI_updateScreen()
     if(screen == NULL)
         return;
     SDL_FillRect(screen, NULL, 0xffffff);
-    
+
     int maxX = 0;
     int width = 0;
-    
+
     int x = 20;
     int y = screen->h - 11;  // Give room for the scrollbar
     // FIXME: Count the number of newlines in the string and adjust y according to that.
@@ -575,25 +574,25 @@ void UI_updateScreen()
         //if(!continuing)
             x = 20;
         y -= font->getHeight(e->text.c_str());
-        
+
         // Trailing newlines...
         if(e->text.size() > 0 && e->text[e->text.size()-1] == '\n')
         {
             x = 20;
             y += font->getHeight();
         }
-        
+
         font->draw(int(20 - scrollX), int(y - scrollY), e->text.c_str());
         if(y < scrollY)
             break;
-        
+
         width = font->getWidth(e->text.c_str());
         x += width;
-        
+
         if(width > maxX)
             maxX = width;
     }
-    
+
     // Draw the horizontal scrollbar
     // FIXME: Word wrap should be toggleable
     if(maxX > screen->w)
@@ -603,7 +602,7 @@ void UI_updateScreen()
         float pos = (float(scrollX)/maxX)*(screen->w-1);
         rect(int(pos - 5), screen->h - 11, int(pos + 5), screen->h, 0x000000);
     }
-    
+
     SDL_Flip(screen);
     #endif
 }
@@ -612,16 +611,16 @@ int UI_waitKeyPress()
 {
     #ifndef PILE_NO_GUI
     Uint8* keystates = SDL_GetKeyState(NULL);
-    
+
     float vel = 40;
-    
+
     SDL_Event event;
     while(1)
     {
         Uint32 starttime = SDL_GetTicks();
         dt = (starttime - lasttime)/1000.0f;
         lasttime = starttime;
-        
+
         while(SDL_PollEvent(&event))
         {
             if(event.type == SDL_QUIT)
@@ -675,7 +674,7 @@ int UI_waitKeyPress()
             vel = 200*dt;
         if(scrollX < 0)
             scrollX = 0;
-        
+
         UI_updateScreen();
         SDL_Delay(50);
     }
@@ -690,21 +689,21 @@ int UI_processEvents()
 {
     #ifndef PILE_NO_GUI
     Uint8* keystates = SDL_GetKeyState(NULL);
-    
+
     static float vel = 40;
-    
+
     Uint32 starttime = SDL_GetTicks();
     dt = (starttime - lasttime)/1000.0f;
     lasttime = starttime;
-    
+
     SDL_Event event;
-    
+
     bool continuousInput = false;
-    
+
     do
     {
         continuousInput = false;
-        
+
         while(SDL_PollEvent(&event))
         {
             if(event.type == SDL_QUIT)
@@ -734,7 +733,7 @@ int UI_processEvents()
                 }
             }
         }
-    
+
         if(keystates[SDLK_UP])
             scrollY -= vel*dt;
         if(keystates[SDLK_DOWN])
@@ -752,13 +751,13 @@ int UI_processEvents()
             vel = 40;
         if(scrollX < 0)
             scrollX = 0;
-        
+
         UI_updateScreen();
         SDL_Delay(50);
     }
     while(continuousInput);
     #endif
-    
+
     return 0;
 }
 
@@ -775,17 +774,17 @@ void UI_print_file(string filename)
         fin.close();
         return;
     }
-    
+
     bool printed = false;
     string line;
-    
+
     while(!fin.eof())
     {
         getline(fin, line);
         UI_output((line + "\n").c_str());
         printed = true;
     }
-    
+
     fin.close();
 }
 
