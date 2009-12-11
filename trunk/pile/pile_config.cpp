@@ -56,13 +56,13 @@ bool createConfig(string path, Configuration& config)
         fout.close();
         return false;
     }
-    
+
     UI_log("Writing config\n");
     fout << "CONFIG_FORMAT_VERSION_MAJOR = " << VERSION_MAJOR << endl;
     fout << "CONFIG_FORMAT_VERSION_MINOR = " << VERSION_MINOR << endl;
     fout << "CONFIG_FORMAT_VERSION_BUGFIX = " << VERSION_BUGFIX << endl;
     UI_log("Wrote version\n");
-    
+
     UI_log("Writing editor\n");
     if(config.editor == "vi")
     {
@@ -77,36 +77,36 @@ bool createConfig(string path, Configuration& config)
              << "//    Editing: Press 'i' to enter Insert mode." << endl << endl;
         UI_log("Wrote vi warning\n");
     }
-    
-    fout << "EDITOR_PATH = \"" << config.editor << "\"" << endl;
+
+    fout << "EDITOR_PATH = " << quoteThis(config.editor) << endl;
     UI_log("Wrote editor\n");
-    
-    fout << "PILE_PATH = \"" << config.installPath << "\"" << endl;
-    
+
+    fout << "PILE_PATH = " << quoteThis(config.installPath) << endl;
+
     /*fout << "lang C: " << config.languages.find("C_COMPILER")->second << ", "
                   << config.languages.find("C_LINKER_D")->second << ", "
                   << config.languages.find("C_LINKER_S")->second << ", "
                   << config.languages.find("C_SYNTAX")->second << endl;*/
-    fout << "cpp_compiler.name = \"" << config.languages.find("CPP_COMPILER")->second << "\"" << endl;
-    fout << "cpp_compiler.path = \"" << config.languages.find("CPP_COMPILER")->second << "\"" << endl;
-    fout << "cpp_linker.name = \"" << config.languages.find("CPP_LINKER_D")->second << "\"" << endl;
-    fout << "cpp_linker.path = \"" << config.languages.find("CPP_LINKER_D")->second << "\"" << endl;
+    fout << "cpp_compiler.name = " << quoteThis(config.languages.find("CPP_COMPILER")->second) << endl;
+    fout << "cpp_compiler.path = " << quoteThis(config.languages.find("CPP_COMPILER")->second) << endl;
+    fout << "cpp_linker.name = " << quoteThis(config.languages.find("CPP_LINKER_D")->second) << endl;
+    fout << "cpp_linker.path = " << quoteThis(config.languages.find("CPP_LINKER_D")->second) << endl;
     /*fout << "lang FORTRAN: " << config.languages.find("FORTRAN_COMPILER")->second << ", "
                   << config.languages.find("FORTRAN_LINKER_D")->second << ", "
                   << config.languages.find("FORTRAN_LINKER_S")->second << ", "
                   << config.languages.find("FORTRAN_SYNTAX")->second << endl;*/
-    fout << "BIN_INSTALL_DIR = \"" << config.binInstallPath << "\"" << endl;
-    fout << "PROGRAM_INSTALL_DIR = \"" << config.programInstallPath << "\"" << endl;
-    fout << "LIBRARY_INSTALL_DIR = \"" << config.libInstallPath << "\"" << endl;
-    fout << "HEADER_INSTALL_DIR = \"" << config.headerInstallPath << "\"" << endl;
-    
+    fout << "BIN_INSTALL_DIR = " << quoteThis(config.binInstallPath) << endl;
+    fout << "PROGRAM_INSTALL_DIR = " << quoteThis(config.programInstallPath) << endl;
+    fout << "LIBRARY_INSTALL_DIR = " << quoteThis(config.libInstallPath) << endl;
+    fout << "HEADER_INSTALL_DIR = " << quoteThis(config.headerInstallPath) << endl;
+
     /*fout << "includeDirs:";
     for(list<string>::iterator e = config.includePaths.begin(); e != config.includePaths.end(); e++)
     {
         fout << " " << *e;
     }
     fout << endl;*/
-    
+
     UI_log("Done writing config\n");
     fout.close();
     return true;
@@ -127,11 +127,11 @@ bool loadConfig(string path, Configuration& config)
     /*
     Pile has three files that it deals with for configuration.
     pile.conf is the config file, in the ~/.pile directory.
-    template_pile.conf is the template for the config file, in the ~/.pile directory. 
+    template_pile.conf is the template for the config file, in the ~/.pile directory.
     template_pile.conf is the template for the config file, in Pile's installation directory.
-    
+
     If pile.conf does not exist, Pile will copy the local template (the one in
-    ~/.pile.  This allows you to make changes to the template, which will be the 
+    ~/.pile.  This allows you to make changes to the template, which will be the
     default if pile.conf is deleted.  If that template does not exist, then Pile
     copies the one in its installation directory.  If that doesn't work, Pile
     tries to create a new template file in ~/.pile, assuming that the user does
@@ -153,7 +153,7 @@ bool loadConfig(string path, Configuration& config)
             return false;
         }
     }
-    
+
     if(!ioExists(file))
     {
         UI_warning("Config file does not exist.  Copying template...\n");
@@ -165,16 +165,16 @@ bool loadConfig(string path, Configuration& config)
             return false;
         }
     }
-    
+
     Scope& s = *(interpreter.env.begin());
-    
+
     Int* version_major = new Int("<temp>", VERSION_MAJOR);
     version_major->reference = true;
     Int* version_minor = new Int("<temp>", VERSION_MINOR);
     version_minor->reference = true;
     Int* version_bugfix = new Int("<temp>", VERSION_BUGFIX);
     version_bugfix->reference = true;
-    
+
     String* editor_path = new String("EDITOR_PATH", "vi");
     editor_path->reference = true;
     String* pile_path = new String("PILE_PATH", config.installPath);
@@ -187,27 +187,27 @@ bool loadConfig(string path, Configuration& config)
     lib_install_path->reference = true;
     String* header_install_path = new String("HEADER_INSTALL_DIR", config.headerInstallPath);
     header_install_path->reference = true;
-    
+
     s.env["CONFIG_FORMAT_VERSION_MAJOR"] = version_major;
     s.env["CONFIG_FORMAT_VERSION_MINOR"] = version_minor;
     s.env["CONFIG_FORMAT_VERSION_BUGFIX"] = version_bugfix;
-    
+
     s.env["EDITOR_PATH"] = editor_path;
     s.env["PILE_PATH"] = pile_path;
-    
-    
+
+
     s.env["BIN_INSTALL_DIR"] = bin_install_path;
     s.env["PROGRAM_INSTALL_DIR"] = program_install_path;
     s.env["LIBRARY_INSTALL_DIR"] = lib_install_path;
     s.env["HEADER_INSTALL_DIR"] = header_install_path;
-    
-    
+
+
     // Add Compiler
     Class* compiler = new Class("Compiler");
     compiler->addVariable("string", "name");
     compiler->addVariable("string", "path");
     interpreter.addClass(compiler);
-    
+
     ClassObject* cpp_compiler = new ClassObject("cpp_compiler", "Compiler");
     cpp_compiler->reference = true;
     Variable* cpp_name = cpp_compiler->getVariable("name");
@@ -218,13 +218,13 @@ bool loadConfig(string path, Configuration& config)
         static_cast<String*>(cpp_path)->setValue(config.languages["CPP_COMPILER"]);
     }
     s.env["cpp_compiler"] = cpp_compiler;
-    
+
     // Add Linker
     Class* linker = new Class("Linker");
     linker->addVariable("string", "name");
     linker->addVariable("string", "path");
     interpreter.addClass(linker);
-    
+
     ClassObject* cpp_linker = new ClassObject("cpp_linker", "Linker");
     cpp_linker->reference = true;
     Variable* cpp_linkname = cpp_linker->getVariable("name");
@@ -235,9 +235,9 @@ bool loadConfig(string path, Configuration& config)
         static_cast<String*>(cpp_linkpath)->setValue(config.languages["CPP_LINKER_D"]);
     }
     s.env["cpp_linker"] = cpp_linker;
-    
-    
-    
+
+
+
     interpreter.allowDeclarations = false;
     // Do the interpretation
     if(!interpretNoPile(file, env, config))
@@ -250,20 +250,20 @@ bool loadConfig(string path, Configuration& config)
     else
     {
         interpreter.allowDeclarations = true;
-        
+
         // Retrieve the variables
         config.editor = editor_path->getValue();
         config.installPath = pile_path->getValue();
-        
+
         // FIXME: This needs to be much better and flexible
         config.languages["CPP_COMPILER"] = static_cast<String*>(cpp_path)->getValue();
         config.languages["CPP_LINKER_D"] = static_cast<String*>(cpp_linkpath)->getValue();
-        
+
         config.binInstallPath = bin_install_path->getValue();
         config.programInstallPath = program_install_path->getValue();
         config.libInstallPath = lib_install_path->getValue();
         config.headerInstallPath = header_install_path->getValue();
-        
+
         interpreter.reset();
     }
     return true;

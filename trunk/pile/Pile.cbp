@@ -8,7 +8,7 @@
 		<Build>
 			<Target title="Release">
 				<Option output="pile" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj/Release/" />
+				<Option object_output="obj\Release\" />
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -16,6 +16,21 @@
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Release - Win32">
+				<Option output="pile" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj\Release\" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add directory="C:\Program Files\CodeBlocks\MinGW\include\SDL" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add option="-mwindows" />
+					<Add library="mingw32" />
 				</Linker>
 			</Target>
 		</Build>
@@ -26,21 +41,20 @@
 		<Linker>
 			<Add library="SDLmain" />
 			<Add library="SDL" />
-			<Add library="SDL_image" />
 			<Add library="SDL_ttf" />
 		</Linker>
-		<Unit filename="Eve Source/eve_builtInFunctions.cpp" />
-		<Unit filename="Eve Source/eve_evaluater.cpp" />
-		<Unit filename="Eve Source/eve_functions.cpp" />
-		<Unit filename="Eve Source/eve_interpreter.cpp" />
-		<Unit filename="Eve Source/eve_interpreter.h" />
-		<Unit filename="Eve Source/eve_operators.cpp" />
-		<Unit filename="Eve Source/eve_tokenizer.cpp" />
-		<Unit filename="Eve Source/eve_variables.cpp" />
-		<Unit filename="External Code/NFont.cpp" />
-		<Unit filename="External Code/NFont.h" />
-		<Unit filename="External Code/goodio.cpp" />
-		<Unit filename="External Code/goodio.h" />
+		<Unit filename="Eve Source\eve_builtInFunctions.cpp" />
+		<Unit filename="Eve Source\eve_evaluater.cpp" />
+		<Unit filename="Eve Source\eve_functions.cpp" />
+		<Unit filename="Eve Source\eve_interpreter.cpp" />
+		<Unit filename="Eve Source\eve_interpreter.h" />
+		<Unit filename="Eve Source\eve_operators.cpp" />
+		<Unit filename="Eve Source\eve_tokenizer.cpp" />
+		<Unit filename="Eve Source\eve_variables.cpp" />
+		<Unit filename="External Code\NFont.cpp" />
+		<Unit filename="External Code\NFont.h" />
+		<Unit filename="External Code\goodio.cpp" />
+		<Unit filename="External Code\goodio.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="pile_build.cpp" />
 		<Unit filename="pile_build.h" />

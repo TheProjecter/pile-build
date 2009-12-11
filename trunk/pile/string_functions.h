@@ -30,6 +30,8 @@ std::string getBaseName(std::string file);
 
 std::string quoteWhitespace(std::string str);
 
+std::string quoteThis(std::string str);
+
 std::string removeQuotes(std::string str);
 
 /*
