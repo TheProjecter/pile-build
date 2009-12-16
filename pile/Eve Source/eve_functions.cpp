@@ -244,6 +244,9 @@ Function::Function(const std::string& text, FunctionEnum builtIn)
         case FN_MOD_TIME:
             argt.push_back(TypeName(STRING));
             break;
+        case FN_SYSTEM:
+            argt.push_back(TypeName(STRING));
+            break;
         case FN_EXTERNAL:
             break;
         case FN_NONE:
@@ -477,9 +480,9 @@ EvalState Function::call(Interpreter& interpreter, std::vector<Variable*>& args)
     return returnValue;
 }
 
-Variable* Function::copy()
+Function* Function::copy()
 {
-    Variable* cp = new Function(*this);
+    Function* cp = new Function(*this);
     cp->temp = false;
     cp->reference = false;
     return cp;

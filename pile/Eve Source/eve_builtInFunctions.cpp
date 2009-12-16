@@ -14,6 +14,7 @@ the Eve interpreter.
 // FIXME: Replace Pile output with an error message system
 #include "../pile_ui.h"
 #include <cassert>
+#include <cstdlib>
 #include <string>
 #include "../External Code/goodio.h"
 using namespace std;
@@ -468,6 +469,18 @@ Variable* fn_mod_time(Variable* f)
     return new Int("<temp>", -1);
 }
 
+/*
+Built-in system().
+*/
+Variable* fn_system(Variable* f)
+{
+    String* text = dynamic_cast<String*>(f);
+    
+    if(text != NULL)
+        system(text->getValue().c_str());
+    return NULL;
+}
+
 
 /*
 Groups together the calling of built-in functions.  Used in callFn().
@@ -644,6 +657,14 @@ EvalState callBuiltIn(FunctionEnum fn, std::vector<Variable*>& args)
                 break;
             }
             v = fn_mod_time(args[0]);
+            break;
+        case FN_SYSTEM:
+            if(args.size() != 1)
+            {
+                interpreter.errorFlag = true;
+                break;
+            }
+            v = fn_system(args[0]);
             break;
         case FN_EXTERNAL:
             //break;

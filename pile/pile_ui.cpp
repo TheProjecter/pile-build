@@ -18,6 +18,7 @@ The UI functions can be enabled/disabled and display according to the UI chosen
 #include "stdarg.h"
 #include <iostream>
 #include <fstream>
+#include <vector>
 #include "string_functions.h"
 #include "pile_config.h"
 #include "External Code/goodio.h"
@@ -133,7 +134,43 @@ void rect(int x, int y, int x2, int y2, Uint32 color)
     SDL_Rect r = {x, y, x2 - x + 1, y2 - y + 1};
     SDL_FillRect(screen, &r, color);
 }
+void rect(SDL_Rect& r, Uint32 color)
+{
+    rect(r.x, r.y, r.x + r.w, r.y + r.h, color);
+}
+void rect_line(int x, int y, int x2, int y2, Uint32 color)
+{
+    if(x > x2)
+    {
+        int s = x;
+        x = x2;
+        x2 = s;
+    }
+    if(y > y2)
+    {
+        int s = y;
+        y = y2;
+        y2 = s;
+    }
 
+    lineh(x, y, x2, color);
+    lineh(x, y2, x2, color);
+    linev(x, y, y2, color);
+    linev(x2, y, y2, color);
+}
+void rect_line(SDL_Rect& r, Uint32 color)
+{
+    rect_line(r.x, r.y, r.x + r.w, r.y + r.h, color);
+}
+
+
+
+
+
+
+
+
+// FIXME: Make this wrap at word boundaries (with minimum of 1 word)!
 string UI_wrap(string text, NFont* font, unsigned int width)
 {
     if(font == NULL)
@@ -502,13 +539,93 @@ bool isNo(string text)
     return (text == "n" || text == "no");
 }
 
+int UI_popup(string message, int numButtons, ...)
+{
+    #ifndef PILE_NO_GUI
+    if(ui_gui)
+    {
+        int numArgs = 0;
+        vector<string> buttonText;
+        va_list lst;
+        va_start(lst, numButtons);
+        for(int i = 0; i < numButtons; i++)
+        {
+            numArgs++;
+            buttonText.push_back(va_arg(lst, char*));
+        }
+        va_end(lst);
+        
+        if(numArgs < 1)
+            return -1;
+        
+        
+        SDL_Rect msgRect = {2, 2, screen->w - 4, screen->h - 4};
+        message = UI_wrap(message, printfont, msgRect.w);
+        
+        SDL_Rect buttons[numArgs];
+        for(int i = 0; i < numArgs; i++)
+        {
+            buttons[i].w = 50;
+            buttons[i].h = 30;
+            buttons[i].x = msgRect.x + msgRect.w/2 - 50*(numArgs-1) + (50 + 3)*i;
+            buttons[i].y = msgRect.y + printfont->getHeight(message.c_str());
+        }
+        
+        // FIXME: Replace loops like this with a programmable loop function (callbacks, blecch, I know).  The most modular approach would be with several base classes.  The objects of which would be told to call their particular function.
+        SDL_Event event;
+        while(1)
+        {
+            Uint32 starttime = SDL_GetTicks();
+            dt = (starttime - lasttime)/1000.0f;
+            lasttime = starttime;
+    
+            while(SDL_PollEvent(&event))
+            {
+                if(event.type == SDL_QUIT)
+                {
+                    return -2;
+                }
+                if(event.type == SDL_MOUSEBUTTONUP)
+                {
+                    if(event.button.button == SDL_BUTTON_LEFT)
+                    {
+                        int mx, my;
+                        SDL_GetMouseState(&mx, &my);
+                        for(int i = 0; i < numArgs; i++)
+                        {
+                            if(buttons[i].x <= mx && mx < buttons[i].x + buttons[i].w
+                               && buttons[i].y <= my && my < buttons[i].y + buttons[i].h)
+                                return i;
+                        }
+                    }
+                }
+            }
+            
+            SDL_FillRect(screen, &msgRect, SDL_MapRGB(screen->format, 200, 200, 200));
+            
+            printfont->drawCenter(msgRect.x + msgRect.w/2, msgRect.y, message.c_str());
+                
+            for(unsigned int i = 0; i < buttonText.size(); i++)
+            {
+                rect_line(buttons[i], SDL_MapRGB(screen->format, 50, 50, 150));
+                printfont->drawCenter(buttons[i].x + buttons[i].w/2, buttons[i].y, buttonText[i].c_str());
+            }
+            
+            SDL_Flip(screen);
+            SDL_Delay(50);
+        }
+    }
+    #endif
+    
+    return -1;
+}
+
 bool UI_prompt(string message)
 {
     #ifndef PILE_NO_GUI
     if(ui_gui)
     {
-
-        return false;
+        return (UI_popup(message, 2, "Yes", "No") == 0);
     }
     #endif
     printf("%s (Yes/No): ", message.c_str());
@@ -525,6 +642,7 @@ bool UI_prompt(string message)
             user.erase(user.end()-1);
     }
     while(!(isYes(user) || isNo(user)));
+
     return isYes(user);
 }
 

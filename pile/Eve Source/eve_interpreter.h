@@ -62,7 +62,7 @@ enum SeparatorEnum{NOT_A_SEPARATOR, COMMA, OPEN_PARENTHESIS, CLOSE_PARENTHESIS,
 
 enum KeywordEnum{KW_NONE, KW_IF, KW_ELSE, KW_RETURN};
 
-enum FunctionEnum{FN_NONE, FN_EXTERNAL, FN_PRINT, FN_PRINTLN, FN_WARNING, FN_ERROR, FN_DEBUG, FN_TYPE, FN_STRING, FN_BOOL, FN_INT, FN_FLOAT, FN_INCLUDE, FN_LS, FN_DEFINED, FN_COPY, FN_MOVE, FN_DELETE, FN_MKDIR, FN_MKPATH, FN_MKFILE, FN_CHMOD, FN_MOD_TIME};
+enum FunctionEnum{FN_NONE, FN_EXTERNAL, FN_PRINT, FN_PRINTLN, FN_WARNING, FN_ERROR, FN_DEBUG, FN_TYPE, FN_STRING, FN_BOOL, FN_INT, FN_FLOAT, FN_INCLUDE, FN_LS, FN_DEFINED, FN_COPY, FN_MOVE, FN_DELETE, FN_MKDIR, FN_MKPATH, FN_MKFILE, FN_CHMOD, FN_MOD_TIME, FN_SYSTEM};
 
 KeywordEnum getKeyword(const std::string& str);
 
@@ -104,6 +104,9 @@ public:
     bool reference;  // Used as a message to callFn that this should be passed by reference.
     Variable(TypeEnum type, const std::string& text);
     TypeEnum getType();
+    // Note: copy() uses covariant return types
+    // This lets you say:
+    // String* mystr = otherstr->copy();
     virtual Variable* copy() = 0;
     virtual std::string getValueString() = 0;
     // This could easily be a virtual function instead... and then it'd be independent of some external stuff.
@@ -126,7 +129,7 @@ public:
     void setValue(const TypeEnum& val);
     TypeEnum& getValue();
     virtual std::string getValueString();
-    virtual Variable* copy();
+    virtual TypeName* copy();
 };
 
 // This class represents an undefined variable.
@@ -139,7 +142,7 @@ public:
     void setValue(const std::string& val);
     std::string& getValue();
     virtual std::string getValueString();
-    virtual Variable* copy();
+    virtual Void* copy();
 };
 
 class String : public Variable
@@ -152,7 +155,7 @@ public:
     void setValue(const std::string& val);
     std::string& getValue();
     virtual std::string getValueString();
-    virtual Variable* copy();
+    virtual String* copy();
 };
 
 class Bool : public Variable
@@ -165,7 +168,7 @@ public:
     bool& getValue();
     void setValue(const bool& val);
     virtual std::string getValueString();
-    virtual Variable* copy();
+    virtual Bool* copy();
 };
 
 class Int : public Variable
@@ -178,7 +181,7 @@ public:
     int& getValue();
     void setValue(const int& val);
     virtual std::string getValueString();
-    virtual Variable* copy();
+    virtual Int* copy();
 };
 
 class Float : public Variable
@@ -191,7 +194,7 @@ public:
     float& getValue();
     void setValue(const float& val);
     virtual std::string getValueString();
-    virtual Variable* copy();
+    virtual Float* copy();
 };
 
 class Macro : public Variable
@@ -204,7 +207,7 @@ public:
     std::string& getValue();
     void setValue(const std::string& val);
     virtual std::string getValueString();
-    virtual Variable* copy();
+    virtual Macro* copy();
 };
 
 
@@ -230,7 +233,7 @@ public:
     
     unsigned int size();
     
-    virtual Variable* copy();
+    virtual Array* copy();
 };
 
 class List : public Variable
@@ -244,7 +247,7 @@ public:
     void setValue(const std::list<Variable*>& val);
     virtual std::string getValueString();
     void push_back(Variable* var);
-    virtual Variable* copy();
+    virtual List* copy();
 };
 
 class Function : public Variable
@@ -295,7 +298,7 @@ public:
     FunctionEnum getBuiltIn();
     EvalState call(Interpreter& interpreter, std::vector<Variable*>& args);
     
-    virtual Variable* copy();
+    virtual Function* copy();
 };
 
 class Procedure : public Variable
@@ -307,7 +310,7 @@ public:
     std::string& getValue();
     void setValue(const std::string& val);
     virtual std::string getValueString();
-    virtual Variable* copy();
+    virtual Procedure* copy();
 };
 
 
@@ -340,7 +343,7 @@ public:
     void addVariable(const std::string& vartype, const std::string& varname);
     void addFunction(std::string name, Function* f);
     virtual std::string getValueString();
-    virtual Variable* copy();
+    virtual Class* copy();
 };
 
 class ClassObject : public Variable
@@ -356,7 +359,7 @@ public:
     
     Variable* getVariable(const std::string& var);
     virtual std::string getValueString();
-    virtual Variable* copy();
+    virtual ClassObject* copy();
 };
 
 

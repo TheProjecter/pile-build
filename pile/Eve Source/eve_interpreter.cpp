@@ -116,6 +116,7 @@ void Interpreter::reset()
     s.env["mkfile"] = new Function("mkfile", FN_MKFILE);
     s.env["chmod"] = new Function("chmod", FN_CHMOD);
     s.env["mod_time"] = new Function("mod_time", FN_MOD_TIME);
+    s.env["system"] = new Function("system", FN_SYSTEM);
 }
 
 void Interpreter::addClass(Class* c)

@@ -281,9 +281,9 @@ std::string TypeName::getValueString()
 {
     return ::getTypeString(value);
 }
-Variable* TypeName::copy()
+TypeName* TypeName::copy()
 {
-    Variable* cp = new TypeName(*this);
+    TypeName* cp = new TypeName(*this);
     cp->temp = false;
     cp->reference = false;
     return cp;
@@ -310,9 +310,9 @@ std::string Void::getValueString()
 {
     return value;
 }
-Variable* Void::copy()
+Void* Void::copy()
 {
-    Variable* cp = new Void(*this);
+    Void* cp = new Void(*this);
     cp->temp = false;
     cp->reference = false;
     return cp;
@@ -341,9 +341,9 @@ std::string String::getValueString()
 {
     return value;
 }
-Variable* String::copy()
+String* String::copy()
 {
-    Variable* cp = new String(*this);
+    String* cp = new String(*this);
     cp->temp = false;
     cp->reference = false;
     return cp;
@@ -379,9 +379,9 @@ std::string Bool::getValueString()
 {
     return (value? "true" : "false");
 }
-Variable* Bool::copy()
+Bool* Bool::copy()
 {
-    Variable* cp = new Bool(*this);
+    Bool* cp = new Bool(*this);
     cp->temp = false;
     cp->reference = false;
     return cp;
@@ -415,9 +415,9 @@ std::string Int::getValueString()
     sprintf(buff, "%d", value);
     return buff;
 }
-Variable* Int::copy()
+Int* Int::copy()
 {
-    Variable* cp = new Int(*this);
+    Int* cp = new Int(*this);
     cp->temp = false;
     cp->reference = false;
     return cp;
@@ -451,9 +451,9 @@ std::string Float::getValueString()
     sprintf(buff, "%f", value);
     return buff;
 }
-Variable* Float::copy()
+Float* Float::copy()
 {
-    Variable* cp = new Float(*this);
+    Float* cp = new Float(*this);
     cp->temp = false;
     cp->reference = false;
     return cp;
@@ -481,9 +481,9 @@ std::string Macro::getValueString()
 {
     return value;
 }
-Variable* Macro::copy()
+Macro* Macro::copy()
 {
-    Variable* cp = new Macro(*this);
+    Macro* cp = new Macro(*this);
     cp->temp = false;
     cp->reference = false;
     return cp;
@@ -575,9 +575,9 @@ unsigned int Array::size()
     return value.size();
 }
 
-Variable* Array::copy()
+Array* Array::copy()
 {
-    Variable* cp = new Array(*this);
+    Array* cp = new Array(*this);
     cp->temp = false;
     cp->reference = false;
     return cp;
@@ -632,9 +632,9 @@ void List::push_back(Variable* var)
     if(var != NULL)
         value.push_back(var);
 }
-Variable* List::copy()
+List* List::copy()
 {
-    Variable* cp = new List(*this);
+    List* cp = new List(*this);
     cp->temp = false;
     cp->reference = false;
     return cp;
@@ -663,9 +663,9 @@ std::string Procedure::getValueString()
 {
     return value;
 }
-Variable* Procedure::copy()
+Procedure* Procedure::copy()
 {
-    Variable* cp = new Procedure(*this);
+    Procedure* cp = new Procedure(*this);
     cp->temp = false;
     cp->reference = false;
     return cp;
@@ -699,9 +699,9 @@ std::string Class::getValueString()
 {
     return name;
 }
-Variable* Class::copy()
+Class* Class::copy()
 {
-    Variable* cp = new Class(*this);
+    Class* cp = new Class(*this);
     cp->temp = false;
     cp->reference = false;
     return cp;
@@ -818,9 +818,9 @@ std::string ClassObject::getValueString()
     return name;
 }
 
-Variable* ClassObject::copy()
+ClassObject* ClassObject::copy()
 {
-    Variable* cp = new ClassObject(*this);
+    ClassObject* cp = new ClassObject(*this);
     cp->temp = false;
     cp->reference = false;
     return cp;
