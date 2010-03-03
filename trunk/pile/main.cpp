@@ -60,7 +60,7 @@ string findPileFile()
     if(ioExists("com.pile"))
         return "com.pile";
     string file;
-        
+
     list<string> ls = ioList(".", false, true);
 
     for(list<string>::iterator e = ls.begin(); e != ls.end(); e++)
@@ -95,15 +95,15 @@ void generatePilefile(string name, int type)
                 base = base.substr(0, dot);
         }
     }
-        
+
     if(ioExists(name))
     {
         UI_print("Cannot create new pilefile.  %s already exists!\n", name.c_str());
         return;
     }
-    
+
     ioNew(name);
-    
+
     switch(type)
     {
         case 0:
@@ -124,41 +124,41 @@ Delete the old log file if it exists.
 */
 int main(int argc, char* argv[])
 {
-    
+
     //string pileDirectory = ioGetProgramPath();
-    
+
     // Create config dir
     ioNewDir(getConfigDir());
-    
+
     // Set log file
     string configDir = getConfigDir();
     log_file = configDir + "pile_log.txt";
     //log_file = "pile_log.txt";
-    
+
     // Delete log file
     ioDelete(log_file);
-    
+
     UI_debug_pile("Starting up...\n");
     UI_debug_pile("Argc = %d\n", argc);
     for(int i = 0; i < argc; i++)
     {
         UI_debug_pile("Argv[%d] = %s\n", i, argv[i]);
     }
-    
-    
-    
-    
+
+
+
+
     // Load pile.conf
     if(!ioExists(configDir))
         ioNewDir(configDir);
-    
-    
+
+
     UI_debug("Loading config.\n");
     loadConfig(configDir, config);
     UI_debug("Done loading config.\n");
-    
+
     env.loadConfig(config);
-    
+
     if(config.installPath == "")
     {
         SYS_alert(("Pile's install path has not been set!  Please edit " + configDir + "pile.conf and set the PILE_PATH string to the directory that contains the Pile installation.\n").c_str());
@@ -172,10 +172,10 @@ int main(int argc, char* argv[])
             return 0;
         }*/
     }
-    
+
     string file;  // pilefile name
-    
-    
+
+
     int cleaning = 0;  // Interpret without actions or messages
     bool graphical = false;
     bool promptForNoPilefile = true;
@@ -215,7 +215,7 @@ int main(int argc, char* argv[])
                 if(s == "compile" || s == "build" || s == "cpp" || s == "c++")
                     type = 1;
             }
-            
+
             generatePilefile(name, type);
             return 0;
         }
@@ -288,7 +288,7 @@ int main(int argc, char* argv[])
                 break;
             // Now we grab all the variants from the list here...
             // It could be var1,var2,... or "var1, var2, ..."
-            
+
             list<string> ls = ioExplode(argv[i], ',');
             for(list<string>::iterator e = ls.begin(); e != ls.end(); e++)
             {
@@ -312,27 +312,27 @@ int main(int argc, char* argv[])
             }
         }
     }
-    
+
     UI_processEvents();
     UI_updateScreen();
-    
-    
-    
+
+
+
     if(!graphical)
     {
         UI_init(false, config);
     }
-    
+
     UI_debug_pile("Current directory: %s", ioGetCWD().c_str());
-    
-    
+
+
     // Find the appropriate pilefile
     if(file == "")
     {
             UI_debug_pile("No pilefile specified.  Searching...\n");
             file = findPileFile();
     }
-    
+
     bool errorFlag = false;
     bool interpreterError = false;
     // If we've found a Pilefile, then we can begin the build.
@@ -341,15 +341,15 @@ int main(int argc, char* argv[])
         UI_debug_pile("Found pilefile: %s\n", file.c_str());
         UI_processEvents();
         UI_updateScreen();
-        
+
         // Interpret the file
         if(!interpret(file, env, config))
             errorFlag = interpreterError = true;
         UI_debug_pile("Done interpreting.\n");
-        
+
         UI_processEvents();
         UI_updateScreen();
-        
+
         if(!errorFlag && env.sources.size() > 0)
         {
             // Scan for dependencies
@@ -366,7 +366,7 @@ int main(int argc, char* argv[])
                     //}
                 }
             }
-            
+
             if(!env.dryRun && !cleaning && !errorFlag)
             {
                 UI_debug_pile("Building and linking.\n");
@@ -377,20 +377,20 @@ int main(int argc, char* argv[])
                         errorFlag = true;
             }
         }
-        
+
     }
     else  // No Pilefile found
     {
         // Prompt user in order to proceed to build all local source files.
-        if(!promptForNoPilefile || UI_prompt(" No Pilefile found here.  Should I try to build all local source files?\n"))
+        if(!promptForNoPilefile || UI_prompt(" No Pilefile found here.  Should I try to build all local source files?\n", 1))
         {
             env.sources = getLocalSourceFiles();
             if(env.variables.find("CFLAGS") == env.variables.end())
                 config.cflags += UI_promptString(" Compiler flags?\n");
-            
+
             if(env.variables.find("LFLAGS") == env.variables.end())
                 config.lflags += UI_promptString(" Linker flags?\n");
-            
+
             // Scan for dependencies
             if(config.useAutoDepend)
             {
@@ -399,7 +399,7 @@ int main(int argc, char* argv[])
                     recurseIncludes(env.depends, env.fileDataHash, config.includePaths, *e, "");
                 }
             }
-            
+
             UI_debug_pile("Building and linking.\n");
             if(!env.dryRun && !cleaning && !errorFlag)
             {
@@ -410,10 +410,10 @@ int main(int argc, char* argv[])
             }
         }
     }
-    
+
     UI_processEvents();
     UI_updateScreen();
-    
+
     // Cleaning
     // FIXME: This should be the default clean, but there should also be a way to overload it in the Pilefile.
     if(cleaning > 0)
@@ -427,9 +427,9 @@ int main(int argc, char* argv[])
         UI_processEvents();
         UI_updateScreen();
     }
-    
-    
-    
+
+
+
     if(errorFlag)
     {
         if(interpreterError)
@@ -437,7 +437,7 @@ int main(int argc, char* argv[])
         else
             UI_error("\nBuild errors have occurred...\n");
     }
-    
+
     if(graphical)
     {
         ui_print = true;
@@ -447,11 +447,21 @@ int main(int argc, char* argv[])
         else
             UI_print("\nAll done!  Press any key.\n");
         UI_updateScreen();
-        
+
+        #ifndef PILE_NO_GUI
+        if(env.autoDone)
+        {
+            UI_print("Pile will automatically close in 5 seconds...\n");
+            UI_autoDone();
+        }
+        else
+            UI_waitKeyPress();
+        #else
         UI_waitKeyPress();
+        #endif
     }
-    
+
     UI_quit();
-    
+
     return 0;
 }

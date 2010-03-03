@@ -166,7 +166,39 @@ void rect_line(SDL_Rect& r, Uint32 color)
 
 
 
-
+void UI_autoDone()
+{
+    Uint32 autoDoneTimer = SDL_GetTicks();
+    SDL_Event event;
+    while(SDL_GetTicks() - autoDoneTimer < 5000)
+    {
+        while(SDL_PollEvent(&event))
+        {
+            if(event.type == SDL_KEYDOWN)
+            {
+                if(event.key.keysym.sym == SDLK_UP
+                   || event.key.keysym.sym == SDLK_DOWN
+                   || event.key.keysym.sym == SDLK_LEFT
+                   || event.key.keysym.sym == SDLK_RIGHT)
+                {
+                    UI_print("Auto-close canceled.  Press any key to quit.\n");
+                    UI_waitKeyPress();
+                }
+                goto AUTO_DONE_BREAK;
+            }
+            else if(event.type == SDL_MOUSEBUTTONDOWN || event.type == SDL_MOUSEBUTTONUP)
+            {
+                UI_print("Auto-close canceled.  Press any key to quit.\n");
+                UI_waitKeyPress();
+                goto AUTO_DONE_BREAK;
+            }
+        }
+        UI_updateScreen();
+        SDL_Delay(100);
+    }
+    AUTO_DONE_BREAK:
+    return;
+}
 
 
 
@@ -339,7 +371,7 @@ void UI_print(const char* formatted_text, ...)
     }
     #endif
     if(ui_print)
-        printf(ui_buffer);
+        printf("%s", ui_buffer);
 
     if(ui_log_print)
         UI_log(ui_buffer);
@@ -366,7 +398,7 @@ void UI_output(const char* formatted_text, ...)
     }
     #endif
     if(ui_print || ui_error)
-        printf(ui_buffer);
+        printf("%s", ui_buffer);
 
     if(ui_log_print || ui_log_error)
         UI_log(ui_buffer);
@@ -394,7 +426,7 @@ void UI_warning(const char* formatted_text, ...)
     #endif
 
     if(ui_warning)
-        printf(ui_buffer);
+        printf("%s", ui_buffer);
 
     if(ui_log_warning)
         UI_log(ui_buffer);
@@ -422,7 +454,7 @@ void UI_error(const char* formatted_text, ...)
     #endif
 
     if(ui_error)
-        printf(ui_buffer);
+        printf("%s", ui_buffer);
 
     if(ui_log_error)
         UI_log(ui_buffer);
@@ -450,7 +482,7 @@ void UI_debug(const char* formatted_text, ...)
     #endif
 
     if(ui_debug)
-        printf(ui_buffer);
+        printf("%s", ui_buffer);
 
     if(ui_log_debug)
         UI_log(ui_buffer);
@@ -481,7 +513,7 @@ void UI_debug_pile(const char* formatted_text, ...)
 
     #ifdef PILE_DEBUG_PILE
     if(ui_debug_pile)
-        printf(ui_buffer);
+        printf("%s", ui_buffer);
 
     if(ui_log_debug_pile)
         UI_log(ui_buffer);
@@ -554,14 +586,14 @@ int UI_popup(string message, int numButtons, ...)
             buttonText.push_back(va_arg(lst, char*));
         }
         va_end(lst);
-        
+
         if(numArgs < 1)
             return -1;
-        
-        
+
+
         SDL_Rect msgRect = {2, 2, screen->w - 4, screen->h - 4};
         message = UI_wrap(message, printfont, msgRect.w);
-        
+
         SDL_Rect buttons[numArgs];
         for(int i = 0; i < numArgs; i++)
         {
@@ -570,7 +602,7 @@ int UI_popup(string message, int numButtons, ...)
             buttons[i].x = msgRect.x + msgRect.w/2 - 50*(numArgs-1) + (50 + 3)*i;
             buttons[i].y = msgRect.y + printfont->getHeight(message.c_str());
         }
-        
+
         // FIXME: Replace loops like this with a programmable loop function (callbacks, blecch, I know).  The most modular approach would be with several base classes.  The objects of which would be told to call their particular function.
         SDL_Event event;
         while(1)
@@ -578,7 +610,7 @@ int UI_popup(string message, int numButtons, ...)
             Uint32 starttime = SDL_GetTicks();
             dt = (starttime - lasttime)/1000.0f;
             lasttime = starttime;
-    
+
             while(SDL_PollEvent(&event))
             {
                 if(event.type == SDL_QUIT)
@@ -600,27 +632,27 @@ int UI_popup(string message, int numButtons, ...)
                     }
                 }
             }
-            
+
             SDL_FillRect(screen, &msgRect, SDL_MapRGB(screen->format, 200, 200, 200));
-            
+
             printfont->drawCenter(msgRect.x + msgRect.w/2, msgRect.y, message.c_str());
-                
+
             for(unsigned int i = 0; i < buttonText.size(); i++)
             {
                 rect_line(buttons[i], SDL_MapRGB(screen->format, 50, 50, 150));
                 printfont->drawCenter(buttons[i].x + buttons[i].w/2, buttons[i].y, buttonText[i].c_str());
             }
-            
+
             SDL_Flip(screen);
             SDL_Delay(50);
         }
     }
     #endif
-    
+
     return -1;
 }
 
-bool UI_prompt(string message)
+bool UI_prompt(string message, int default_answer)
 {
     #ifndef PILE_NO_GUI
     if(ui_gui)
@@ -628,7 +660,12 @@ bool UI_prompt(string message)
         return (UI_popup(message, 2, "Yes", "No") == 0);
     }
     #endif
-    printf("%s (Yes/No): ", message.c_str());
+    if(default_answer == 1)
+        printf("%s (Y/n): ", message.c_str());
+    else if(default_answer == 0)
+        printf("%s (y/N): ", message.c_str());
+    else
+        printf("%s (y/n): ", message.c_str());
     string user;
     bool ran = false;
     do
@@ -636,10 +673,15 @@ bool UI_prompt(string message)
         if(ran)
             printf(" Huh?: ");
         ran = true;
-        //cin.clear();  // :( This didn't work...
-        cin >> user;
-        if(user[user.size()-1] == '\n')
-            user.erase(user.end()-1);
+
+        getline(cin, user);
+        if(user == "")
+        {
+            if(default_answer == 0)
+                return false;
+            if(default_answer == 1)
+                return true;
+        }
     }
     while(!(isYes(user) || isNo(user)));
 
@@ -656,16 +698,10 @@ string UI_promptString(string message)
     }
     #endif
     printf("%s: ", message.c_str());
-    char buff[1024];
-    cin.clear();
-    do
-    {
-        cin.getline(buff, 1023);
-        delay(20);
-    }
-    while(strcmp(buff, "") == 0);
+    string result;
+    getline(cin, result);
 
-    return buff;
+    return result;
 }
 
 

@@ -29,12 +29,13 @@ This file contains all system-specific functions used in Pile.
 #include <Xm/PushB.h>*/
 #endif
 
+#include "pile_ui.h"
 
 
 // Motif stuff from http://stackoverflow.com/questions/1384125/c-messagebox-for-linux-like-in-ms-windows
-/*void pushed_fn(Widget w, XtPointer client_data, 
-               XmPushButtonCallbackStruct *cbs) 
-  {   
+/*void pushed_fn(Widget w, XtPointer client_data,
+               XmPushButtonCallbackStruct *cbs)
+  {
      printf("Don't Push Me!!\n");
   }*/
 
@@ -80,15 +81,15 @@ string getHomeDir()
 {
     #ifdef PILE_WIN32
     char path[PATH_MAX];
-    
+
     if(SHGetSpecialFolderPath(HWND_DESKTOP, path, CSIDL_PERSONAL, FALSE))
         return path;
-    
+
     // Error...
-    
+
     return "";
     #endif
-    
+
     #ifdef PILE_LINUX
     return getenv("HOME");
     #endif
@@ -113,18 +114,20 @@ void systemCall(string command)
     // Append stdout and stderr to file
     string tempname = ".pile.tmp";
     command += " >> " + tempname + " 2>&1";
-    
+
     #ifdef PILE_LINUX
-    system(command.c_str());
+    int result = system(command.c_str());
+    if(result != 0)
+        UI_warning("System call signalled failure with value %d: '%s'\n", result, command.c_str());
     #endif
-    
+
     #ifdef PILE_WIN32
     //ShellExecute(NULL, "open", "cmd.exe", ("/C " + command).c_str(), NULL, SW_HIDE);
     //delay(100);
     char buff[command.size() + 10];
-    
+
     sprintf(buff, "%s", ("/C " + command).c_str());
-    
+
     SHELLEXECUTEINFO ShExecInfo = {0};
     ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
     ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
@@ -135,9 +138,9 @@ void systemCall(string command)
     ShExecInfo.lpDirectory = NULL;
     ShExecInfo.nShow = SW_HIDE;
     ShExecInfo.hInstApp = NULL;
-    
+
     ShellExecuteEx(&ShExecInfo);
-    
+
     WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
     #endif
 }
