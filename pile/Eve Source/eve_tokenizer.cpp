@@ -15,6 +15,7 @@ system that converts characters into meaningful tokens for use by the evaluater.
 #include "../pile_ui.h"
 
 #include <string>
+#include <cstdio>
 using namespace std;
 
 extern Interpreter interpreter;
@@ -371,7 +372,7 @@ TypeEnum getTypeFromString(const string& str)
         return CLASS;
     if(str == "class_object")
         return CLASS_OBJECT;
-    
+
     return NOT_A_TYPE;
 }
 
@@ -380,14 +381,14 @@ TypeEnum getTypeFromString(const string& str)
 // Analyze token to return a correct variable.
 // First, see if it's a type name.
 // If it's a literal (numbers only...  strings are handled in nextToken()),
-// then return a new one.  
+// then return a new one.
 // Then, look it up in the environment.
 // If it's not found, it's an error (maybe not?).
 Variable* getCorrectVariable(string token, bool isFunction = false)
 {
     if(token == "")
         return NULL;
-    
+
     if(token == "true")
     {
         Bool* b = new Bool(true);
@@ -400,7 +401,7 @@ Variable* getCorrectVariable(string token, bool isFunction = false)
         b->literal = true;
         return b;
     }
-    
+
     // #### or .####
     if(isNumeric(token[0]) || (token[0] == '.' && isNumeric(token[1])))
     {
@@ -438,7 +439,7 @@ Variable* getCorrectVariable(string token, bool isFunction = false)
         v->setValue(t);
         return v;
     }
-    
+
     Variable* var = interpreter.getVar(token);
     if(var == NULL)
     {
@@ -620,7 +621,7 @@ Token nextToken1(string& line, bool startingLine)
             }
             return Token();
         }
-        
+
         if(foundQuote)  // If we're in a quoted string...
         {
             // FIXME: Should all of the escaped characters be done here?
@@ -678,7 +679,7 @@ Token nextToken1(string& line, bool startingLine)
             s->literal = true;
             return Token(s, token);
         }
-        
+
         if(found < 0)  // If we haven't found anything yet...
         {
             if(isWhitespace(line[i]))  // Keep skipping whitespace
@@ -717,11 +718,11 @@ Token nextToken1(string& line, bool startingLine)
                 }
                 if(foundQuote)  // A lone quote?  Error?
                 {
-                    
+
                 }
                 if(dot)  // A lone dot?  Error?
                 {
-                    
+
                 }
                 return Token();
             }
@@ -749,11 +750,11 @@ Token nextToken1(string& line, bool startingLine)
                 }
                 if(foundQuote)  // A lone quote?  Error?
                 {
-                    
+
                 }
                 if(dot)  // A lone dot?  Error?
                 {
-                    
+
                 }
                 return Token();
             }
@@ -796,7 +797,7 @@ Token nextToken1(string& line, bool startingLine)
                             line.erase(0, i+2);
                             return Token(Token::OPERATOR, token);
                         }
-                        
+
                         string token = line.substr(found, i - found + 1);
                         line.erase(0, i+1);
                         return Token();
@@ -877,7 +878,7 @@ Token nextToken1(string& line, bool startingLine)
                 }
                 if(foundQuote)  // A lone quote?  Error?
                 {
-                    
+
                 }
             }
         }
@@ -899,9 +900,9 @@ list<Token> tokenize1(string& line, bool& continuation)
     #ifdef PILE_DEBUG_TOKENS
         static int tokenNum = 1;
     #endif
-    
+
     continuation = false;
-    
+
     bool start = true;
     do
     {
@@ -917,7 +918,7 @@ list<Token> tokenize1(string& line, bool& continuation)
         }
     }
     while(line.size() > 0 && tok.type != Token::NOT_A_TOKEN);
-    
+
     // Check for the continuation operator at the end.
     if(tokens.size() > 0)
     {
@@ -929,7 +930,7 @@ list<Token> tokenize1(string& line, bool& continuation)
             tokens.erase(e);
         }
     }
-    
+
     return tokens;
 }
 

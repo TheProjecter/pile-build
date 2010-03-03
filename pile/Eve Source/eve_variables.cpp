@@ -15,6 +15,7 @@ functions.
 #include "../pile_ui.h"
 
 #include <string>
+#include <cstdio>
 using namespace std;
 
 extern Interpreter interpreter;
@@ -317,8 +318,8 @@ Void* Void::copy()
     cp->reference = false;
     return cp;
 }
-    
-    
+
+
 
 
 
@@ -498,7 +499,7 @@ Variable* Array::size_fn(Variable* arr)
 {
     if(arr == NULL || arr->getType() != ARRAY)
         return NULL;
-    
+
     return new Int("<temp>", static_cast<Array*>(arr)->size());
 }
 
@@ -725,7 +726,7 @@ ClassObject::ClassObject(const std::string& text, const std::string& name)
     : Variable(CLASS_OBJECT, text)
     , name(name)
 {
-    
+
     // Search the registered classes for the name
     // If it's found, create all new variables.
     // If it's not found, set className to ""

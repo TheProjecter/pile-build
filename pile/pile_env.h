@@ -50,6 +50,9 @@ class Environment
     bool dryRun;
     bool noCompile;
     bool noLink;
+    #ifndef PILE_NO_GUI
+    bool autoDone;
+    #endif
     
     std::string pilefile;
     
@@ -58,6 +61,9 @@ class Environment
         , dryRun(false)
         , noCompile(false)
         , noLink(false)
+        #ifndef PILE_NO_GUI
+        , autoDone(true)
+        #endif
     {}
     
     void loadConfig(Configuration& config)

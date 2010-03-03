@@ -14,12 +14,12 @@ the Eve interpreter.
 // FIXME: Replace Pile output with an error message system
 #include "../pile_ui.h"
 #include <cassert>
-#include <cstdlib>
 #include <string>
 #include "../External Code/goodio.h"
 using namespace std;
 
 extern Interpreter interpreter;
+void systemCall(std::string command);
 
 /*
 Returns a new string that has the printing escape sequences (\n, \t, etc.)
@@ -477,7 +477,15 @@ Variable* fn_system(Variable* f)
     String* text = dynamic_cast<String*>(f);
     
     if(text != NULL)
-        system(text->getValue().c_str());
+    {
+        string tempname = ".pile.tmp";
+        ioDelete(tempname);
+        
+        systemCall(text->getValue());
+        
+        UI_print_file(tempname);
+        ioDelete(tempname);
+    }
     return NULL;
 }
 
