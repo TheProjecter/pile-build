@@ -200,7 +200,6 @@ int main(int argc, char* argv[])
         else if(string("new") == argv[i])
         {
             // Generate a new pilefile
-            // FIXME: Allow 'pile new c++', not just 'pile new my.pile c++'
             string name = "com.pile";
             i++;
             if(i < argc)
@@ -214,6 +213,11 @@ int main(int argc, char* argv[])
                 string s = argv[i];
                 if(s == "compile" || s == "build" || s == "cpp" || s == "c++")
                     type = 1;
+            }
+            else if(name == "compile" || name == "build" || name == "cpp" || name == "c++")
+            {
+                type = 1;
+                name = "com.pile";
             }
 
             generatePilefile(name, type);

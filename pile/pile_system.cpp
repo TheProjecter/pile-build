@@ -30,6 +30,7 @@ This file contains all system-specific functions used in Pile.
 #endif
 
 #include "pile_ui.h"
+#include "cstdio"
 
 
 // Motif stuff from http://stackoverflow.com/questions/1384125/c-messagebox-for-linux-like-in-ms-windows
@@ -41,8 +42,9 @@ This file contains all system-specific functions used in Pile.
 
 void SYS_alert(const char* text)
 {
+    printf("%s", text);
     #ifdef PILE_WIN32
-    ;
+
     #endif
     #ifdef PILE_LINUX
     /*Widget top_wid, button;
