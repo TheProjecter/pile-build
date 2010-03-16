@@ -115,6 +115,54 @@ void generatePilefile(string name, int type)
     }
 }
 
+void stripWrappingWhitespace(string& s)
+{
+    size_t p = s.find_first_not_of(" \n\t\r");
+    if(p != string::npos)
+        s = s.substr(p, string::npos);
+    else
+        s = "";
+    p = s.find_first_of(" \n\t\r");
+        s = s.substr(0, p);
+}
+
+
+string getCFlagHistory()
+{
+    string file = getConfigDir() + "CFLAGS.history";
+    ioFileReader r(file);
+    if(r.ready())
+        return r.getLine();
+    return "";
+}
+
+void setCFlagHistory(const string& response)
+{
+    string file = getConfigDir() + "CFLAGS.history";
+    ioClear(file);
+    string s = response;
+    stripWrappingWhitespace(s);
+    ioAppend(response, file);
+}
+
+string getLFlagHistory()
+{
+    string file = getConfigDir() + "LFLAGS.history";
+    ioFileReader r(file);
+    if(r.ready())
+        return r.getLine();
+    return "";
+}
+
+void setLFlagHistory(const string& response)
+{
+    string file = getConfigDir() + "LFLAGS.history";
+    ioClear(file);
+    string s = response;
+    stripWrappingWhitespace(s);
+    ioAppend(response, file);
+}
+
 /*
 The basic outline:
 Create config file if it doesn't exist.
@@ -390,10 +438,32 @@ int main(int argc, char* argv[])
         {
             env.sources = getLocalSourceFiles();
             if(env.variables.find("CFLAGS") == env.variables.end())
-                config.cflags += UI_promptString(" Compiler flags?\n");
+            {
+                string oldInput = getCFlagHistory();
+                string question = " Compiler flags?\n";
+                if(oldInput != "")
+                    question += string(" Leave blank to use: ") + oldInput + "\n";
+                string response = UI_promptString(question);
+                if(response == "")
+                    response = oldInput;
+                else
+                    setCFlagHistory(response);
+                config.cflags += response;
+            }
 
             if(env.variables.find("LFLAGS") == env.variables.end())
-                config.lflags += UI_promptString(" Linker flags?\n");
+            {
+                string oldInput = getLFlagHistory();
+                string question = " Linker flags?\n";
+                if(oldInput != "")
+                    question += string(" Leave blank to use: ") + oldInput + "\n";
+                string response = UI_promptString(question);
+                if(response == "")
+                    response = oldInput;
+                else
+                    setLFlagHistory(response);
+                config.lflags += response;
+            }
 
             // Scan for dependencies
             if(config.useAutoDepend)

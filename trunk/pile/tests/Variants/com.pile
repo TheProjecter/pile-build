@@ -1,4 +1,5 @@
 
+print("Variants: \n" + string(VARIANTS) + "\n")
 
 if(VARIANTS <> "debug")
 {
