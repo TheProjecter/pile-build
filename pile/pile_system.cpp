@@ -118,9 +118,10 @@ void systemCall(string command)
     command += " >> " + tempname + " 2>&1";
 
     #ifdef PILE_LINUX
-    int result = system(command.c_str());
-    if(result != 0)
-        UI_warning("System call signalled failure with value %d: '%s'\n", result, command.c_str());
+    system(command.c_str());
+    //int result = system(command.c_str());
+    //if(result != 0)
+    //    UI_warning("System call signalled failure with value %d: '%s'\n", result, command.c_str());
     #endif
 
     #ifdef PILE_WIN32
