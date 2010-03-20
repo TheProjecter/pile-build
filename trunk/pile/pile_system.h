@@ -77,7 +77,7 @@ inline std::string getConfigDir()
 
 void convertSlashes(std::string& str);
 
-void systemCall(std::string command);
+int systemCall(std::string command);
 
 void delay(unsigned int milliseconds);
 

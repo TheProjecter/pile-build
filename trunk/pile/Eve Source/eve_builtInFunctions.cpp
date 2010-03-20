@@ -19,7 +19,7 @@ the Eve interpreter.
 using namespace std;
 
 extern Interpreter interpreter;
-void systemCall(std::string command);
+int systemCall(std::string command);
 
 /*
 Returns a new string that has the printing escape sequences (\n, \t, etc.)
