@@ -57,23 +57,31 @@ eve_interpreter.cpp:
         Add evalToken() return value handling if necessary
 
 
-ADD BUILT-IN FUNCTION
+ADD EXTERNAL FUNCTION
 ----------------------
 pile_env.h:
+    Add the function prototype to the top of this file.
     void initInterpreter(Interpreter& inter):
         Add a new function to the env if it's a Pile fn.
 
+Somewhere else:
+    Write the function that you refer to in initInterpreter.
+
+
+ADD BUILT-IN FUNCTION
+----------------------
+
 eve_interpreter.h:
     enum FunctionEnum:
-        Add the function name.
+        Add the function name if it's an Eve built-in fn.
 
 eve_interpreter.cpp:
     Interpreter::reset():
-        Add a new function to the env if it's an Eve fn.
+        Add a new function to the env if it's an Eve built-in fn.
 
 eve_builtInFunctions.cpp:
     Variable* callBuiltIn(FunctionEnum fn, vector<Variable*>& args):
-        Add case for the fn.
+        Add case for the fn if it's an Eve fn.
 
 eve_functions.cpp:
     Function::Function(FunctionEnum builtIn):

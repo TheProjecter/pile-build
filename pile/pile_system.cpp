@@ -111,14 +111,15 @@ void convertSlashes(string& str)
 }
 
 
-void systemCall(string command)
+int systemCall(string command)
 {
     // Append stdout and stderr to file
     string tempname = ".pile.tmp";
     command += " >> " + tempname + " 2>&1";
+    int result = 0;
 
     #ifdef PILE_LINUX
-    system(command.c_str());
+    result = system(command.c_str());
     //int result = system(command.c_str());
     //if(result != 0)
     //    UI_warning("System call signalled failure with value %d: '%s'\n", result, command.c_str());
@@ -142,10 +143,12 @@ void systemCall(string command)
     ShExecInfo.nShow = SW_HIDE;
     ShExecInfo.hInstApp = NULL;
 
-    ShellExecuteEx(&ShExecInfo);
+    result = ShellExecuteEx(&ShExecInfo);
 
     WaitForSingleObject(ShExecInfo.hProcess, INFINITE);
     #endif
+    
+    return result;
 }
 
 void delay(unsigned int milliseconds)

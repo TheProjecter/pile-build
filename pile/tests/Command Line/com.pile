@@ -1,0 +1,6 @@
+ 
+
+println("OUTPUT = " + OUTPUT)
+println("VARIANTS = " + string(VARIANTS))
+println("CFLAGS = " + string(CFLAGS))
+println("LFLAGS = " + string(LFLAGS))

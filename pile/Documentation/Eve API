@@ -1,0 +1,66 @@
+This file lists the functions that are built into the Eve interpreter.
+
+string type(any)
+ Arg 1: Any variable
+ Side Effect: None
+ Return: typename of the variable.  This can be used for declarations.
+
+bool bool(any)
+ Arg 1: bool, int, or float
+ Side Effect: None
+ Return: bool cast of Arg 1's value.
+
+int int(any)
+ Arg 1: bool, int, or float
+ Side Effect: None
+ Return: int cast of Arg 1's value.
+
+float float(any)
+ Arg 1: bool, int, or float
+ Side Effect: None
+ Return: float cast of Arg 1's value.
+
+string string(any)
+ Arg 1: Any variable
+ Side Effect: None
+ Return: string containing a representation of Arg 1's value.
+
+void print(string)
+ Arg 1: string to print
+ Side Effect: Prints the string to Pile's stdout
+ Return: None
+
+void println(string)
+ Arg 1: string to print
+ Side Effect: Prints the string to Pile's stdout with an appended newline
+ Return: None
+
+void warning(string)
+ Arg 1: string to print
+ Side Effect: Prints the string to Pile's stdout
+ Return: None
+
+void error(string)
+ Arg 1: string to print
+ Side Effect: Prints the string to Pile's stdout
+ Return: None
+
+void debug(string)
+ Arg 1: string to print
+ Side Effect: Prints the string to Pile's stdout
+ Return: None
+
+void include(string)
+ Arg 1: file name to include
+ Side Effect: Effectively places the text of the included file into this file, to be parsed before continuing with the current file.
+ Return: None
+
+array<string> ls(string)
+ Arg 1: Directory, file, or pattern (with wildcard '*')
+ Side Effect: None
+ Return: An array of file names which match the given pattern.
+
+int array::size()
+ Side Effect: None
+ Return: The number of elements currently in the array.
+

@@ -25,6 +25,9 @@ This file contains the Environment class definition.
 Variable* fn_scan(Variable* arg1, Variable* arg2);
 Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3);
 Variable* fn_link(Variable* arg1, Variable* arg2, Variable* arg3, Variable* arg4, Variable* arg5);
+Variable* fn_link(Variable* arg1, Variable* arg2, Variable* arg3, Variable* arg4, Variable* arg5);
+
+Variable* fn_codeStats(Variable* arg1, Variable* arg2);
 
 Variable* createNewVariableFromCommandLine(const std::string& name, const std::string& value);
 void changeVariableFromCommandLine(Variable* var, const std::string& name, const std::string& value);
@@ -230,6 +233,11 @@ class Environment
             static_cast<Array*>(s.env["LFLAGS"])->push_back(new String("<temp>", *e));
         }
         
+        
+        // Useful functions
+        
+        s.env["codeStats"] = new Function("codeStats", &fn_codeStats);
+        s.env["codeStats"]->reference = true;
         
         
     }

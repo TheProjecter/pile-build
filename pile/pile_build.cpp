@@ -304,18 +304,21 @@ Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
             UI_debug_pile("Actual call:\n %s\n", buff.c_str());
 
             // Needed for success check
-            bool objExists = ioExists(objName);
+            /*bool objExists = ioExists(objName);
             time_t objTime = 0;
             if(objExists)
-                objTime = ioTimeModified(objName);
+                objTime = ioTimeModified(objName);*/
 
-            systemCall(buff.c_str());
+            int result = systemCall(buff.c_str());
 
             UI_print_file(tempname);
             ioDelete(tempname.c_str());
+			
+			if(result != 0)
+				failedFiles.push_back(sourceFile);
 
             // Check to see if the build was successful.
-            if(objExists)
+            /*if(objExists)
             {
                 // FIXME: This looks like it could fail if the build is quick (and the object had been modified...)!!!
                 if(!ioExists(objName) || objTime >= ioTimeModified(objName))
@@ -326,7 +329,7 @@ Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
             {
                 if(!ioExists(objName))
                     failedFiles.push_back(sourceFile);
-            }
+            }*/
         }
         else
         {
@@ -348,6 +351,8 @@ Variable* fn_build(Variable* arg1, Variable* arg2, Variable* arg3)
             UI_error("  %s\n", e->c_str());
         }
         UI_error("\n");
+        // FIXME: I have to make a better way to signal an error.
+        resultObjects->setValue(vector<Variable*>());
     }
 
     return resultObjects;
@@ -365,6 +370,9 @@ Variable* fn_link(Variable* arg1, Variable* arg2, Variable* arg3, Variable* arg4
     Array* opts = convertArg_Array(arg5, STRING);
 
     if(c == NULL || outname == NULL || objs == NULL || opts == NULL)
+        return NULL;
+    
+    if(objs->size() == 0)
         return NULL;
 
     string path = quoteWhitespace(static_cast<String*>(c->getVariable("path"))->getValue());
@@ -417,10 +425,13 @@ Variable* fn_link(Variable* arg1, Variable* arg2, Variable* arg3, Variable* arg4
     string buff = buffer;
     convertSlashes(buff);
 
-    systemCall(buff);
+    int result = systemCall(buff);
 
     UI_print_file(tempname);
     ioDelete(tempname.c_str());
+	
+	if(result != 0)
+        UI_error("Linking failed.\n");
 
     UI_processEvents();
     UI_updateScreen();

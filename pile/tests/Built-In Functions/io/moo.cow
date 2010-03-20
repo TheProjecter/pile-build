@@ -1,0 +1,12 @@
+ 
+copy("com.pile", "moo.moo")
+
+move("moo.moo", "moo.cow")
+
+mkdir("popopo")
+
+mkpath("a/b/c/d/e")
+
+mkfile("del.me")
+
+delete("del.me")

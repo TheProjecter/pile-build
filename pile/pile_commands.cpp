@@ -16,6 +16,12 @@ This file contains the functions which implement several command-line options.
 #include "pile_config.h"
 #include "pile_ui.h"
 #include "External Code/goodio.h"
+#include "Eve Source/eve_interpreter.h"
+
+
+extern Interpreter interpreter;
+
+void stripWrappingWhitespace(string& s);
 
 
 string getObjectName(string source, string objPath, bool useSourceDir);
@@ -171,8 +177,7 @@ bool edit(string file, Configuration& config)
     }
     else
     {
-        system((config.editor + " " + file).c_str());
-        return true;
+        return (system((config.editor + " " + file).c_str()) == 0);
     }
 }
 
@@ -199,3 +204,104 @@ bool install()
 {
     return false;
 }
+
+
+
+
+
+
+
+
+// Returns void
+// Takes array<string> sourceFiles, string type
+Variable* fn_codeStats(Variable* arg1, Variable* arg2)
+{
+    Array* sourceFiles = convertArg_Array(arg1, STRING);
+    String* typeStr = convertArg_String(arg2);
+
+    if(sourceFiles == NULL || typeStr == NULL)
+        return NULL;
+
+    vector<Variable*> sources = sourceFiles->getValue();
+    string type = typeStr->getValue();
+    
+    /* Count the:
+    Number of files
+    Number of lines
+    Number and percentage of blank lines
+    Number and percentage of comment lines
+    Number and percentage of code lines
+    Number and percentage of lines that have mixed code and comments
+    Total text lines
+    */
+    
+    if(type == "C++" || type == "c++" || type == "C" || type == "c")
+    {
+        unsigned int numFiles = 0;
+        unsigned int numLines = 0;
+        unsigned int numBlanks = 0;
+        unsigned int numComments = 0;
+        unsigned int numCodes = 0;
+        unsigned int numPreprocessor = 0;
+        unsigned int numMixed = 0;
+        unsigned int numText = 0;
+        unsigned int numStatements = 0;
+        
+        bool inQuote = false;
+        bool inPreprocessor = false;  // For multi-line macros
+        bool inComment = false;
+        
+        for(vector<Variable*>::iterator e = sources.begin(); e != sources.end(); e++)
+        {
+            if((*e)->getType() != STRING)
+            {
+                interpreter.error("Wrong type in array sent to codeStats().\n");
+                return NULL;
+            }
+            
+            String* fileStr = convertArg_String(*e);
+            if(fileStr == NULL)
+            {
+                interpreter.error("Wrong type in array sent to codeStats().\n");
+                return NULL;
+            }
+            string file = fileStr->getValue();
+            ioFileReader r(file);
+            numFiles++;
+            
+            while(r.ready())
+            {
+                string line = r.getLine();
+                stripWrappingWhitespace(line);
+                numLines++;
+                if(line.size() > 0)
+                    numText++;
+                
+                /*for(string::iterator f = line.begin(); f != line.end(); f++)
+                {
+                    if(inQuote)
+                    {
+                        if(*f == '\"')
+                            inQuote = false;
+                    }
+                    else if(inPreprocessor)
+                    {
+                        string::iterator g = line.end();
+                        g--;
+                        if(f == g && *f != '\\')
+                            inPreprocessor = false;
+                    }
+                }*/
+            }
+            
+        }
+        
+        UI_print("In %d files...\nTotal lines: %d\nTotal code lines: %d\n", numFiles, numLines, numText);
+        
+        
+    }
+    
+    
+    return NULL;
+}
+
