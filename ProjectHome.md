@@ -1,0 +1,5 @@
+Pile is a tool for controlling software compilation, much like GNU Make, Jam, or Scons.  The main goals are to be actually intuitive and cross-platform.  This doesn't just mean that it works on multiple operating systems and languages.  On Linux, you might expect to use the command line.  On Windows, you would expect to use a GUI.  Pile does it either way.  Just type `pile` or double-click on a Pilefile (.pile) and you either get a working binary or a clear description of what went wrong.
+
+The Pile Interpreter (Eve) is specifically designed to be intuitive for users who know C/C++.  It uses a C-like syntax and operators though it extends the base language to make things more intuitive, easy, and convenient.  The main purpose is to control the functionality of Pile through the Pilefile, which is written in this interpreted language.
+
+Pile is still in a very early stage.  Please be patient, as even the basics of the interpreter are not yet complete.
